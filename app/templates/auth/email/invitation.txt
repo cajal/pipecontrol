@@ -1,0 +1,13 @@
+Hi,
+
+{{ user.name or user.username }} wants to invite you to DataJoy!
+
+To join, please paste the following link in your browser's address bar:
+
+{{ url_for('auth.register_with_token', token=token, _external=True) }}
+
+Sincerely,
+
+The DataJoy Team
+
+Note: replies to this email address are not monitored.

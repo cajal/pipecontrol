@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Labloid{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    {% if current_user.is_authenticated() %}
+    <h1>Hello {{ current_user.username }}</h1>
+    {% else %}
+    <h1>DataJoy</h1>
+    <h4>a tool to view and edit simple DataJoint tables</h4>
+    {% endif %}
+</div>
+
+
+<div class="post-tabs">
+
+    {% if not current_user.is_authenticated() %}
+
+    <p>
+        Please <a href="{{ url_for('auth.login') }}">login</a> if you want to see your current posts or <a
+            href="{{ url_for('auth.register') }}">register</a> as a new user.
+    </p>
+
+
+    {% endif %}
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+{% endblock %}
+

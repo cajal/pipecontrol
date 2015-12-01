@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}DataJoy - Edit Membership{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Edit Membership of {{ form.user.username }} in {{ form.group.groupname }}</h1>
+</div>
+
+<div class="col-md-4">
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock %}

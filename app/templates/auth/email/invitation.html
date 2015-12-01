@@ -1,0 +1,8 @@
+<p>Hi,</p>
+<p>{{ user.name or user.username }} wants to invite you to <b>DataJoy</b>!</p>
+<p>To join, please click <a href="{{ url_for('auth.register_with_token', token=token, _external=True) }}">click here</a>.</p>
+<p>Alternatively, you can paste the following link in your browser's address bar:</p>
+<p>{{ url_for('auth.register_with_token', token=token, _external=True) }}</p>
+<p>Sincerely,</p>
+<p>The DataJoy Team</p>
+<p><small>Note: replies to this email address are not monitored.</small></p>

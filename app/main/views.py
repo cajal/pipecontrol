@@ -26,7 +26,7 @@ def after_request(response):
 def index():
     page = request.args.get('page', 1, type=int)
     show_followed = False
-    if current_user.is_authenticated():
+    if current_user.is_authenticated:
         show_followed = bool(request.cookies.get('show_followed', ''))
 
     if show_followed:

@@ -2,11 +2,11 @@
 {% import "bootstrap/wtf.html" as wtf %}
 {% import "_macros.html" as macros %}
 
-{% block title %}Labloid{% endblock %}
+{% block title %}DataJoy{% endblock %}
 
 {% block page_content %}
 <div class="page-header">
-    {% if current_user.is_authenticated() %}
+    {% if current_user.is_authenticated %}
     <h1>Hello {{ current_user.username }}</h1>
     {% else %}
     <h1>DataJoy</h1>
@@ -17,7 +17,7 @@
 
 <div class="post-tabs">
 
-    {% if not current_user.is_authenticated() %}
+    {% if not current_user.is_authenticated %}
 
     <p>
         Please <a href="{{ url_for('auth.login') }}">login</a> if you want to see your current posts or <a

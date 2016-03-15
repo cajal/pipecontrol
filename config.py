@@ -13,13 +13,13 @@ class Config:
     MAIL_USE_SSL = False
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    DATAJOY_MAIL_SUBJECT_PREFIX = '[DataJoy]'
-    DATAJOY_MAIL_SENDER = os.environ.get('MAIL_SENDER')
-    DATAJOY_ADMIN = os.environ.get('DATAJOY_ADMIN')
-    DATAJOY_POSTS_PER_PAGE = 20
-    DATAJOY_FOLLOWERS_PER_PAGE = 50
-    DATAJOY_COMMENTS_PER_PAGE = 30
-    DATAJOY_SLOW_DB_QUERY_TIME=0.5
+    ROWBOT_MAIL_SUBJECT_PREFIX = '[Row-Bot]'
+    ROWBOT_MAIL_SENDER = os.environ.get('MAIL_SENDER')
+    ROWBOT_ADMIN = os.environ.get('ROWBOT_ADMIN')
+    ROWBOT_POSTS_PER_PAGE = 20
+    ROWBOT_FOLLOWERS_PER_PAGE = 50
+    ROWBOT_COMMENTS_PER_PAGE = 30
+    ROWBOT_SLOW_DB_QUERY_TIME=0.5
 
 
     @staticmethod
@@ -52,9 +52,9 @@ class ProductionConfig(Config):
                 secure = ()
         mail_handler = SMTPHandler(
             mailhost=(cls.MAIL_SERVER, cls.MAIL_PORT),
-            fromaddr=cls.DATAJOY_MAIL_SENDER,
-            toaddrs=[cls.DATAJOY_ADMIN],
-            subject=cls.DATAJOY_MAIL_SUBJECT_PREFIX + ' Application Error',
+            fromaddr=cls.ROWBOT_MAIL_SENDER,
+            toaddrs=[cls.ROWBOT_ADMIN],
+            subject=cls.ROWBOT_MAIL_SUBJECT_PREFIX + ' Application Error',
             credentials=credentials,
             secure=secure)
         mail_handler.setLevel(logging.ERROR)

@@ -83,7 +83,7 @@ def register():
         db.session.add(user)
         db.session.commit()
         token = user.generate_confirmation_token()
-        send_email(user.email, 'Please Confirm Your Labloid Account',
+        send_email(user.email, 'Please Confirm Your Row-Bot Account',
                    'auth/email/confirm', user=user, token=token)
         flash('A confirmation email has been sent to you by email.')
         return redirect(url_for('auth.login'))
@@ -107,7 +107,7 @@ def confirm(token):
 @login_required
 def resend_confirmation():
     token = current_user.generate_confirmation_token()
-    send_email(current_user.email, 'Please Confirm Your Labloid Account',
+    send_email(current_user.email, 'Please Confirm Your Row-Bot Account',
                'auth/email/confirm', user=current_user, token=token)
     flash('A new confirmation email has been sent to you by email.')
     return redirect(url_for('main.index'))

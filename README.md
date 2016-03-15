@@ -1,4 +1,4 @@
-# DataJoy
+# Row-Bot
 Viewing and editing DataJoint tables.  
 
 ## Ackownledgements

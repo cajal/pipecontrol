@@ -1,6 +1,6 @@
 Hi,
 
-{{ user.name or user.username }} wants to invite you to DataJoy!
+{{ user.name or user.username }} wants to invite you to Row-Bot!
 
 To join, please paste the following link in your browser's address bar:
 
@@ -8,6 +8,6 @@ To join, please paste the following link in your browser's address bar:
 
 Sincerely,
 
-The DataJoy Team
+The Row-Bot Team
 
 Note: replies to this email address are not monitored.

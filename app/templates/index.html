@@ -39,8 +39,12 @@
               <tr>
                 <td>{{ relname }}</td>
                 <td>
-                    <button type="button" class="btn btn-info">View</button>
-                    <button type="button" class="btn btn-warning">Enter</button>
+                     <a href="{{ url_for('djtable.display', relname=relname) }}">
+                         <button type="button" class="btn btn-info">View</button>
+                     </a>
+                     <a href="{{ url_for('djtable.enter', relname=relname) }}">
+                        <button type="button" class="btn btn-warning">Enter Data</button>
+                     </a>
                 </td>
               </tr>
             {% endfor %}

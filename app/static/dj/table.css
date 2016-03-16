@@ -1,0 +1,17 @@
+table.djtable {
+    font-size:11px;
+}
+
+.djtable thead th, .djtable tfoot{
+    background: lightsteelblue;
+}
+
+.djtable tfoot tr td{
+    text-align: center;
+}
+
+.djtable a:link{
+    color: darkslategrey;
+}
+
+

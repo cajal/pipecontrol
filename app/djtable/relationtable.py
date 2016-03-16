@@ -1,7 +1,8 @@
 from importlib import import_module
-
 from math import ceil
-from flask import render_template, request, url_for
+
+from flask import url_for
+
 
 def get_get(restr=None, sortby=None, sortdir=None, page=1):
     ret = []
@@ -19,11 +20,6 @@ def get_get(restr=None, sortby=None, sortdir=None, page=1):
         return '?' + '&'.join(ret)
     else:
         return ''
-
-def _import_relation(relname):
-    p, m = relname.strip().rsplit('.', 1)
-    mod = import_module(p)
-    return getattr(mod, m)()
 
 
 class RelationTable:
@@ -139,3 +135,7 @@ class RelationTable:
                get_get(restrictions, sortby, descending if descending is not None else self.descending, page)
 
 
+def _import_relation(relname):
+    p, m = relname.strip().rsplit('.', 1)
+    mod = import_module(p)
+    return getattr(mod, m)()

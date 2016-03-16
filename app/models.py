@@ -198,6 +198,7 @@ class AnonymousUser(AnonymousUserMixin):
         return False
 
 
+
 login_manager.anonymous_user = AnonymousUser
 
 

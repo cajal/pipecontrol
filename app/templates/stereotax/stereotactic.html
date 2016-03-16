@@ -1,0 +1,80 @@
+{% macro render_field(field) %}
+    <div class="form-group">
+        <label>{{ field.label }}</label>
+
+        {{ field(**kwargs)|safe }}
+        {% if field.errors %}
+            <ul class=errors>
+                {% for error in field.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stereotax/style.css') }}">
+{% endblock %}
+
+{% block page_content %}
+    {% if computed %}
+        <div class="page-header">
+
+        <div class="container">
+        <table class="table-striped stereotax">
+            <thead>
+                <tr>
+                    <th colspan="2">Computed coordinates</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for name, coord in burr_hole.items() %}
+                <tr>
+                    <td>{{ name }}</td>
+                    <td>{{ coord }} mm</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+
+        <div class="container">
+        <table class="table-striped stereotax   ">
+            <thead>
+                <tr>
+                    <th colspan="2">Specifications</th>
+                </tr>
+            </thead>
+            <tr>
+                <td>dLGN depth:</td>
+                <td>{{ depth }} mm</td>
+            </tr>
+            <tr>
+                <td>Correction factor:</td>
+                <td>{{ factor }}</td>
+            </tr>
+            <tr>
+                <td>Error due to leveling:</td>
+                <td>{{ error }} mm</td>
+            </tr>
+        </table>
+                    <a href="{{ insert_url }}">
+                        <button class="btn btn-success">insert data</button>
+                    </a>
+        </div>
+    {% endif %}
+
+    <p><br></p>
+    <h4>Enter measurements</h4>
+    <form role="form" method=post action="{{ url_for('.stereotax') }}">
+        {% for fieldname, field in form._fields.items() %}
+            {{ render_field(field) }}
+
+        {% endfor %}
+        <button type="submit" class="btn btn-info" value=Submit name="submit">Submit</button>
+    </form>
+{% endblock %}

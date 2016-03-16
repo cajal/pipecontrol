@@ -43,6 +43,9 @@ def create_app(config_name):
     from .djtable import djpage
     app.register_blueprint(djpage, url_prefix='/dj')
 
+    from .stereotax import stereotax
+    app.register_blueprint(stereotax, url_prefix='/stereotax')
+
 
     # from .api_1_0 import api as api_1_0_blueprint
     # app.register_blueprint(api_1_0_blueprint, url_prefix='/api/v1.0')

@@ -6,7 +6,6 @@ from wtforms.validators import required, optional
 from wtforms.widgets import HiddenInput
 from .relationtable import _import_relation
 import re
-
 class DataJointFormFactory:
 
     def __init__(self):
@@ -22,6 +21,7 @@ class DataJointFormFactory:
                     isinstance(rel, dj.Imported) or \
                     isinstance(rel, dj.Part):
                 raise dj.DataJointError("Data should not be entered directly in Computed, Imported, or Part tables.")
+
 
             class ReturnValue(wtf.Form):
                 _rel = rel
@@ -46,7 +46,6 @@ class DataJointFormFactory:
             ReturnValue.required = OrderedDict()
             for name, attr in rel.heading.attributes.items():
                 ReturnValue.append_field(name, field_factory(attr))
-                #setattr(ReturnValue, name, field_factory(attr))
                 ReturnValue.required[name] = not attr.nullable and attr.default is None
             ReturnValue.append_field('REFERRER', wtf.StringField(label='REFERRER',widget=HiddenInput()))
             self.store[key] = ReturnValue
@@ -66,6 +65,7 @@ def field_factory(attr):
         if attr.in_key: kwargs['validators'].append(required())
         if attr.nullable or attr.default is not None:
             kwargs['validators'].append(optional())
+
         if re.match('.*int.*(\(.+\))?', attr.type):
             return wtf.IntegerField(**kwargs)
         elif attr.type == 'double' or attr.type == 'float':

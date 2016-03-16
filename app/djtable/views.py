@@ -1,15 +1,11 @@
 from . import PER_PAGE
-from flask import render_template, request, url_for
-from flask.ext.login import login_user, logout_user, login_required, \
-    current_user
+from flask.ext.login import login_required, current_user
 from .forms import Restriction
 from app.djtable.form_factory import DataJointFormFactory
 from .relationtable import RelationTable
-from . import djpage
 from flask import request, flash, url_for, render_template
 from werkzeug.utils import redirect
 from . import djpage
-import wtforms as wtf
 
 form_factory = DataJointFormFactory()
 
@@ -59,7 +55,7 @@ def enter(relname):
             except:
                 pass
     return render_template('djtable/datajoint_form.html', form=enter_form,
-                           target=url_for('.enter', relname=relname, target=target))
+                           target=url_for('.enter', relname=relname, target=url_for('.enter', relname=relname)))
 
 
 

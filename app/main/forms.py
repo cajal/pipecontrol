@@ -10,8 +10,7 @@ from ..models import User
 
 class EditProfileForm(Form):
     name = StringField('Real name', validators=[Length(0, 64)])
-    location = StringField('Location', validators=[Length(0, 64)])
-
+    schemata = TextAreaField('DataJoint Schemata')
     submit = SubmitField('Submit')
 
 
@@ -23,16 +22,12 @@ class EditProfileAdminForm(Form):
                                           'Usernames must have only letters, '
                                           'numbers, dots or underscores')])
     confirmed = BooleanField('Confirmed')
-    role = SelectField('GroupRole', coerce=int)
     name = StringField('Real name', validators=[Length(0, 64)])
-    location = StringField('Location', validators=[Length(0, 64)])
 
     submit = SubmitField('Submit')
 
     def __init__(self, user, *args, **kwargs):
         super(EditProfileAdminForm, self).__init__(*args, **kwargs)
-        self.role.choices = [(role.id, role.name)
-                             for role in GroupRole.query.order_by(GroupRole.name).all()]
         self.user = user
 
     def validate_email(self, field):
@@ -44,13 +39,4 @@ class EditProfileAdminForm(Form):
         if field.data != self.user.username and \
                 User.query.filter_by(username=field.data).first():
             raise ValidationError('Username already in use.')
-
-class PostForm(Form):
-    body = PageDownField("What's on your mind?", validators=[required()])
-    submit = SubmitField('Submit')
-
-class CommentForm(Form):
-    body = StringField('Enter your comment', validators=[required()])
-    submit = SubmitField('Submit')
-
 

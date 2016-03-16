@@ -1,5 +1,8 @@
+import inspect
 from datetime import datetime
 import hashlib
+from importlib import import_module
+
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from markdown import markdown
@@ -8,7 +11,7 @@ from flask import current_app, request, url_for
 from flask.ext.login import UserMixin, AnonymousUserMixin
 from app.exceptions import ValidationError
 from . import db, login_manager
-
+import datajoint as dj
 
 class Permission:
     READ = 0x01
@@ -50,7 +53,6 @@ class Role(db.Model):
     def __repr__(self):
         return '<Role %r>' % self.name
 
-
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -61,9 +63,6 @@ class User(UserMixin, db.Model):
 
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False)
-    git_repo = db.Column(db.String(256), unique=True, index=True)
-
-    location = db.Column(db.String(64))
 
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
@@ -72,7 +71,7 @@ class User(UserMixin, db.Model):
 
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
-
+    schemata = db.Column(db.Text)
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -80,6 +79,10 @@ class User(UserMixin, db.Model):
         if self.email is not None and self.avatar_hash is None:
             self.avatar_hash = hashlib.md5(
                 self.email.encode('utf-8')).hexdigest()
+
+    @property
+    def tables(self):
+        yield from map(lambda x: x.strip(), self.schemata.split(','))
 
     @property
     def password(self):
@@ -138,15 +141,6 @@ class User(UserMixin, db.Model):
         self.password = new_password
         db.session.add(self)
         return True
-
-    def is_member_of(self, group):
-        return GroupMemberShip().query.filter_by(group_id=group.id, member_id=self.id).count() > 0
-
-    def is_in_group_named(self, groupname):
-        for gm in GroupMemberShip().query.filter_by(member_id=self.id).all():
-            if gm.group.groupname.lower() == groupname.lower():
-                return True
-        return False
 
     def generate_email_change_token(self, new_email, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)

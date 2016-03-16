@@ -16,13 +16,39 @@
 
 
 <div class="post-tabs">
-
     {% if not current_user.is_authenticated %}
 
     <p>
         Please <a href="{{ url_for('auth.login') }}">login</a> if you want to see your current posts or <a
             href="{{ url_for('auth.register') }}">register</a> as a new user.
     </p>
+
+    {% else %}
+
+        <div>
+        {% if user == current_user %}
+        <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Table</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for relname in current_user.tables %}
+              <tr>
+                <td>{{ relname }}</td>
+                <td>
+                    <button type="button" class="btn btn-info">View</button>
+                    <button type="button" class="btn btn-warning">Enter</button>
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+
+        {% endif %}
+        </div>
 
 
     {% endif %}

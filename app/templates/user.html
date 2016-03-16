@@ -18,12 +18,6 @@
             </small>
 
         </h1>
-        <p>
-            {% if user.location %}
-                From <a href="http://maps.google.com/?q={{ user.location }}">{{ user.location }}</a><br>
-            {% endif %}
-
-        </p>
 
         {% if current_user.is_administrator() %}
         <p><a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
@@ -33,9 +27,6 @@
         </p>
     </div>
 
-    {% if user == current_user %}
-        show somethings
-    {% endif %}
 
 
 </div>

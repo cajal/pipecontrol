@@ -12,7 +12,7 @@ if os.path.exists('.env'):
 
 # --- import extensions and apps
 from app import create_app, db
-from app.models import User,  Permission,  Role
+from app.models import User,  Permission,  Role, Schema
 from flask.ext.script import Manager, Shell, Server
 from flask.ext.migrate import Migrate, MigrateCommand
 # -- create app and register with extensions
@@ -64,6 +64,10 @@ def init_dev():
     u.password = 'test123'
     u.role_id = Role.query.filter_by(name='Administrator').first().id
     db.session.add(u)
+    db.session.commit()
+
+    Schema.insert_schemata()
+
 
 if __name__ == '__main__':
 

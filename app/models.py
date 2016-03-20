@@ -86,6 +86,10 @@ class Schema(db.Model):
 
         db.session.commit()
 
+    @property
+    def full_name(self):
+        return "{0}.{1}".format(self.module, self.schema)
+
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'

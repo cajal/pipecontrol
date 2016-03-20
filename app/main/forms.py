@@ -10,7 +10,6 @@ from ..models import User
 
 class EditProfileForm(Form):
     name = StringField('Real name', validators=[Length(0, 64)])
-    schemata = TextAreaField('DataJoint Schemata')
     submit = SubmitField('Submit')
 
 

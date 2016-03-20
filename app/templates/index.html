@@ -35,14 +35,14 @@
               </tr>
             </thead>
             <tbody>
-            {% for relname in current_user.tables %}
+            {% for schema in current_user.schemata %}
               <tr>
-                <td>{{ relname }}</td>
+                <td>{{ schema.schema }}</td>
                 <td>
-                     <a href="{{ url_for('djtable.display', relname=relname) }}">
+                     <a href="{{ url_for('djtable.display', relname=schema.full_name) }}">
                          <button type="button" class="btn btn-info">View</button>
                      </a>
-                     <a href="{{ url_for('djtable.enter', relname=relname) }}">
+                     <a href="{{ url_for('djtable.enter', relname=schema.full_name) }}">
                         <button type="button" class="btn btn-warning">Enter Data</button>
                      </a>
                 </td>

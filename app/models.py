@@ -2,9 +2,11 @@ import inspect
 from datetime import datetime
 import hashlib
 from importlib import import_module
+from fabric.utils import abort
+from sqlalchemy import UniqueConstraint
 
 from werkzeug.security import generate_password_hash, check_password_hash
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, BadSignature
 from markdown import markdown
 import bleach
 from flask import current_app, request, url_for
@@ -13,17 +15,18 @@ from app.exceptions import ValidationError
 from . import db, login_manager
 import datajoint as dj
 
+
 class Permission:
-    READ = 0x01
-    COMMENT = 0x02
-    POST = 0x04
-    MODERATE_COMMENTS = 0x08
+    READRESTR = 0x01
+    WRITERESTR = 0x02
+    READALL = 0x04
+    WRITEALL = 0x08
     ADMINISTER = 0x80
 
 
 class Role(db.Model):
     __tablename__ = 'roles'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(64), unique=True)
     default = db.Column(db.Boolean, default=False, index=True)
     permissions = db.Column(db.Integer)
@@ -32,26 +35,40 @@ class Role(db.Model):
     @staticmethod
     def insert_roles():
         roles = {
-            'User': (Permission.READ |
-                     Permission.COMMENT |
-                     Permission.POST, True),
-            'Moderator': (Permission.READ |
-                          Permission.COMMENT |
-                          Permission.POST |
-                          Permission.MODERATE_COMMENTS, False),
+            'User': (Permission.READRESTR |
+                     Permission.WRITERESTR, True),
+            'Moderator': (Permission.READALL |
+                          Permission.WRITEALL, False),
             'Administrator': (0xff, False)
         }
         for r in roles:
             role = Role.query.filter_by(name=r).first()
             if role is None:
                 role = Role(name=r)
-            role.permissions = roles[r][0]
-            role.default = roles[r][1]
+            role.permissions, role.default = roles[r]
             db.session.add(role)
         db.session.commit()
 
     def __repr__(self):
         return '<Role %r>' % self.name
+
+user_schema_access = db.Table('user_schema_access',
+                              db.Column('user_id', db.Integer, db.ForeignKey('users.id'), nullable=False ),
+                              db.Column('module_name', db.String(256), nullable=False),
+                              db.Column('schema_name', db.String(128), nullable=False),
+                              db.ForeignKeyConstraint(('module_name', 'schema_name'),
+                                                      ('schemata.module', 'schemata.schema')),
+                              db.PrimaryKeyConstraint('user_id', 'module_name', 'schema_name'),
+                              )
+
+
+class Schema(db.Model):
+    __tablename__ = 'schemata'
+
+    module = db.Column(db.String(256), primary_key=True)
+    schema = db.Column(db.String(128), primary_key=True)
+    users = db.relationship('User', secondary=user_schema_access, backref='schemata')
+
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -71,18 +88,17 @@ class User(UserMixin, db.Model):
 
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
-    schemata = db.Column(db.Text)
+    # schemata = db.Column(db.Text)
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
-
         if self.email is not None and self.avatar_hash is None:
             self.avatar_hash = hashlib.md5(
                 self.email.encode('utf-8')).hexdigest()
 
-    @property
-    def tables(self):
-        yield from map(lambda x: x.strip(), self.schemata.split(','))
+    # @property
+    # def tables(self):
+    #     yield from map(lambda x: x.strip(), self.schemata.split(','))
 
     @property
     def password(self):
@@ -199,11 +215,12 @@ class AnonymousUser(AnonymousUserMixin):
 
 
 
-login_manager.anonymous_user = AnonymousUser
 
+
+
+
+login_manager.anonymous_user = AnonymousUser
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-
-

@@ -14,9 +14,8 @@ from app import create_app, db
 from app.models import User,  Permission,  Role
 from flask.ext.script import Manager, Shell
 from flask.ext.migrate import Migrate, MigrateCommand
-from app import mail
 # -- create app and register with extensions
-app = create_app(os.getenv('FLASK_CONFIG') or 'default')
+app = create_app(os.getenv('ROWBOT_CONFIG') or 'default')
 manager = Manager(app)
 migrate = Migrate(app, db)
 
@@ -41,8 +40,6 @@ def deploy():
     # migrate database to latest revision
     upgrade()
 
-    # create user roles
-    GroupRole.insert_roles()
 
     # create self-follows for all users
     User.feed_to_self()
@@ -63,8 +60,9 @@ def init_dev():
     # create user roles
     Role.insert_roles()
 
-    u = User(username='Tester', email='test@labloid.org', confirmed=True)
+    u = User(username='admin', email='admin@rowbot.org', confirmed=True)
     u.password = 'test123'
+    u.role_id = Role.query.filter_by(name='Administrator').first().id
     db.session.add(u)
 
 if __name__ == '__main__':

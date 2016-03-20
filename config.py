@@ -16,9 +16,6 @@ class Config:
     ROWBOT_MAIL_SUBJECT_PREFIX = '[Row-Bot]'
     ROWBOT_MAIL_SENDER = os.environ.get('MAIL_SENDER')
     ROWBOT_ADMIN = os.environ.get('ROWBOT_ADMIN')
-    ROWBOT_POSTS_PER_PAGE = 20
-    ROWBOT_FOLLOWERS_PER_PAGE = 50
-    ROWBOT_COMMENTS_PER_PAGE = 30
     ROWBOT_SLOW_DB_QUERY_TIME=0.5
 
 
@@ -98,6 +95,5 @@ config = {
     'production': ProductionConfig,
     'heroku': HerokuConfig,
     'unix': UnixConfig,
-
     'default': DevelopmentConfig
 }

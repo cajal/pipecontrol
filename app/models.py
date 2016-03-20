@@ -90,7 +90,7 @@ class User(UserMixin, db.Model):
 
     # schemata = db.Column(db.Text)
 
-    def __init__(self, **kwargs):
+    def __init__(self, admin=False, **kwargs):
         super(User, self).__init__(**kwargs)
         if self.email is not None and self.avatar_hash is None:
             self.avatar_hash = hashlib.md5(

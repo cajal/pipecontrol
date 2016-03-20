@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import getpass
 import os
 
 # --- import environment variables from hidden file
@@ -12,12 +13,14 @@ if os.path.exists('.env'):
 # --- import extensions and apps
 from app import create_app, db
 from app.models import User,  Permission,  Role
-from flask.ext.script import Manager, Shell
+from flask.ext.script import Manager, Shell, Server
 from flask.ext.migrate import Migrate, MigrateCommand
 # -- create app and register with extensions
 app = create_app(os.getenv('ROWBOT_CONFIG') or 'default')
 manager = Manager(app)
 migrate = Migrate(app, db)
+
+manager.add_command('runserver', Server(host="0.0.0.0"))
 
 # --- shell context
 def make_shell_context():
@@ -40,9 +43,6 @@ def deploy():
     # migrate database to latest revision
     upgrade()
 
-
-    # create self-follows for all users
-    User.feed_to_self()
 
 
 # --- run the application

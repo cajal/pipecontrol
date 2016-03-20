@@ -4,7 +4,7 @@ from flask.ext.login import login_required, current_user
 from flask import request, flash, url_for, render_template
 from werkzeug.utils import redirect
 import numpy as np
-from fabee_schemata import lgn
+from fabee import lgn
 
 @login_required
 @stereotax.route('/', methods=['GET', 'POST'])
@@ -33,7 +33,7 @@ def stereotax():
                 error = np.round(depth * ((enter_form.l.data['ventral'] - enter_form.b.data['ventral']) / c0[0]),
                                  decimals=4)
 
-                insert_url = url_for('djtable.enter', relname='fabee_schemata.lgn.Injections') + \
+                insert_url = url_for('djtable.enter', relname='fabee.lgn.Injections') + \
                              "?lambda_bregma=%.2f&caudal=%.1f&lateral=%.1f&ventral=%.1f&adjustment=%.2f&area=%s" % (
                                         np.abs(c0[0]), f * coord['caudal'],
                                         f * coord['lateral'], f * coord['ventral'], f, area)

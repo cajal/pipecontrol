@@ -83,7 +83,7 @@ def register():
         db.session.add(user)
         db.session.commit()
         token = user.generate_confirmation_token()
-        send_email(user.email, 'Please Confirm Your Row-Bot Account',
+        send_email(user.email, 'Please Confirm Your Row-Bot Account', # TODO: email admin
                    'auth/email/confirm', user=user, token=token)
         flash('A confirmation email has been sent to you by email.')
         return redirect(url_for('auth.login'))

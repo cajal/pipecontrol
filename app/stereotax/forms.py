@@ -1,5 +1,5 @@
 import wtforms as wtf
-from fabee_schemata import lgn
+from fabee import lgn
 import numpy as np
 
 areas = np.unique(lgn.AtlasStereotacticTargets().fetch['area'])

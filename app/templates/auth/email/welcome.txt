@@ -1,0 +1,9 @@
+Dear {{ user.username }},
+Welcome to Row-Bot. Your account has been confirmed and you can now login  at
+
+{{ url_for('auth.login', _external=True) }}.
+
+Sincerely,
+The Row-Bot Engine
+
+Note: replies to this email address are not monitored.

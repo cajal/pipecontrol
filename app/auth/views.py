@@ -83,11 +83,12 @@ def register():
                     password=form.password.data)
         db.session.add(user)
         db.session.commit()
-        token = user.generate_confirmation_token()
+        confirm_token = user.generate_token()
+        reject_token = user.generate_token(action='reject')
         for admin in User.admins():
             send_email(admin.email, 'Please Confirm Row-Bot Account for User {0}'.format(user.username),
-                   'auth/email/confirm', user=user, token=token)
-        flash('A confirmation email has been sent by email.')
+                   'auth/email/register', user=user, confirm_token=confirm_token, reject_token=reject_token)
+        flash('A request email has been sent to our admins.')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', form=form)
 
@@ -99,9 +100,20 @@ def confirm(token):
 
     if User.confirm_user(token):
         user = User.user_from_token(token)
+        send_email(user.email, 'Your row-bot account has been confirmed'.format(user.username),
+                   'auth/email/welcome', user=user)
         flash('You have confirmed the account for %s. Thanks!' % (user.username, ))
     else:
-        flash('The confirmation link is invalid or has expired.')
+        flash('The confirmation link is invalid or has expired. ')
+    return redirect(url_for('main.index'))
+
+@auth.route('/reject/<token>')
+def reject(token):
+
+    if User.reject_user(token):
+        flash('You have deleted the pending account. Thanks!' )
+    else:
+        flash('The confirmation link is invalid or has expired. ')
     return redirect(url_for('main.index'))
 
 

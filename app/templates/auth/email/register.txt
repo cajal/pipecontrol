@@ -2,7 +2,11 @@ Dear Row-Bot admin,
 
 Please confirm user {{ user.username }} by inserting this URL in your browser.
 
-{{ url_for('auth.confirm', token=token, _external=True) }}
+Accept:
+{{ url_for('auth.confirm', token=confirm_token, _external=True) }}
+
+Reject:
+{{ url_for('auth.reject', token=reject_token, _external=True) }}
 
 Sincerely,
 

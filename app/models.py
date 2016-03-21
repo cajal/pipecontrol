@@ -130,9 +130,9 @@ class User(UserMixin, db.Model):
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def generate_confirmation_token(self, expiration=3600):
+    def generate_token(self, expiration=3600, action='confirm'):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'confirm': self.id})
+        return s.dumps({action: self.id})
 
     def confirm(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
@@ -140,26 +140,44 @@ class User(UserMixin, db.Model):
             data = s.loads(token)
         except:
             return False
+
         if data.get('confirm') != self.id:
             return False
-        self.confirmed = True
-        db.session.add(self)
-        return True
+        else:
+            self.confirmed = True
+            db.session.add(self)
+            return True
+
+    def reject(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return False
+
+        if data.get('reject') == self.id:
+            db.session.delete(self)
+            return True
 
     @staticmethod
-    def user_from_token(token):
+    def user_from_token(token,action='confirm'):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
         except BadSignature:
             abort(403)
-        user = User.query.filter_by(id=data['confirm']).first_or_404()
+        user = User.query.filter_by(id=data[action]).first_or_404()
         return user
 
     @staticmethod
     def confirm_user(token):
         user = User.user_from_token(token)
         return user.confirm(token)
+
+    @staticmethod
+    def reject_user(token):
+        user = User.user_from_token(token, 'reject')
+        return user.reject(token)
 
     def generate_reset_token(self, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)

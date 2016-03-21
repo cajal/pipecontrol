@@ -21,6 +21,7 @@ class RegistrationForm(Form):
         required(), Length(1, 64), Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0,
                                           'Usernames must have only letters, '
                                           'numbers, dots or underscores')])
+    realname = StringField('Real Name', validators=[required(), Length(1, 128)])
     password = PasswordField('Password', validators=[
         required(), EqualTo('password2', message='Passwords must match.')])
     password2 = PasswordField('Confirm password', validators=[required()])

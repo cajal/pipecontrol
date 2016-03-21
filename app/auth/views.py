@@ -80,13 +80,14 @@ def register():
     if form.validate_on_submit():
         user = User(email=form.email.data,
                     username=form.username.data,
-                    password=form.password.data)
+                    password=form.password.data,
+                    name=form.realname.data)
         db.session.add(user)
         db.session.commit()
         confirm_token = user.generate_token()
         reject_token = user.generate_token(action='reject')
         for admin in User.admins():
-            send_email(admin.email, 'Please Confirm Row-Bot Account for User {0}'.format(user.username),
+            send_email(admin.email, 'Please Confirm Row-Bot Account for User {0} ({1})'.format(user.username, user.name),
                    'auth/email/register', user=user, confirm_token=confirm_token, reject_token=reject_token)
         flash('A request email has been sent to our admins.')
         return redirect(url_for('auth.login'))

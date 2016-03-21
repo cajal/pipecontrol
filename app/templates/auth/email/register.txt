@@ -1,6 +1,6 @@
 Dear Row-Bot admin,
 
-Please confirm user {{ user.username }} by inserting this URL in your browser.
+Please confirm user {{ user.name }} ({{ user.username }}) by inserting this URL in your browser.
 
 Accept:
 {{ url_for('auth.confirm', token=confirm_token, _external=True) }}

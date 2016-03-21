@@ -1,5 +1,5 @@
 <p>Dear Row-Bot Admin,</p>
-<p>Please confirm the account of {{ user.username }} by clicking <a href="{{ url_for('auth.confirm', token=confirm_token, _external=True) }}">here</a>.</p>
+<p>Please confirm the account of {{ user.name }}  ({{ user.username }}) by clicking <a href="{{ url_for('auth.confirm', token=confirm_token, _external=True) }}">here</a>.</p>
 <p>To reject {{ user.username }} <a href="{{ url_for('auth.reject', token=reject_token, _external=True) }}">click here</a>.</p>
 <p>Alternatively, you can paste the following links in your browser's address bar:</p>
 <p>Accept:</p>

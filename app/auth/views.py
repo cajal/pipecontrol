@@ -1,3 +1,4 @@
+from fabric.utils import abort
 from flask import render_template, redirect, request, url_for, flash, current_app
 from flask.ext.login import login_user, logout_user, login_required, \
     current_user
@@ -83,9 +84,10 @@ def register():
         db.session.add(user)
         db.session.commit()
         token = user.generate_confirmation_token()
-        send_email(user.email, 'Please Confirm Your Row-Bot Account', # TODO: email admin
+        for admin in User.admins():
+            send_email(admin.email, 'Please Confirm Row-Bot Account for User {0}'.format(user.username),
                    'auth/email/confirm', user=user, token=token)
-        flash('A confirmation email has been sent to you by email.')
+        flash('A confirmation email has been sent by email.')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', form=form)
 

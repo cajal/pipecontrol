@@ -17,3 +17,6 @@ def permission_required(permission):
 
 def admin_required(f):
     return permission_required(Permission.ADMINISTER)(f)
+
+def guardian_required(f):
+    return permission_required(Permission.GRANT | Permission.ADMINISTER)(f)

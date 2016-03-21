@@ -60,10 +60,11 @@ def init_dev():
     # create user roles
     Role.insert_roles()
 
-    u = User(username='admin', email='admin@rowbot.org', confirmed=True)
+    u = User(username='admin', email=os.getenv('MAIL_USERNAME'), confirmed=True)
     u.password = 'test123'
     u.role_id = Role.query.filter_by(name='Administrator').first().id
     db.session.add(u)
+
     db.session.commit()
 
     Schema.insert_schemata()

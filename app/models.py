@@ -38,7 +38,7 @@ class Role(db.Model):
         roles = {
             'Viewer': (Permission.READ , True),
             'User': (Permission.READ | Permission.WRITE, True),
-            'Moderator': (Permission.READ | Permission.WRITE | Permission.GRANT, False),
+            'Guardian': (Permission.READ | Permission.WRITE | Permission.GRANT, False),
             'Administrator': (0xff, False)
         }
         for r in roles:
@@ -114,6 +114,10 @@ class User(UserMixin, db.Model):
         if self.email is not None and self.avatar_hash is None:
             self.avatar_hash = hashlib.md5(
                 self.email.encode('utf-8')).hexdigest()
+
+    @staticmethod
+    def admins():
+        return User.query.join(User.role, aliased=True).filter_by(name='Administrator').all()
 
     @property
     def password(self):

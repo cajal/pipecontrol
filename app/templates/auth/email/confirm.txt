@@ -1,13 +1,11 @@
-Dear {{ user.username }},
+Dear Row-Bot admin,
 
-Welcome to Row-Bot!
-
-To confirm your account please click on the following link:
+Please confirm user {{ user.username }} by inserting this URL in your browser.
 
 {{ url_for('auth.confirm', token=token, _external=True) }}
 
 Sincerely,
 
-The Row-Bot Team
+The Row-Bot Engine
 
 Note: replies to this email address are not monitored.

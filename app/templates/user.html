@@ -13,7 +13,7 @@
                 {% if user == current_user %}
                     <a class="btn btn-primary pull-right" href="{{ url_for('.edit_profile') }}">Edit Profile</a>
                 {% elif current_user.is_administrator() %}
-                    <a class="btn btn-danger pull-right" href="{{ url_for('.edit_profile_admin', id=user.id) }}">Edit Profile [Admin]</a>
+                    <a class="btn btn-danger pull-right" href="{{ url_for('.edit_profile_admin', username=user.username) }}">Edit Profile [Admin]</a>
                 {% endif %}
             </small>
 

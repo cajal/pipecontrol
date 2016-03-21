@@ -1,16 +1,17 @@
 from flask.ext.wtf import Form
 from wtforms import StringField, TextAreaField, BooleanField, SelectField, \
-    SubmitField
+    SubmitField, SelectMultipleField
 from wtforms.validators import required, Length, Email, Regexp
 from wtforms import ValidationError
 from flask.ext.pagedown.fields import PageDownField
 from wtforms.widgets import TextArea
-from ..models import User
+from ..models import User, Role, Schema
 
 
 class EditProfileForm(Form):
     name = StringField('Real name', validators=[Length(0, 64)])
     submit = SubmitField('Submit')
+
 
 
 class EditProfileAdminForm(Form):
@@ -22,11 +23,17 @@ class EditProfileAdminForm(Form):
                                           'numbers, dots or underscores')])
     confirmed = BooleanField('Confirmed')
     name = StringField('Real name', validators=[Length(0, 64)])
+    role = SelectField('Role', coerce=int)
+    schemata = SelectMultipleField('Schemata')
 
     submit = SubmitField('Submit')
 
     def __init__(self, user, *args, **kwargs):
         super(EditProfileAdminForm, self).__init__(*args, **kwargs)
+        self.role.choices = [(role.id, role.name)
+                             for role in Role.query.order_by(Role.name).all()]
+        self.schemata.choices = [('{0}:{1}'.format(s.module, s.schema), s.schema)
+                                    for s in Schema.query.order_by(Schema.module).all()]
         self.user = user
 
     def validate_email(self, field):
@@ -38,4 +45,5 @@ class EditProfileAdminForm(Form):
         if field.data != self.user.username and \
                 User.query.filter_by(username=field.data).first():
             raise ValidationError('Username already in use.')
+
 

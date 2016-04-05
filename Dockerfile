@@ -17,8 +17,9 @@ COPY . /server/rowbot
 RUN \
   pip install -r rowbot/requirements.txt
 
+WORKDIR /server/rowbot
 
-ENTRYPOINT /bin/bash
+ENTRYPOINT python3 manage.py runserver
 
 
 

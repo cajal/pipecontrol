@@ -1,3 +1,4 @@
+from ..djtable.decorators import connection_required
 from . import stereotax
 from .forms import StereoTacticMeasurement
 from flask.ext.login import login_required, current_user
@@ -8,6 +9,7 @@ from fabee import lgn
 
 @login_required
 @stereotax.route('/', methods=['GET', 'POST'])
+@connection_required
 def stereotax():
     enter_form = StereoTacticMeasurement(request.form)
     if request.method == 'POST':

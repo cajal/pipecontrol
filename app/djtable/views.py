@@ -1,3 +1,4 @@
+from .decorators import connection_required
 from . import PER_PAGE
 from flask.ext.login import login_required, current_user
 from .forms import Restriction
@@ -11,6 +12,7 @@ form_factory = DataJointFormFactory()
 
 @djpage.route('/display/<relname>', methods=['GET', 'POST'])
 @login_required
+@connection_required
 def display(relname):
     form = Restriction(request.form)
     error_msg = None
@@ -38,6 +40,7 @@ def display(relname):
 
 @djpage.route('/enter/<relname>', methods=['GET', 'POST'])
 #@djpage.route('/enter/<relname>/<target>', methods=['GET', 'POST'])
+@connection_required
 def enter(relname):
     enter_form = form_factory(relname)(request.form)
     if request.method == 'POST':

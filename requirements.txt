@@ -11,3 +11,4 @@ Flask-WTF==0.12
 Markdown==2.6.5
 bleach==1.4.2
 fabric
+flask-sslify

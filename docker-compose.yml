@@ -1,0 +1,9 @@
+version: '2'
+services:
+  rowbot:
+    build:
+      context: .
+    ports:
+      - "80:5000"
+    volumes:
+      - /var/rowbot:/server/rowbot/databases

@@ -48,7 +48,7 @@ def deploy():
 # --- run the application
 
 @manager.command
-def init_dev():
+def init():
     """Initialize database, migrate, upgrade, and perform initial inserts."""
     from flask.ext.migrate import upgrade, init, migrate
     from app.models import Role, User

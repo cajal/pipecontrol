@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import getpass
 import os
-
+from config import Config
 # --- import environment variables from hidden file
 if os.path.exists('.env'):
     print('Importing environment from .env...')
@@ -18,7 +18,7 @@ from flask.ext.migrate import Migrate, MigrateCommand
 # -- create app and register with extensions
 app = create_app(os.getenv('ROWBOT_CONFIG') or 'default')
 manager = Manager(app)
-migrate = Migrate(app, db)
+migrate = Migrate(app, db, directory=Config.MIGRATION_DIR)
 
 manager.add_command('runserver', Server(host="0.0.0.0"))
 

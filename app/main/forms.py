@@ -32,7 +32,7 @@ class EditProfileAdminForm(Form):
         super(EditProfileAdminForm, self).__init__(*args, **kwargs)
         self.role.choices = [(role.id, role.name)
                              for role in Role.query.order_by(Role.name).all()]
-        self.schemata.choices = [('{0}:{1}'.format(s.module, s.schema), s.schema)
+        self.schemata.choices = [('{0}:{1}'.format(s.module, s.schema), '{0}.{1}'.format(s.module, s.schema))
                                     for s in Schema.query.order_by(Schema.module).all()]
         self.user = user
 

@@ -37,7 +37,7 @@
             <tbody>
             {% for schema in current_user.schemata %}
               <tr>
-                <td>{{ schema.schema }}</td>
+                <td>{{ schema.module }}.{{ schema.schema }}</td>
                 <td>
                      <a href="{{ url_for('djtable.display', relname=schema.full_name) }}">
                          <button type="button" class="btn btn-info">View</button>

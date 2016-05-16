@@ -52,43 +52,6 @@ class Role(db.Model):
     def __repr__(self):
         return '<Role %r>' % self.name
 
-user_schema_access = db.Table('user_schema_access',
-                              db.Column('user_id', db.Integer, db.ForeignKey('users.id'), nullable=False ),
-                              db.Column('module_name', db.String(256), nullable=False),
-                              db.Column('schema_name', db.String(128), nullable=False),
-                              db.ForeignKeyConstraint(('module_name', 'schema_name'),
-                                                      ('schemata.module', 'schemata.schema')),
-                              db.PrimaryKeyConstraint('user_id', 'module_name', 'schema_name'),
-                              )
-
-
-class Schema(db.Model):
-    __tablename__ = 'schemata'
-
-    module = db.Column(db.String(256), primary_key=True)
-    schema = db.Column(db.String(128), primary_key=True)
-    users = db.relationship('User', secondary=user_schema_access, backref='schemata')
-
-    @staticmethod
-    def insert_schemata():
-        schemas = os.getenv('DJ_MODS')
-        for mod_name in schemas.split(':'):
-            mod = import_module(mod_name)
-            for name, _ in inspect.getmembers(mod,
-                                lambda k: isinstance(k, type) and issubclass(k, (dj.Manual, dj.Lookup))):
-                s = Schema.query.filter_by(module=mod_name, schema=name).first()
-                if s is None:
-                    s = Schema(module=mod_name, schema=name)
-                for admin in User.query.join(User.role, aliased=True).filter_by(name='Administrator'):
-                    if admin not in s.users:
-                        s.users.append(admin)
-                db.session.add(s)
-
-        db.session.commit()
-
-    @property
-    def full_name(self):
-        return "{0}.{1}".format(self.module, self.schema)
 
 
 class User(UserMixin, db.Model):

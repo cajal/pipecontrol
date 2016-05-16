@@ -12,7 +12,7 @@ if os.path.exists('.env'):
 
 # --- import extensions and apps
 from app import create_app, db
-from app.models import User,  Permission,  Role, Schema
+from app.models import User,  Permission,  Role
 from flask.ext.script import Manager, Shell, Server
 from flask.ext.migrate import Migrate, MigrateCommand
 # -- create app and register with extensions

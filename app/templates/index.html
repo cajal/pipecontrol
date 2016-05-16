@@ -5,62 +5,51 @@
 {% block title %}Row-Bot{% endblock %}
 
 {% block page_content %}
-<div class="page-header">
-    {% if current_user.is_authenticated %}
-    <h1>Hello {{ current_user.username }}</h1>
-    {% else %}
-    <h1>Row-Bot</h1>
-    <h4>a tool to view and edit simple DataJoint tables</h4>
-    {% endif %}
-</div>
+    <div class="page-header">
+        {% if current_user.is_authenticated %}
+            <h1>Hello {{ current_user.username }}</h1>
+        {% else %}
+            <h1>Row-Bot</h1>
+            <h4>a tool to view and edit simple DataJoint tables</h4>
+        {% endif %}
+    </div>
 
 
-<div class="post-tabs">
-    {% if not current_user.is_authenticated %}
+    <div class="post-tabs">
+        {% if not current_user.is_authenticated %}
 
-    <p>
-        Please <a href="{{ url_for('auth.login') }}">login</a> if you want to see your current posts or <a
-            href="{{ url_for('auth.register') }}">register</a> as a new user.
-    </p>
+            <p>
+                Please <a href="{{ url_for('auth.login') }}">login</a> if you want to see your current posts or <a
+                    href="{{ url_for('auth.register') }}">register</a> as a new user.
+            </p>
 
-    {% else %}
+        {% else %}
 
-        <div>
-        {% if user == current_user %}
-        <table class="table table-striped">
-            <thead>
-              <tr>
-                <th>Table</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-            {% for schema in current_user.schemata %}
-              <tr>
-                <td>{{ schema.module }}.{{ schema.schema }}</td>
-                <td>
-                     <a href="{{ url_for('djtable.display', relname=schema.full_name) }}">
-                         <button type="button" class="btn btn-info">View</button>
-                     </a>
-                     <a href="{{ url_for('djtable.enter', relname=schema.full_name) }}">
-                        <button type="button" class="btn btn-warning">Enter Data</button>
-                     </a>
-                </td>
-              </tr>
-            {% endfor %}
-            </tbody>
-          </table>
+            <div class="col-sm-6 col-md-2">
+                <div class="thumbnail tile tile-medium tile-green">
+                    <a href="#" class="fa-links">
+                        <br><br>
+                        <h3>Tables</h3>
+                        <i class="fa fa-3x fa-table"> </i>
+                    </a>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="thumbnail tile tile-medium tile-blue">
+                    <a href="{{ url_for('stereotax.stereotax') }}" class="fa-links">
+                        <br><br>
+                        <h3>Stereotax</h3>
+                        <i class="fa fa-3x fa-blind"></i>
+                    </a>
+                </div>
+            </div>
 
         {% endif %}
-        </div>
-
-
-    {% endif %}
-</div>
+    </div>
 {% endblock %}
 
 
 {% block scripts %}
-{{ super() }}
+    {{ super() }}
 {% endblock %}
 

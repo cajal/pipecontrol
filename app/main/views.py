@@ -5,8 +5,8 @@ from flask.ext.sqlalchemy import get_debug_queries
 from . import main
 from .forms import EditProfileForm, EditProfileAdminForm
 from .. import db
-from ..models import Permission, User, Role, Schema
-from ..decorators import admin_required, permission_required, guardian_required
+from ..models import Permission, User, Role
+from ..decorators import admin_required, permission_required
 from .errors import forbidden
 
 
@@ -49,7 +49,6 @@ def edit_profile():
 
 @main.route('/edit-profile/<username>', methods=['GET', 'POST'])
 @login_required
-@guardian_required
 def edit_profile_admin(username):
     user = User.query.filter_by(username=username).first_or_404()
     form = EditProfileAdminForm(user=user, schemata=['{0}:{1}'.format(s.module, s.schema) for s in user.schemata])
@@ -59,8 +58,6 @@ def edit_profile_admin(username):
         user.confirmed = form.confirmed.data
         user.role = Role.query.get(form.role.data)
         user.name = form.name.data
-        user.schemata = [Schema.query.filter_by(module=mod, schema=s).first()
-                                for mod, s in map(lambda d: d.split(':'), form.schemata.data)]
         db.session.add(user)
         flash('The profile has been updated.')
         return redirect(url_for('.user', username=user.username))

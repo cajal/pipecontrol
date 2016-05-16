@@ -5,7 +5,7 @@ from wtforms.validators import required, Length, Email, Regexp
 from wtforms import ValidationError
 from flask.ext.pagedown.fields import PageDownField
 from wtforms.widgets import TextArea
-from ..models import User, Role, Schema
+from ..models import User, Role
 
 
 class EditProfileForm(Form):
@@ -24,7 +24,6 @@ class EditProfileAdminForm(Form):
     confirmed = BooleanField('Confirmed')
     name = StringField('Real name', validators=[Length(0, 64)])
     role = SelectField('Role', coerce=int)
-    schemata = SelectMultipleField('Schemata')
 
     submit = SubmitField('Submit')
 
@@ -32,8 +31,6 @@ class EditProfileAdminForm(Form):
         super(EditProfileAdminForm, self).__init__(*args, **kwargs)
         self.role.choices = [(role.id, role.name)
                              for role in Role.query.order_by(Role.name).all()]
-        self.schemata.choices = [('{0}:{1}'.format(s.module, s.schema), '{0}.{1}'.format(s.module, s.schema))
-                                    for s in Schema.query.order_by(Schema.module).all()]
         self.user = user
 
     def validate_email(self, field):

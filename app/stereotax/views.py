@@ -5,7 +5,8 @@ from flask.ext.login import login_required, current_user
 from flask import request, flash, url_for, render_template
 from werkzeug.utils import redirect
 import numpy as np
-from fabee import lgn
+from fabee import inj
+
 
 @login_required
 @stereotax.route('/', methods=['GET', 'POST'])
@@ -16,7 +17,8 @@ def stereotax():
         if request.form['submit'] == 'Submit':
             if enter_form.validate():
                 area = enter_form.area.data
-                coord = (lgn.AtlasStereotacticTargets() & "area='%s'" % (area,)).fetch1()
+                substance = enter_form.substance.data
+                coord = (inj.AtlasStereotacticTargets() & "area='%s'" % (area,)).fetch1()
                 c0 = np.array([enter_form.l.data['caudal'] - enter_form.b.data['caudal'],
                                enter_form.l.data['lateral'] - enter_form.b.data['lateral'],
                                0])
@@ -35,10 +37,18 @@ def stereotax():
                 error = np.round(depth * ((enter_form.l.data['ventral'] - enter_form.b.data['ventral']) / c0[0]),
                                  decimals=4)
 
-                insert_url = url_for('djtable.enter', relname='fabee.lgn.Injections') + \
-                             "?lambda_bregma=%.2f&caudal=%.1f&lateral=%.1f&ventral=%.1f&adjustment=%.2f&area=%s" % (
-                                        np.abs(c0[0]), f * coord['caudal'],
-                                        f * coord['lateral'], f * coord['ventral'], f, area)
+                data = dict(
+                    lambda_bregma=np.abs(c0[0]),
+                    caudal=f * coord['caudal'],
+                    lateral=f * coord['lateral'],
+                    ventral=f * coord['ventral'],
+                    adjustment=f,
+                    area=area,
+                    substance_id=enter_form.substances[enter_form.substance.data],
+                    item_id=enter_form.glass.data
+                )
+                formatstr = '?' + '&'.join(['%s={%s}' % (k,k) for k in data])
+                insert_url = url_for('djtable.enter', relname='fabee.inj.Injection') + formatstr.format(**data)
 
                 return render_template('stereotax/stereotactic.html', form=enter_form,
                                        computed=True,

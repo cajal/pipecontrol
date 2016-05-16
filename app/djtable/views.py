@@ -1,3 +1,6 @@
+from importlib import import_module
+
+
 from . import PER_PAGE
 from flask.ext.login import login_required, current_user
 from .forms import Restriction
@@ -7,6 +10,7 @@ from flask import request, flash, url_for, render_template
 from werkzeug.utils import redirect
 from . import djpage
 import datajoint as dj
+import inspect
 
 form_factory = DataJointFormFactory()
 
@@ -59,9 +63,12 @@ def enter(relname):
                            target=url_for('.enter', relname=relname, target=url_for('.enter', relname=relname)))
 
 
-@djpage.route('/list/<dbname>')
+@djpage.route('/list/<modname>')
 @login_required
-def list_tables(dbname):
-    tables = dict()
-    schema = dj.schema(dbname, tables)
-    
+def list_tables(modname):
+    mod = import_module(modname)
+    template = '%s.{tablename}' % (modname,)
+
+    tables = [template.format(tablename=k[0])
+              for k in inspect.getmembers(mod, lambda kls: inspect.isclass(kls) and issubclass(kls,dj.BaseRelation))]
+    return render_template('djtable/list_database.html', tables=tables, modname=modname)

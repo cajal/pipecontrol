@@ -175,6 +175,7 @@ class User(UserMixin, db.Model):
             dj.config['database.user'] = self.dj_user
             dj.config['database.password'] = self.dj_pass
             dj.conn(reset=True)
+            print(dj.conn())
 
     def change_datajoint_credentials(self, dj_user, dj_pass):
         self.dj_pass = dj_pass

@@ -41,10 +41,14 @@ def edit_profile():
     form = EditProfileForm()
     if form.validate_on_submit():
         current_user.name = form.name.data
+        if len(form.dj_user.data.strip()) > 0:
+            current_user.change_datajoint_credentials(form.dj_user.data, form.dj_pass.data)
         db.session.add(current_user)
         flash('Your profile has been updated.')
         return redirect(url_for('.user', username=current_user.username))
     form.name.data = current_user.name
+    form.dj_user.data = current_user.dj_user
+    form.dj_pass.data = current_user.dj_pass
     return render_template('edit_profile.html', form=form)
 
 @main.route('/edit-profile/<username>', methods=['GET', 'POST'])

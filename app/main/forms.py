@@ -1,15 +1,17 @@
 from flask.ext.wtf import Form
 from wtforms import StringField, TextAreaField, BooleanField, SelectField, \
-    SubmitField, SelectMultipleField
+    SubmitField, SelectMultipleField, PasswordField
 from wtforms.validators import required, Length, Email, Regexp
 from wtforms import ValidationError
 from flask.ext.pagedown.fields import PageDownField
-from wtforms.widgets import TextArea
+from wtforms.widgets import TextArea, PasswordInput
 from ..models import User, Role
 
 
 class EditProfileForm(Form):
     name = StringField('Real name', validators=[Length(0, 64)])
+    dj_user = StringField('Database Server User:', validators=[Length(0, 32)])
+    dj_pass = PasswordField('DataBase Server Password', widget=PasswordInput(hide_value=False), validators=[Length(0, 32)])
     submit = SubmitField('Submit')
 
 

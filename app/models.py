@@ -17,7 +17,6 @@ from . import db, login_manager
 import datajoint as dj
 
 
-
 class Permission:
     READ = 0x01
     WRITE = 0x02
@@ -36,7 +35,7 @@ class Role(db.Model):
     @staticmethod
     def insert_roles():
         roles = {
-            'Viewer': (Permission.READ , True),
+            'Viewer': (Permission.READ, True),
             'User': (Permission.READ | Permission.WRITE, True),
             'Guardian': (Permission.READ | Permission.WRITE | Permission.GRANT, False),
             'Administrator': (0xff, False)
@@ -52,6 +51,11 @@ class Role(db.Model):
     def __repr__(self):
         return '<Role %r>' % self.name
 
+
+class DataJointDataBases(db.Model):
+    __tablename__ = 'dj_dbs'
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    db_name = db.Column(db.String(64), primary_key=True)
 
 
 class User(UserMixin, db.Model):
@@ -70,7 +74,11 @@ class User(UserMixin, db.Model):
 
     avatar_hash = db.Column(db.String(32))
 
+    dj_user = db.Column(db.String(32))
+    dj_pass = db.Column(db.String(32))
+
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    databases = db.relationship('DataJointDataBases', backref='users', lazy='dynamic')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -123,7 +131,7 @@ class User(UserMixin, db.Model):
             return True
 
     @staticmethod
-    def user_from_token(token,action='confirm'):
+    def user_from_token(token, action='confirm'):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
@@ -162,6 +170,18 @@ class User(UserMixin, db.Model):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'change_email': self.id, 'new_email': new_email})
 
+    def update_datajoint_connection(self):
+        if self.dj_user is not None and not dj.conn().in_transaction:
+            dj.config['database.user'] = self.dj_user
+            dj.config['database.password'] = self.dj_pass
+            dj.conn(reset=True)
+
+    def change_datajoint_credentials(self, dj_user, dj_pass):
+        self.dj_pass = dj_pass
+        self.dj_user = dj_user
+        db.session.add(self)
+        self.update_datajoint_connection()
+
     def change_email(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
@@ -190,6 +210,7 @@ class User(UserMixin, db.Model):
 
     def ping(self):
         self.last_seen = datetime.utcnow()
+        self.update_datajoint_connection()
         db.session.add(self)
 
     def gravatar(self, size=100, default='identicon', rating='g'):
@@ -214,12 +235,8 @@ class AnonymousUser(AnonymousUserMixin):
         return False
 
 
-
-
-
-
-
 login_manager.anonymous_user = AnonymousUser
+
 
 @login_manager.user_loader
 def load_user(user_id):

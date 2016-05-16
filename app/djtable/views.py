@@ -1,4 +1,3 @@
-from .decorators import connection_required
 from . import PER_PAGE
 from flask.ext.login import login_required, current_user
 from .forms import Restriction
@@ -7,12 +6,12 @@ from .relationtable import RelationTable
 from flask import request, flash, url_for, render_template
 from werkzeug.utils import redirect
 from . import djpage
+import datajoint as dj
 
 form_factory = DataJointFormFactory()
 
 @djpage.route('/display/<relname>', methods=['GET', 'POST'])
 @login_required
-@connection_required
 def display(relname):
     form = Restriction(request.form)
     error_msg = None
@@ -40,7 +39,6 @@ def display(relname):
 
 @djpage.route('/enter/<relname>', methods=['GET', 'POST'])
 #@djpage.route('/enter/<relname>/<target>', methods=['GET', 'POST'])
-@connection_required
 def enter(relname):
     enter_form = form_factory(relname)(request.form)
     if request.method == 'POST':
@@ -61,5 +59,9 @@ def enter(relname):
                            target=url_for('.enter', relname=relname, target=url_for('.enter', relname=relname)))
 
 
-
-
+@djpage.route('/list/<dbname>')
+@login_required
+def list_tables(dbname):
+    tables = dict()
+    schema = dj.schema(dbname, tables)
+    

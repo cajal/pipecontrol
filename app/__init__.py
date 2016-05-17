@@ -46,4 +46,7 @@ def create_app(config_name):
     from .stereotax import stereotax
     app.register_blueprint(stereotax, url_prefix='/stereotax')
 
+    from .virus import virus
+    app.register_blueprint(virus, url_prefix='/virus')
+
     return app

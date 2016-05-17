@@ -1,20 +1,12 @@
-import inspect
 from datetime import datetime
 import hashlib
-from importlib import import_module
-import os
 from fabric.utils import abort
-from sqlalchemy import UniqueConstraint
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, BadSignature
-from markdown import markdown
-import bleach
 from flask import current_app, request, url_for
 from flask.ext.login import UserMixin, AnonymousUserMixin
-from app.exceptions import ValidationError
 from . import db, login_manager
-import datajoint as dj
 
 
 class Permission:
@@ -52,11 +44,21 @@ class Role(db.Model):
         return '<Role %r>' % self.name
 
 
-class DataJointDataBases(db.Model):
-    __tablename__ = 'dj_dbs'
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
-    db_name = db.Column(db.String(64), primary_key=True)
+class DataJointModule(db.Model):
+    __tablename__ = 'djmodules'
+    mod_name = db.Column(db.String(128), primary_key=True)
 
+    @staticmethod
+    def add_module(mod):
+        d = DataJointModule(mod_name=mod)
+        db.session.add(d)
+        db.session.commit()
+
+    @staticmethod
+    def remove_module(mod):
+        d = DataJointModule.query.filter_by(mod_name=mod).first_or_404()
+        db.session.delete(d)
+        db.session.commit()
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -74,11 +76,7 @@ class User(UserMixin, db.Model):
 
     avatar_hash = db.Column(db.String(32))
 
-    dj_user = db.Column(db.String(32))
-    dj_pass = db.Column(db.String(32))
-
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
-    databases = db.relationship('DataJointDataBases', backref='users', lazy='dynamic')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -170,13 +168,6 @@ class User(UserMixin, db.Model):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'change_email': self.id, 'new_email': new_email})
 
-    def update_datajoint_connection(self):
-        if self.dj_user is not None and not dj.conn().in_transaction:
-            dj.config['database.user'] = self.dj_user
-            dj.config['database.password'] = self.dj_pass
-            dj.conn(reset=True)
-            print(dj.conn())
-
     def change_datajoint_credentials(self, dj_user, dj_pass):
         self.dj_pass = dj_pass
         self.dj_user = dj_user
@@ -211,7 +202,6 @@ class User(UserMixin, db.Model):
 
     def ping(self):
         self.last_seen = datetime.utcnow()
-        self.update_datajoint_connection()
         db.session.add(self)
 
     def gravatar(self, size=100, default='identicon', rating='g'):

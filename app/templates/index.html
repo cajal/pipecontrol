@@ -27,19 +27,28 @@
 
             <div class="col-sm-6 col-md-2">
                 <div class="thumbnail tile tile-medium tile-teal">
-                    <a href="#" class="fa-links">
+                    <a href="{{ url_for('.modules') }}" class="fa-links">
                         <br><br>
                         <h3>Tables</h3>
                         <i class="fa fa-3x fa-table"> </i>
                     </a>
                 </div>
             </div>
-            <div class="col-sm-6 col-md-3">
+            <div class="col-sm-6 col-md-2">
                 <div class="thumbnail tile tile-medium tile-blue">
                     <a href="{{ url_for('stereotax.stereotax') }}" class="fa-links">
                         <br><br>
                         <h3>Stereotax</h3>
                         <i class="fa fa-3x fa-blind"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-2">
+                <div class="thumbnail tile tile-medium tile-asbestos ">
+                    <a href="{{ url_for('djtable.enter', relname='commons.mice.Death') }}" class="fa-links">
+                        <br><br>
+                        <h3>Dead Mouse</h3>
+                        <i class="fa fa-3x fa-close"></i>
                     </a>
                 </div>
             </div>

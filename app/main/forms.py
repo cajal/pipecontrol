@@ -10,10 +10,12 @@ from ..models import User, Role
 
 class EditProfileForm(Form):
     name = StringField('Real name', validators=[Length(0, 64)])
-    dj_user = StringField('Database Server User:', validators=[Length(0, 32)])
-    dj_pass = PasswordField('DataBase Server Password', widget=PasswordInput(hide_value=False), validators=[Length(0, 32)])
     submit = SubmitField('Submit')
 
+
+class NewModuleForm(Form):
+    modname = StringField('Full module name (i.e. commons.virus)', validators=[Length(0, 128)])
+    submit = SubmitField('Submit')
 
 
 class EditProfileAdminForm(Form):

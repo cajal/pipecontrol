@@ -4,7 +4,7 @@ from flask.ext.login import login_user, logout_user, login_required, \
     current_user
 from . import auth
 from .. import db
-from ..models import User
+from ..models import User, Role
 from ..email import send_email
 from .forms import LoginForm, RegistrationForm, ChangePasswordForm,\
     PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm, TokenRegistrationForm
@@ -81,7 +81,8 @@ def register():
         user = User(email=form.email.data,
                     username=form.username.data,
                     password=form.password.data,
-                    name=form.realname.data)
+                    name=form.realname.data,
+                    role_id=Role.query.filter_by(name='User').first().id)
         db.session.add(user)
         db.session.commit()
         confirm_token = user.generate_token()

@@ -67,8 +67,6 @@ def init():
 
     db.session.commit()
 
-    Schema.insert_schemata()
-
 
 if __name__ == '__main__':
 

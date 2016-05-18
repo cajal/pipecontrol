@@ -12,7 +12,7 @@ class DataJointFormFactory:
     def __init__(self):
         self.store = {}
 
-    def register(self, **kwargs):
+    def assemble(self, **kwargs):
         for key, rel in kwargs.items():
             if key in self.store:
                 return
@@ -47,13 +47,12 @@ class DataJointFormFactory:
                 ReturnValue.append_field(name, field_factory(attr))
                 ReturnValue.required[name] = not attr.nullable and attr.default is None
             ReturnValue.append_field('REFERRER', wtf.StringField(label='REFERRER', widget=HiddenInput()))
-            self.store[key] = ReturnValue
+            return ReturnValue
 
     def __call__(self, name):
-        if name not in self.store:
-            rel = _import_relation(name)
-            self.register(**{name: rel})
-        return self.store[name]
+
+        rel = _import_relation(name)
+        return self.assemble(name=rel)
 
 
 def field_factory(attr):
@@ -70,7 +69,8 @@ def field_factory(attr):
         return wtf.FloatField(**kwargs)
     elif attr.type.startswith('varchar'):
         ml = int(attr.type.split('(')[-1][:-1])
-        return wtf.StringField(**kwargs)  # TODO: can I specify a max length here?
+        kwargs['validators'].append(len_validator_factory(ml))
+        return wtf.StringField(**kwargs)
     elif attr.type == 'date':
         kwargs['validators'].append(date_validator)
         return wtf.DateField(format='%Y-%m-%d', default=datetime.date.today(), **kwargs)
@@ -80,7 +80,7 @@ def field_factory(attr):
     elif attr.type.startswith('char'):
         l = int(attr.type.split('(')[-1][:-1])
         kwargs['validators'].append(len_validator_factory(l))
-        return wtf.StringField(**kwargs)  # TODO: can I specify a max length here?
+        return wtf.StringField(**kwargs)
     elif attr.type == 'timestamp':
         return wtf.DateTimeField(format='%Y-%m-%d %H:%M', default=datetime.datetime.today(), **kwargs)
     else:
@@ -96,7 +96,9 @@ def date_validator(form, field):
 
 def len_validator_factory(n):
     def len_validator(form, field):
-        if len(form.data) == n:
+        if len(form.data) <= n:
             return
         else:
-            raise wtf.ValidationError('%s must have length %i'(form.id, n))
+            raise wtf.ValidationError('%s must have length <= %i'(field.id, n))
+
+    return len_validator

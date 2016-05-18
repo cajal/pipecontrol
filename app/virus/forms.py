@@ -8,21 +8,20 @@ class NewVirusForm(Form):
         super(NewVirusForm, self).__init__()
         if not self.virus_id.data:
             self.virus_id.data = virus.Virus().project().fetch['virus_id'].max() + 1
+        if not self.construct.choices:
+            self.construct.choices = list(zip(*virus.Construct().fetch['construct_id', 'construct_id']))
+        if not self.source.choices:
+            self.source.choices = list(zip(*virus.Source().fetch['source_id', 'source_id']))
+        if not self.type.choices:
+            self.type.choices = list(zip(*virus.Type().fetch['virus_type', 'virus_type']))
 
     virus_id = wtf.IntegerField('virus_id', validators=[wtf.validators.required()])
-    construct = wtf.SelectField('construct',
-                                choices=list(zip(*virus.Construct().fetch['construct_id', 'construct_id'])),
-                                validators=[wtf.validators.required()])
-    type = wtf.SelectField('type',
-                           choices=list(zip(*virus.Type().fetch['virus_type', 'virus_type'])),
-                           validators=[wtf.validators.required()])
-
-    source = wtf.SelectField('source',
-                             choices=list(zip(*virus.Source().fetch['source_id', 'source_id'])),
-                             validators=[wtf.validators.required()])
+    construct = wtf.SelectField('construct', validators=[wtf.validators.required()])
+    type = wtf.SelectField('type', validators=[wtf.validators.required()])
+    source = wtf.SelectField('source', validators=[wtf.validators.required()])
 
     lot = wtf.StringField('virus lot', validators=[wtf.validators.Optional()])
-    titer = wtf.FloatField('titer',  validators=[wtf.validators.Optional()])
+    titer = wtf.FloatField('titer', validators=[wtf.validators.Optional()])
     notes = wtf.TextAreaField('notes')
     submit = wtf.SubmitField('Submit')
 

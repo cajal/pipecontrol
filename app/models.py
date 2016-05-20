@@ -1,10 +1,10 @@
 from datetime import datetime
 import hashlib
-from fabric.utils import abort
+
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, BadSignature
-from flask import current_app, request, url_for
+from flask import current_app, request, url_for, abort
 from flask.ext.login import UserMixin, AnonymousUserMixin
 from . import db, login_manager
 

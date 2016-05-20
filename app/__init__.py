@@ -7,6 +7,9 @@ from flask.ext.login import LoginManager
 from flask.ext.pagedown import PageDown
 from config import config
 
+from flask.ext.qrcode import QRcode
+
+
 bootstrap = Bootstrap()
 mail = Mail()
 moment = Moment()
@@ -20,6 +23,7 @@ login_manager.login_view = 'auth.login'
 
 def create_app(config_name):
     app = Flask(__name__)
+    QRcode(app)
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
 
@@ -48,5 +52,9 @@ def create_app(config_name):
 
     from .virus import virus
     app.register_blueprint(virus, url_prefix='/virus')
+
+    from .mouse import mouse
+    app.register_blueprint(mouse, url_prefix='/mouse')
+
 
     return app

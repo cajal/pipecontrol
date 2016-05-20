@@ -1,5 +1,4 @@
-from fabric.utils import abort
-from flask import render_template, redirect, request, url_for, flash, current_app
+from flask import render_template, redirect, request, url_for, flash, current_app, abort
 from flask.ext.login import login_user, logout_user, login_required, \
     current_user
 from . import auth

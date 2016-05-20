@@ -12,6 +12,7 @@ def mouse_validator(form, field):
 
 class SelectMouseForm(Form):
     animal_id = wtf.IntegerField('animal_id', validators=[wtf.validators.required(), mouse_validator])
+    pdf = wtf.BooleanField('pdf', default=True)
     submit = wtf.SubmitField('Submit')
 
 

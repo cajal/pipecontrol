@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='mouse/style.css') }}">
-    <link href="//netdna.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet"
-
 </head>
 <body>
 
@@ -14,21 +12,22 @@
     <table class="cagecard">
         <tr>
             <td rowspan="4"><img src="{{ qrcode(url_for('.index',animal_id=animal_id, _external=True), box_size=3) }}"></td>
-            <td class="djattribute"> Animal ID</td>
+            <td  colspan="2" class="djattribute"> Animal ID</td>
             <td class="djattribute"> PI:</td>
             <td> A. Tolias (713-798-4071)</td>
         </tr>
         <tr>
-            <td rowspan="3" class="animal"> {{ animal_id }}</td>
+            <td rowspan="2" colspan="2" class="animal"> {{ animal_id }}</td>
             <td class="djattribute"> Protocol:</td>
             <td> {{ protocol }}</td>
-            <td rowspan="4"><i class="fa fa-4x fa-{{ 'mars' if sex=='M' else 'venus' }}"> </i></td>
         </tr>
         <tr>
             <td class="djattribute"> Breeding:</td>
             <td> C. Lopez (713-798-4072)</td>
         </tr>
         <tr>
+            <td class="djattribute">Sex: </td>
+            <td >{{ sex }} </td>
             <td class="djattribute"> Animal Owner:</td>
             <td> {{ owner }}</td>
         </tr>
@@ -71,13 +70,17 @@
                     <td>{{ injection['area'] }}</td>
                     <td class="djattribute">TOI</td>
                     <td>{{ injection['toi'] }}</td>
-                    <td class="djattribute">Lot</td>
-                    <td>{{ injection['virus_lot'] }}</td>
                 </tr>
                 <tr>
                     <td></td>
                     <td class="djattribute">Virus</td>
-                    <td colspan="3">  {{ injection['construct_id'] }}</td>
+                    <td colspan="2">  {{ injection['construct_id'] }}</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td class="djattribute">Lot</td>
+                    <td>{{ injection['virus_lot'] }}</td>
+
                 </tr>
 
             {% endfor %}

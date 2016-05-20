@@ -23,7 +23,10 @@ def index(animal_id):
 def select_mouse():
     form = SelectMouseForm()
     if form.validate_on_submit():
-        return redirect(url_for('.cagecard_pdf', animal_id=form.animal_id.data))
+        if form.pdf.data:
+            return redirect(url_for('.cagecard_pdf', animal_id=form.animal_id.data))
+        else:
+            return redirect(url_for('.cagecard', animal_id=form.animal_id.data))
     return render_template('mouse/select_mouse.html', form=form)
 
 
@@ -32,21 +35,27 @@ def select_mouse():
 def cagecard(animal_id):
     info = (mice.Mice() & dict(animal_id=animal_id)).fetch1()
     info['lines'] = (mice.Genotypes() & dict(animal_id=animal_id)).fetch.as_dict()
-    # info['father'] =
-    parent_ids = np.asarray([int(i) for i in (mice.Parents() & dict(animal_id=animal_id)).fetch['parent_id']], dtype=int)
 
+    # find out parents
+    parent_ids = [int(i) for i in (mice.Parents() & dict(animal_id=animal_id)).fetch['parent_id']]
     parent_rstr = {'animal_id':p for p in parent_ids}
-    parents = {p['sex']:p['animal_id'] for p in (mice.Mice() & parent_rstr).fetch.as_dict()}
+    parents = (mice.Mice() & parent_rstr).fetch.as_dict()
 
+    parents2 = {}
 
+    for p in parents:
+        if p['sex'] in parents2:
+            parents2[p['sex']] += ', {0}'.format(p['animal_id'])
+        else:
+            parents2[p['sex']] = str(p['animal_id'])
+        parent_ids.remove(p['animal_id'])
 
-    if len(parents) < 2:
-        if 'M' in parents:
-            parents['F'] = parent_ids[parent_ids != parents['M']][0]
-        if 'F' in parents:
-            parents['M'] = parent_ids[parent_ids != parents['F']][0]
-
-    info['parents'] = parents
+    if len(parent_ids) > 0:
+        if 'M' not in parents2:
+            parents2['M'] = ', '.join([str(i) for i in parent_ids])
+        else:
+            parents2['F'] = ', '.join([str(i) for i in parent_ids])
+    info['parents'] = parents2
 
     injections =  inj.Injection()*inj.Substance()*inj.Substance.Virus()*virus.Virus() & dict(animal_id=animal_id)
     if injections:
@@ -64,4 +73,6 @@ def cagecard_pdf(animal_id):
     # Make a PDF from another view
     html = cagecard(animal_id=animal_id)
     print(html)
-    return render_pdf(HTML(string=html), stylesheets=[CSS(url_for('static', filename='mouse/style.css'))])
+    return render_pdf(HTML(string=html),
+                      stylesheets=[CSS(url_for('static', filename='mouse/style.css')),
+                                   CSS('//netdna.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css')])

@@ -7,7 +7,7 @@ class NewVirusForm(Form):
     def __init__(self):
         super(NewVirusForm, self).__init__()
         if not self.virus_id.data:
-            self.virus_id.data = virus.Virus().project().fetch['virus_id'].max() + 1
+            self.virus_id.data = virus.Virus().proj().fetch['virus_id'].max() + 1
         if not self.construct.choices:
             self.construct.choices = list(zip(*virus.Construct().fetch['construct_id', 'construct_id']))
         if not self.source.choices:

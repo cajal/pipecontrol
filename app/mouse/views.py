@@ -38,7 +38,7 @@ def cagecard(animal_id):
 
     # find out parents
     parent_ids = [int(i) for i in (mice.Parents() & dict(animal_id=animal_id)).fetch['parent_id']]
-    parent_rstr = {'animal_id':p for p in parent_ids}
+    parent_rstr = [{'animal_id':p } for p in parent_ids]
     parents = (mice.Mice() & parent_rstr).fetch.as_dict()
 
     parents2 = {}
@@ -49,20 +49,13 @@ def cagecard(animal_id):
         else:
             parents2[p['sex']] = str(p['animal_id'])
         parent_ids.remove(p['animal_id'])
-
-    if len(parent_ids) > 0:
-        if 'M' not in parents2:
-            parents2['M'] = ', '.join([str(i) for i in parent_ids])
-        else:
-            parents2['F'] = ', '.join([str(i) for i in parent_ids])
     info['parents'] = parents2
 
     injections =  inj.Injection()*inj.Substance()*inj.Substance.Virus()*virus.Virus() & dict(animal_id=animal_id)
     if injections:
-        info['injections'] = injections.project('area','construct_id','toi','virus_lot').fetch.as_dict()
+        info['injections'] = injections.proj('area','construct_id','toi','virus_lot').fetch.as_dict()
         for i in info['injections']:
             i['toi'] = str(i['toi']).split()[0]
-
 
     return render_template('mouse/cagecard.html', protocol='AN-4703', **info)
 

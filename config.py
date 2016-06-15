@@ -3,7 +3,7 @@ basedir = os.path.abspath(os.path.dirname(__file__)) + '/databases/'
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'hard to guess string'
-    SSL_DISABLE = False
+    SSL_DISABLE = True
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     SQLALCHEMY_RECORD_QUERIES = True
     MAIL_SERVER = os.environ.get('MAIL_SERVER')

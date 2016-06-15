@@ -26,50 +26,50 @@
         {% else %}
 
             <div class="col-sm-6 col-md-2">
-                <div class="thumbnail tile tile-medium tile-teal">
-                    <a href="{{ url_for('.modules') }}" class="fa-links">
+                <a href="{{ url_for('.modules') }}" class="fa-links">
+                    <div class="thumbnail tile tile-medium tile-teal">
                         <br><br>
                         <h3>Tables</h3>
                         <i class="fa fa-3x fa-table"> </i>
-                    </a>
-                </div>
+                    </div>
+                </a>
             </div>
             <div class="col-sm-6 col-md-2">
-                <div class="thumbnail tile tile-medium tile-blue">
-                    <a href="{{ url_for('stereotax.stereotax') }}" class="fa-links">
+                <a href="{{ url_for('stereotax.stereotax') }}" class="fa-links">
+                    <div class="thumbnail tile tile-medium tile-blue">
                         <br><br>
                         <h3>Stereotax</h3>
                         <i class="fa fa-3x fa-blind"></i>
-                    </a>
-                </div>
+                    </div>
+                </a>
             </div>
             <div class="col-sm-6 col-md-2">
-                <div class="thumbnail tile tile-medium tile-asbestos ">
-                    <a href="{{ url_for('djtable.enter', relname='commons.mice.Death') }}" class="fa-links">
+                <a href="{{ url_for('djtable.enter', relname='commons.mice.Death') }}" class="fa-links">
+                    <div class="thumbnail tile tile-medium tile-asbestos ">
                         <br><br>
                         <h3>Dead Mouse</h3>
                         <i class="fa fa-3x fa-close"></i>
-                    </a>
-                </div>
+                    </div>
+                </a>
             </div>
             <div class="col-sm-6 col-md-2">
-                <div class="thumbnail tile tile-medium tile-lime ">
-                    <a href="{{ url_for('virus.enter') }}" class="fa-links">
+                <a href="{{ url_for('virus.enter') }}" class="fa-links">
+                    <div class="thumbnail tile tile-medium tile-lime ">
                         <br><br>
                         <h3>Virus</h3>
                         <i class="fa fa-3x fa-flask"></i>
-                    </a>
-                </div>
+                    </div>
+                </a>
             </div>
 
             <div class="col-sm-6 col-md-2">
-                <div class="thumbnail tile tile-medium tile-wet-asphalt ">
-                    <a href="{{ url_for('mouse.select_mouse') }}" class="fa-links">
+                <a href="{{ url_for('mouse.select_mouse') }}" class="fa-links">
+                    <div class="thumbnail tile tile-medium tile-wet-asphalt ">
                         <br><br>
                         <h3>Cagecard</h3>
                         <i class="fa fa-3x fa-credit-card-alt"></i>
-                    </a>
-                </div>
+                    </div>
+                </a>
             </div>
 
         {% endif %}

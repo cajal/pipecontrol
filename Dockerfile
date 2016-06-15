@@ -19,7 +19,7 @@ RUN \
 
 WORKDIR /server/rowbot
 
-    ENTRYPOINT python3 manage.py runserver
+ENTRYPOINT gunicorn -b 0.0.0.0:80 manage:app
 
 
 

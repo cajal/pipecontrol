@@ -1,5 +1,15 @@
 import os
+
 basedir = os.path.abspath(os.path.dirname(__file__)) + '/databases/'
+
+# --- import environment variables from hidden file
+if os.path.exists('.env'):
+    print('Importing environment from .env...')
+    for line in open('.env'):
+        var = line.strip().split('=')
+        if len(var) == 2:
+            os.environ[var[0]] = var[1]
+
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'hard to guess string'
@@ -7,15 +17,17 @@ class Config:
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     SQLALCHEMY_RECORD_QUERIES = True
     MAIL_SERVER = os.environ.get('MAIL_SERVER')
-    MAIL_PORT =  587
+    MAIL_PORT = 587
     MAIL_USE_TLS = True
+    # MAIL_DEBUG = False
     MAIL_USE_SSL = False
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    # DEFAULT_MAIL_SENDER = os.environ.get('MAIL_SENDER')
     ROWBOT_MAIL_SUBJECT_PREFIX = '[Row-Bot]'
     ROWBOT_MAIL_SENDER = os.environ.get('MAIL_SENDER')
     ROWBOT_ADMIN = os.environ.get('ROWBOT_ADMIN')
-    ROWBOT_SLOW_DB_QUERY_TIME=0.5
+    ROWBOT_SLOW_DB_QUERY_TIME = 0.5
     MIGRATION_DIR = basedir + 'migrations/'
 
     @staticmethod
@@ -26,12 +38,13 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+                              'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
 
 
 class ProductionConfig(Config):
+    DEBUG = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+                              'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 
     @classmethod
     def init_app(cls, app):
@@ -94,5 +107,5 @@ config = {
     'production': ProductionConfig,
     'heroku': HerokuConfig,
     'unix': UnixConfig,
-    'default': DevelopmentConfig
+    'default': ProductionConfig
 }

@@ -96,9 +96,9 @@ def date_validator(form, field):
 
 def len_validator_factory(n):
     def len_validator(form, field):
-        if len(form.data) <= n:
+        if len(field.data) <= n:
             return
         else:
-            raise wtf.ValidationError('%s must have length <= %i'(field.id, n))
+            raise wtf.ValidationError('%s must have length <= %i' % (field.id, n))
 
     return len_validator

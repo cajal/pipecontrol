@@ -8,6 +8,9 @@ Flask-PageDown==0.2.1
 Flask-SQLAlchemy==2.1
 Flask-Script==2.0.5
 Flask-WTF==0.12
+qrcode==5.3
+flask-qrcode
+flask-weasyprint
 Markdown==2.6.5
 bleach==1.4.2
 fabric

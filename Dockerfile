@@ -8,8 +8,10 @@ WORKDIR /server/
 RUN \
   git clone https://github.com/fabiansinz/fabee.git && \
   git clone https://github.com/fabiansinz/commons.git && \
+  git clone https://github.com/fabiansinz/datajoint-addons.git && \
   pip install -e commons/python && \
-  pip install -e fabee 
+  pip install -e fabee && \
+  pip install -e datajoint-addons
 
 # Install rowbot
 COPY . /server/rowbot

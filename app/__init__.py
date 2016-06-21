@@ -6,9 +6,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager
 from flask.ext.pagedown import PageDown
 from config import config
-
 from flask.ext.qrcode import QRcode
-
 
 bootstrap = Bootstrap()
 mail = Mail()
@@ -55,6 +53,5 @@ def create_app(config_name):
 
     from .mouse import mouse
     app.register_blueprint(mouse, url_prefix='/mouse')
-
 
     return app

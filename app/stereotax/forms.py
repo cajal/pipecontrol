@@ -10,12 +10,10 @@ subv, constr, lot = (inj.Substance() * inj.Substance.Virus() * virus.Virus()).fe
     'substance_id', 'construct_id', 'virus_lot']
 subd, dyes = (inj.Substance() * inj.Substance.Dye()).fetch['substance_id', 'dye_name']
 
-substances = dict(chain(zip( ['{0}@{1}'.format(a, b) for a, b in zip(constr, lot)],subv),
+substances = dict(chain(zip(['{0}@{1}'.format(a, bregma) for a, bregma in zip(constr, lot)], subv),
                         zip(dyes, subd)))
 substance_names = substances.keys()
-
 glass = inj.PipetteGlass().fetch['item_id']
-
 
 
 class StereoTacticCoordinate(wtf.Form):
@@ -27,8 +25,8 @@ class StereoTacticCoordinate(wtf.Form):
 class StereoTacticMeasurement(wtf.Form):
     substances = substances
 
-    l = wtf.FormField(StereoTacticCoordinate, label='bregma')
-    b = wtf.FormField(StereoTacticCoordinate, label='lambda')
+    bregma = wtf.FormField(StereoTacticCoordinate, label='bregma')
+    lambd = wtf.FormField(StereoTacticCoordinate, label='lambda')
     area = wtf.SelectField('area', validators=[wtf.validators.required()],
                            choices=list(zip(areas, areas)))
     substance = wtf.SelectField('substance', validators=[wtf.validators.required()],

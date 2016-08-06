@@ -12,8 +12,9 @@
     <table class="cagecard">
         <tr>
 
-            <td rowspan="4"><img src="{{ qrcode(url_for('.index',animal_id=animal_id, _external=True), box_size=3) }}"></td>
-            <td  colspan="2" class="djattribute"> Animal ID</td>
+            <td rowspan="4"><img src="{{ qrcode(url_for('.index',animal_id=animal_id, _external=True), box_size=3) }}">
+            </td>
+            <td colspan="2" class="djattribute"> Animal ID</td>
             <td class="djattribute"> PI:</td>
             <td> A. Tolias (713-798-4071)</td>
         </tr>
@@ -27,8 +28,8 @@
             <td> C. Lopez (713-798-4072)</td>
         </tr>
         <tr>
-            <td class="djattribute">Sex: </td>
-            <td >{{ sex }} </td>
+            <td class="djattribute">Sex:</td>
+            <td>{{ sex }} </td>
             <td class="djattribute"> Animal Owner:</td>
             <td> {{ owner }}</td>
         </tr>
@@ -67,8 +68,12 @@
             {% for injection in injections %}
                 <tr>
                     <td class="djattribute">Injection {{ loop.index }}:</td>
-                    <td class="djattribute">Area</td>
-                    <td>{{ injection['area'] }}</td>
+                    <td class="djattribute">Site</td>
+                    {% if 'area' in injection %}
+                        <td>{{ injection['area'] }}</td>
+                    {% else %}
+                        <td>{{ injection['injection_site'] }}</td>
+                    {% endif %}
                     <td class="djattribute">TOI</td>
                     <td>{{ injection['toi'] }}</td>
                 </tr>

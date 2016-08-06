@@ -12,6 +12,7 @@ from commons import mice, virus
 from weasyprint import HTML
 import numpy as np
 from fabee import inj
+from commons import inj as com_inj
 
 @mouse.route('/<animal_id>')
 @login_required
@@ -51,12 +52,19 @@ def cagecard(animal_id):
         parent_ids.remove(p['animal_id'])
     info['parents'] = parents2
 
-    injections =  inj.Injection()*inj.Substance()*inj.Substance.Virus()*virus.Virus() & dict(animal_id=animal_id)
-    if injections:
-        info['injections'] = injections.proj('area','construct_id','toi','virus_lot').fetch.as_dict()
-        for i in info['injections']:
-            i['toi'] = str(i['toi']).split()[0]
 
+    # TODO: clean this up
+    info['injections'] = []
+    if com_inj.VirusInjection() & dict(animal_id=animal_id):
+        injections = com_inj.VirusInjection() * virus.Virus() & dict(animal_id=animal_id)
+        info['injections'].extend(injections.proj('injection_site', 'construct_id', 'toi', 'virus_lot').fetch.as_dict())
+    if inj.Injection() & dict(animal_id=animal_id):
+        injections =  inj.Injection()*inj.Substance()*inj.Substance.Virus()*virus.Virus() & dict(animal_id=animal_id)
+        info['injections'].extend( injections.proj('area','construct_id','toi','virus_lot').fetch.as_dict())
+    for i in info['injections']:
+        i['toi'] = str(i['toi']).split()[0]
+    if len(info['injections']) == 0:
+        del info['injections']
     return render_template('mouse/cagecard.html', protocol='AN-4703', **info)
 
 

@@ -9,14 +9,9 @@ import re
 
 
 class DataJointFormFactory:
-    def __init__(self):
-        self.store = {}
 
     def assemble(self, **kwargs):
         for key, rel in kwargs.items():
-            if key in self.store:
-                return
-
             if isinstance(rel, dj.Computed) or \
                     isinstance(rel, dj.Imported) or \
                     isinstance(rel, dj.Part):
@@ -32,7 +27,6 @@ class DataJointFormFactory:
 
                 def insert(self2, replace=False):
                     rel = self2._rel
-                    print(rel.connection)
                     dat = {}
                     for k, v in self2._fields.items():
                         if v.data is not None and k != 'REFERRER':  # was not specified and is also not required
@@ -45,13 +39,14 @@ class DataJointFormFactory:
             ReturnValue.required = OrderedDict()
             for name, attr in rel.heading.attributes.items():
                 ReturnValue.append_field(name, field_factory(attr))
-                ReturnValue.required[name] = not attr.nullable and attr.default is None
+                ReturnValue.required[name] = not attr.nullable or attr.default is None
             ReturnValue.append_field('REFERRER', wtf.StringField(label='REFERRER', widget=HiddenInput()))
             return ReturnValue
 
     def __call__(self, name):
 
         rel = _import_relation(name)
+        print(id(rel))
         return self.assemble(name=rel)
 
 
@@ -81,8 +76,8 @@ def field_factory(attr):
         l = int(attr.type.split('(')[-1][:-1])
         kwargs['validators'].append(len_validator_factory(l))
         return wtf.StringField(**kwargs)
-    elif attr.type == 'timestamp':
-        return wtf.DateTimeField(format='%Y-%m-%d %H:%M', default=datetime.datetime.today(), **kwargs)
+    # elif attr.type == 'timestamp':
+    #     return wtf.DateTimeField(format='%Y-%m-%d %H:%M', default=datetime.datetime.today(), **kwargs)
     else:
         raise NotImplementedError('FieldFactory does not know what to do with %s' % (attr.type))
 

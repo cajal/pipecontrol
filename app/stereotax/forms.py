@@ -1,19 +1,9 @@
 import wtforms as wtf
-from fabee import inj
+#from fabee import inj
 import numpy as np
-from commons import virus
+from commons import virus, inj
 from itertools import chain
 
-areas = np.unique(inj.AtlasStereotacticTargets().fetch['area'])
-
-subv, constr, lot = (inj.Substance() * inj.Substance.Virus() * virus.Virus()).fetch[
-    'substance_id', 'construct_id', 'virus_lot']
-subd, dyes = (inj.Substance() * inj.Substance.Dye()).fetch['substance_id', 'dye_name']
-
-substances = dict(chain(zip(['{0}@{1}'.format(a, bregma) for a, bregma in zip(constr, lot)], subv),
-                        zip(dyes, subd)))
-substance_names = substances.keys()
-glass = inj.PipetteGlass().fetch['item_id']
 
 
 class StereoTacticCoordinate(wtf.Form):
@@ -23,13 +13,17 @@ class StereoTacticCoordinate(wtf.Form):
 
 
 class StereoTacticMeasurement(wtf.Form):
-    substances = substances
 
     bregma = wtf.FormField(StereoTacticCoordinate, label='bregma')
     lambd = wtf.FormField(StereoTacticCoordinate, label='lambda')
-    area = wtf.SelectField('area', validators=[wtf.validators.required()],
-                           choices=list(zip(areas, areas)))
-    substance = wtf.SelectField('substance', validators=[wtf.validators.required()],
-                                choices=list(zip(substance_names, substance_names)))
-    glass = wtf.SelectField('pipette', validators=[wtf.validators.required()],
-                            choices=list(zip(glass, glass)))
+    site = wtf.SelectField('site', validators=[wtf.validators.required()])
+    target = wtf.SelectField('coordinates', validators=[wtf.validators.required()])
+    virus = wtf.SelectField('virus', validators=[wtf.validators.required()])
+
+    def __init__(self,*args, **kwargs):
+        super(StereoTacticMeasurement, self).__init__(*args, **kwargs)
+
+        self.site.choices = [2*choice for choice in zip(inj.Site().fetch['injection_site'])]
+        self.target.choices = [2*target for target in zip(inj.AtlasStereotacticTargets().fetch['target_id'])]
+        self.virus.choices = [(vid, '{0} (Lot {1})'.format(cid, lot)) \
+                              for vid, cid, lot in zip(*virus.Virus().fetch.order_by('virus_ts DESC')['virus_id','construct_id','virus_lot'])]

@@ -1,80 +1,111 @@
-{% macro render_field(field) %}
-    <div class="form-group">
-        <label>{{ field.label }}</label>
+{% import "bootstrap/wtf.html" as wtf %}
 
-        {{ field(**kwargs)|safe }}
-        {% if field.errors %}
-            <ul class=errors>
-                {% for error in field.errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
+{% macro render_field(field, recurse=0) %}
+    {#    <div class="form-group">#}
+    <div class="row">
+
+        {% if not field.type == 'CSRFTokenField' %}
+            <div class="col-xs-4 col-md-2 .col-md-offset-{{ recurse }} .col-xs-offset-{{ recurse }}">{{ field.label }}</div>
         {% endif %}
+
+        <div class="col-xs-6 col-md-4  .col-md-offset-{{ recurse }} .col-xs-offset-{{ recurse }}">
+            {% if not field.type == 'FormField' %}
+                {#            {{ field.short_name }}#}
+                {{ field(**kwargs)|safe }}
+            {% else %}
+                {% for sub_field in field %}
+                    {{ render_field(sub_field, recurse+1) }}
+                {% endfor %}
+            {% endif %}
+            {% if field.errors %}
+                <ul class=errors>
+                    {% for error in field.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
     </div>
+
 {% endmacro %}
 
 {% extends "base.html" %}
 
 {% block head %}
-{{ super() }}
-<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stereotax/style.css') }}">
+    {{ super() }}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stereotax/style.css') }}">
 {% endblock %}
 
 {% block page_content %}
     {% if computed %}
         <div class="page-header">
+            <h4>Coordinates</h4>
 
-        <div class="container">
-        <table class="table-striped stereotax">
-            <thead>
-                <tr>
-                    <th colspan="2">Computed coordinates</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for name, coord in burr_hole.items() %}
-                <tr>
-                    <td>{{ name }}</td>
-                    <td>{{ coord }} mm</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        </div>
+            <div class="container">
+                <table class="table-striped stereotax">
+                    <thead>
+                    <tr>
+                        <th colspan="2">Computed coordinates</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for name, coord in burr_hole.items() %}
+                        <tr>
+                            <td>{{ name }}</td>
+                            <td>{{ coord }} mm</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="container">
-        <table class="table-striped stereotax   ">
-            <thead>
-                <tr>
-                    <th colspan="2">Specifications</th>
-                </tr>
-            </thead>
-            <tr>
-                <td>Depth:</td>
-                <td>{{ depth }} mm</td>
-            </tr>
-            <tr>
-                <td>Correction factor:</td>
-                <td>{{ factor }}</td>
-            </tr>
-            <tr>
-                <td>Error due to leveling:</td>
-                <td>{{ error }} mm</td>
-            </tr>
-        </table>
-                    <a href="{{ insert_url }}">
-                        <button class="btn btn-success">insert data</button>
-                    </a>
+            <div class="container">
+                <table class="table-striped stereotax   ">
+                    <thead>
+                    <tr>
+                        <th colspan="2">Specifications</th>
+                    </tr>
+                    </thead>
+                    <tr>
+                        <td>Depth:</td>
+                        <td>{{ depth }} mm</td>
+                    </tr>
+                    <tr>
+                        <td>Correction factor:</td>
+                        <td>{{ factor }}</td>
+                    </tr>
+                    <tr>
+                        <td>Error due to leveling:</td>
+                        <td>{{ error }} mm</td>
+                    </tr>
+                </table>
+            </div>
         </div>
     {% endif %}
 
     <p><br></p>
-    <h4>Enter measurements</h4>
-    <form role="form" method=post action="{{ url_for('.stereotax') }}">
-        {% for fieldname, field in form._fields.items() %}
-            {{ render_field(field) }}
 
-        {% endfor %}
-        <button type="submit" class="btn btn-info" value=Submit name="submit">Submit</button>
-    </form>
+
+
+    <div class="container-fluid">
+        <h4>Measurements</h4>
+        <form role="form" method=post action="{{ url_for('.stereotax') }}">
+            {% for field in form %}
+                {{ render_field(field) }}
+            {% endfor %}
+        <br>
+            <div class="row">
+                <div class="col-xs-2 col-md-2">
+                    <button type="submit" class="btn btn-info" value="compute" name="submit">compute coordinates
+                    </button>
+                </div>
+                {% if computed %}
+                    <div class="col-xs-2 col-md-2">
+                        <button type="submit" class="btn btn-info" value="insert" name="submit">insert into database
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
 {% endblock %}

@@ -76,8 +76,8 @@ def field_factory(attr):
         l = int(attr.type.split('(')[-1][:-1])
         kwargs['validators'].append(len_validator_factory(l))
         return wtf.StringField(**kwargs)
-    # elif attr.type == 'timestamp':
-    #     return wtf.DateTimeField(format='%Y-%m-%d %H:%M', default=datetime.datetime.today(), **kwargs)
+    elif attr.type == 'timestamp':
+        return wtf.DateTimeField(format='%Y-%m-%d %H:%M', default=datetime.datetime.today(), **kwargs)
     else:
         raise NotImplementedError('FieldFactory does not know what to do with %s' % (attr.type))
 

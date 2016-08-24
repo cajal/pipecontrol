@@ -1,4 +1,4 @@
-FROM at-docker:5000/pipeline:latest
+FROM ninai/pipeline:latest
 
 MAINTAINER Fabian Sinz <sinz@bcm.com>
 

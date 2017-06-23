@@ -5,50 +5,29 @@
 {% block head %}
     {{ super() }}
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-{#    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">#}
+    {#    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">#}
     <link href="//netdna.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet"
           type="text/css"/>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='metro-bootstrap/dist/css/metro-bootstrap.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static', filename='metro-bootstrap/dist/css/metro-bootstrap.css') }}">
 {% endblock %}
 
 {% block navbar %}
     <div class="navbar navbar-inverse" role="navigation">
         <div class="container">
             <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="{{ url_for('main.index') }}">Row-Bot</a>
+
+                <a class="navbar-brand" href="{{ url_for('main.index') }}">Pipeline Control</a>
             </div>
             <div class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
-                    <li><a href="{{ url_for('main.index') }}">Home</a></li>
-                    {% if current_user.is_authenticated %}
-                        <li><a href="{{ url_for('main.user', username=current_user.username) }}">Profile</a></li>
-                    {% endif %}
+
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
-                    {% if current_user.is_authenticated %}
-                        <li class="dropdown">
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                                <img src="{{ current_user.gravatar(size=18) }}">
-                                Account <b class="caret"></b>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a href="{{ url_for('auth.change_password') }}">Change Password</a></li>
-                                <li><a href="{{ url_for('auth.change_email_request') }}">Change Email</a></li>
-                                <li><a href="{{ url_for('auth.logout') }}">Log Out</a></li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        <li><a href="{{ url_for('auth.login') }}">Log In</a></li>
-                    {% endif %}
+                    User
                 </ul>
             </div>
         </div>
@@ -70,5 +49,4 @@
 
 {% block scripts %}
     {{ super() }}
-    {{ moment.include_moment() }}
 {% endblock %}

@@ -1,23 +1,9 @@
 from flask import Flask
-from flask.ext.bootstrap import Bootstrap
-from flask.ext.mail import Mail
-from flask.ext.moment import Moment
-from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.login import LoginManager
-from flask.ext.pagedown import PageDown
+from flask_bootstrap import Bootstrap
 from config import config
-from flask.ext.qrcode import QRcode
+from flask_qrcode import QRcode
 
 bootstrap = Bootstrap()
-mail = Mail()
-moment = Moment()
-db = SQLAlchemy()
-pagedown = PageDown()
-
-login_manager = LoginManager()
-login_manager.session_protection = 'strong'
-login_manager.login_view = 'auth.login'
-
 
 def create_app(config_name):
     app = Flask(__name__)
@@ -26,11 +12,6 @@ def create_app(config_name):
     config[config_name].init_app(app)
 
     bootstrap.init_app(app)
-    mail.init_app(app)
-    moment.init_app(app)
-    db.init_app(app)
-    login_manager.init_app(app)
-    pagedown.init_app(app)
 
     if not app.debug and not app.testing and not app.config['SSL_DISABLE']:
         from flask.ext.sslify import SSLify
@@ -39,19 +20,5 @@ def create_app(config_name):
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
-    from .auth import auth as auth_blueprint
-    app.register_blueprint(auth_blueprint, url_prefix='/auth')
-
-    from .djtable import djpage
-    app.register_blueprint(djpage, url_prefix='/dj')
-
-    from .stereotax import stereotax
-    app.register_blueprint(stereotax, url_prefix='/stereotax')
-
-    from .virus import virus
-    app.register_blueprint(virus, url_prefix='/virus')
-
-    from .mouse import mouse
-    app.register_blueprint(mouse, url_prefix='/mouse')
 
     return app

@@ -6,4 +6,12 @@ services:
     ports:
       - "80:5000"
     volumes:
-      - /var/rowbot:/server/rowbot/databases
+      - /var/pipecontrol:/server/pipecontrol/databases
+
+  dev:
+    build:
+      context: .
+    ports:
+      - "80:5000"
+    volumes:
+      - $PWD:/server/pipecontrol

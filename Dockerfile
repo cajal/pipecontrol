@@ -1,28 +1,18 @@
-FROM ninai/pipeline:latest
+FROM datajoint/datajoint
 
 MAINTAINER Fabian Sinz <sinz@bcm.com>
 
 WORKDIR /server/
 
-# get fabee schemata
-RUN \
-  git clone https://github.com/fabiansinz/fabee.git && \
-  git clone https://github.com/fabiansinz/commons.git && \
-  git clone https://github.com/fabiansinz/datajoint-addons.git && \
-  pip install -e commons/python && \
-  pip install -e fabee && \
-  pip install -e datajoint-addons
 
-# Install rowbot
-COPY . /server/rowbot
+# Install pipecontrol
+COPY . /server/pipecontrol
 
-RUN \
-  pip install -r rowbot/requirements.txt
+RUN pip3 install -r pipecontrol/requirements.txt
 
-WORKDIR /server/rowbot
+WORKDIR /server/pipecontrol
 
-ENTRYPOINT gunicorn -b 0.0.0.0:80 manage:app
-
-
+#ENTRYPOINT gunicorn -b 0.0.0.0:80 manage:app
+ENTRYPOINT python3 manage.py runserver
 
   

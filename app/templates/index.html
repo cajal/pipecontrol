@@ -2,77 +2,21 @@
 {% import "bootstrap/wtf.html" as wtf %}
 {% import "_macros.html" as macros %}
 
-{% block title %}Row-Bot{% endblock %}
+{% block title %}Pipeline Control{% endblock %}
+
 
 {% block page_content %}
     <div class="page-header">
-        {% if current_user.is_authenticated %}
-            <h1>Hello {{ current_user.username }}</h1>
+        {% if not user %}
+         Please choose a user from the dropdown menue above.
         {% else %}
-            <h1>Row-Bot</h1>
-            <h4>a tool to view and edit simple DataJoint tables</h4>
+            Hi {{ user }}
         {% endif %}
     </div>
 
 
     <div class="post-tabs">
-        {% if not current_user.is_authenticated %}
-
-            <p>
-                Please <a href="{{ url_for('auth.login') }}">login</a> if you want to see your current posts or <a
-                    href="{{ url_for('auth.register') }}">register</a> as a new user.
-            </p>
-
-        {% else %}
-
-            <div class="col-sm-6 col-md-2">
-                <a href="{{ url_for('.modules') }}" class="fa-links">
-                    <div class="thumbnail tile tile-medium tile-teal">
-                        <br><br>
-                        <h3>Tables</h3>
-                        <i class="fa fa-3x fa-table"> </i>
-                    </div>
-                </a>
-            </div>
-            <div class="col-sm-6 col-md-2">
-                <a href="{{ url_for('stereotax.stereotax') }}" class="fa-links">
-                    <div class="thumbnail tile tile-medium tile-blue">
-                        <br><br>
-                        <h3>Stereotax</h3>
-                        <i class="fa fa-3x fa-blind"></i>
-                    </div>
-                </a>
-            </div>
-            <div class="col-sm-6 col-md-2">
-                <a href="{{ url_for('djtable.enter', relname='commons.mice.Death') }}" class="fa-links">
-                    <div class="thumbnail tile tile-medium tile-asbestos ">
-                        <br><br>
-                        <h3>Dead Mouse</h3>
-                        <i class="fa fa-3x fa-close"></i>
-                    </div>
-                </a>
-            </div>
-            <div class="col-sm-6 col-md-2">
-                <a href="{{ url_for('virus.enter') }}" class="fa-links">
-                    <div class="thumbnail tile tile-medium tile-lime ">
-                        <br><br>
-                        <h3>Virus</h3>
-                        <i class="fa fa-3x fa-flask"></i>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-sm-6 col-md-2">
-                <a href="{{ url_for('mouse.select_mouse') }}" class="fa-links">
-                    <div class="thumbnail tile tile-medium tile-wet-asphalt ">
-                        <br><br>
-                        <h3>Cagecard</h3>
-                        <i class="fa fa-3x fa-credit-card-alt"></i>
-                    </div>
-                </a>
-            </div>
-
-        {% endif %}
+        {{ jobs }}
     </div>
 {% endblock %}
 
@@ -80,4 +24,5 @@
 {% block scripts %}
     {{ super() }}
 {% endblock %}
+
 

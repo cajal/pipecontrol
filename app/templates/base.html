@@ -28,6 +28,17 @@
           href="{{ url_for('static', filename='metro-bootstrap/dist/css/metro-bootstrap.css') }}">
 {% endblock %}
 
+{% block navbar %}
+    <div class="navbar navbar-inverse" role="navigation">
+            <form class="navbar-brand" method=post>
+                <dl>
+                    {{ form.user(onchange="this.form.submit()") | safe }}
+                </dl>
+            </form>
+        <a class="navbar-brand" href="{{ url_for('main.index') }}">Home</a>
+        <a class="navbar-brand" href="{{ url_for('main.jobs') }}">Jobs</a>
+    </div>
+{% endblock %}
 
 {% block content %}
     <div class="container">

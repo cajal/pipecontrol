@@ -5,18 +5,29 @@
 {% block title %}Pipeline Control{% endblock %}
 
 
-{% block page_content %}
-    <div class="page-header">
-        {% if not user %}
-         Please choose a user from the dropdown menue above.
-        {% else %}
-            Hi {{ user }}
-        {% endif %}
+{% block navbar %}
+    <div class="navbar navbar-inverse" role="navigation">
+        <div class="container">
+            <form method=post>
+                <dl>
+                    {{ form.user(onchange="this.form.submit()") | safe }}
+                </dl>
+            </form>
+        </div>
+
     </div>
+{% endblock %}
+
+
+{% block page_content %}
 
 
     <div class="post-tabs">
-        {{ jobs }}
+
+        {% if jobs %}
+            <h2>Jobs table for "reso" schema</h2>
+            {{ jobs }}
+        {% endif %}
     </div>
 {% endblock %}
 

@@ -30,12 +30,13 @@
 
 {% block navbar %}
     <div class="navbar navbar-inverse" role="navigation">
-            <form class="navbar-brand" method=post>
-                <dl>
-                    {{ form.user(onchange="this.form.submit()") | safe }}
-                </dl>
-            </form>
+
+        <a class="navbar-brand" href="{{ url_for('main.user') }}">
+                {{ session['user'] if 'user' in session else 'Please choose user' }}
+        </a>
         <a class="navbar-brand" href="{{ url_for('main.index') }}">Home</a>
+
+        <a class="navbar-brand" href="{{ url_for('main.correction') }}">Correction Channel</a>
         <a class="navbar-brand" href="{{ url_for('main.jobs') }}">Jobs</a>
     </div>
 {% endblock %}

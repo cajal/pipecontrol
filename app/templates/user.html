@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Pipeline Control{% endblock %}
+
+
+{% block page_content %}
+
+
+    <div class="post-tabs">
+        {% from "_macros.html" import render_field %}
+        <form method=post>
+            <dl>
+                {{ render_field(form.user) }}
+            </dl>
+            <input type=submit value=Change>
+        </form>
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+    {{ super() }}
+{% endblock %}
+
+

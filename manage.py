@@ -7,7 +7,7 @@ from config import Config
 
 # --- import extensions and apps
 from app import create_app
-from flask.ext.script import Manager, Server
+from flask_script import Manager, Server
 
 # -- create app and register with extensions
 app = create_app(os.getenv('PIPELINE_CONFIG') or 'default')

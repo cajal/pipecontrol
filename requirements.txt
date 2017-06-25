@@ -4,5 +4,6 @@ Flask-WTF
 Flask-Script
 qrcode
 flask-qrcode
+flask-table
 flask-sslify
 gunicorn

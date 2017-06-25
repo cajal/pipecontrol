@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Pipeline Control{% endblock %}
+
+
+
+
+{% block page_content %}
+    <div class="post-tabs">
+        {% if jobs %}
+            <h2>Jobs table for "reso" schema</h2>
+            {{ jobs }}
+        {% endif %}
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+    {{ super() }}
+{% endblock %}
+
+

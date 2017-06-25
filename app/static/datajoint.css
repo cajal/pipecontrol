@@ -1,0 +1,60 @@
+.Relation {
+    border-collapse: collapse;
+}
+
+.Relation th {
+    background: #A0A0A0;
+    color: #ffffff;
+    padding: 4px;
+    border: #f0e0e0 1px solid;
+    font-weight: normal;
+    font-family: monospace;
+    font-size: 75%;
+}
+
+.Relation td {
+    padding: 4px;
+    border: #f0e0e0 1px solid;
+    font-size: 75%;
+}
+
+.Relation tr:nth-child(odd) {
+    background: #ffffff;
+}
+
+.Relation tr:nth-child(even) {
+    background: #f3f1ff;
+}
+
+/* Tooltip container */
+.djtooltip {
+}
+
+/* Tooltip text */
+.djtooltip .djtooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+    /* Position the tooltip text - see examples below! */
+    position: absolute;
+    z-index: 1;
+}
+
+#primary {
+    font-weight: bold;
+    color: black;
+}
+
+#nonprimary {
+    font-weight: normal;
+    color: white;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.djtooltip:hover .djtooltiptext {
+    visibility: visible;
+}

@@ -69,7 +69,7 @@ def user(username):
 @ping
 @main.route('/jobs', methods=['GET', 'POST'])
 def jobs():
-    jobs = reso.schema.jobs & "user like '{}%%'".format(session['user'])
+    jobs = reso.schema.jobs
 
     return render_template('jobs.html',
                            jobs=Markup(jobs._repr_html_()) if len(jobs) > 0 else None)

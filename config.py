@@ -71,5 +71,5 @@ config = {
     'production': ProductionConfig,
     'heroku': HerokuConfig,
     'unix': UnixConfig,
-    'default': DevelopmentConfig
+    'default': ProductionConfig
 }

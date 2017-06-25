@@ -1,12 +1,10 @@
 version: '2'
 services:
-  rowbot:
+  pipecontrol:
     build:
       context: .
     ports:
       - "80:5000"
-    volumes:
-      - /var/pipecontrol:/server/pipecontrol/databases
 
   dev:
     build:

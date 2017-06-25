@@ -34,6 +34,8 @@ def user(username):
         session['user'] = form.user.data
     elif 'user' in session:
         form.user.data = session['user']
+    else:
+        session['user'] = 'unknown'
 
     if username is not None:
         session['user'] = username

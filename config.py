@@ -26,7 +26,7 @@ class DevelopmentConfig(Config):
 
 
 class ProductionConfig(Config):
-    DEBUG = True
+    DEBUG = False
 
     @classmethod
     def init_app(cls, app):
@@ -71,5 +71,5 @@ config = {
     'production': ProductionConfig,
     'heroku': HerokuConfig,
     'unix': UnixConfig,
-    'default': DevelopmentConfig
+    'default': ProductionConfig
 }

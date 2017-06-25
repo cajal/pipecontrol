@@ -25,3 +25,10 @@ class CorrectionChannel(Table):
     slice = Col('Slice')
     channel = ChannelCol('Channel')
     select = SelectCol('Insert')
+
+class ProgressTable(Table):
+    classes = ['Relation']
+    relation = Col('Relation')
+    finished = Col('Finished')
+    total = Col('Total')
+    percent = Col('Percentage')

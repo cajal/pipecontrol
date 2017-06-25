@@ -11,11 +11,30 @@ class ChannelCol(Col):
         ret += "</select>"
         return ret
 
-class SelectCol(Col):
+class ChoiceCol(Col):
     def td_format(self, content):
-        return '''<input type="checkbox" name="{}" value='1' checked="checked">'''.format(content)
+        name, choices, default = content
+        ret = "<select name='{}'>".format(name)
+        for choice in choices:
+            if not choice == default:
+                ret += "<option value='{choice}'>{choice}</option>".format(choice=choice)
+            else:
+                ret += "<option selected='selected' value='{choice}'>{choice}</option>".format(choice=choice)
+        ret += "</select>"
+        return ret
 
-# Declare your table
+class SelectCol(Col):
+
+    def __init__(self, *args, checked=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.checked = checked
+
+    def td_format(self, content):
+        if self.checked:
+            return '''<input type="checkbox" name="{}" value='1' checked="checked">'''.format(content)
+        else:
+            return '''<input type="checkbox" name="{}" value='1'>'''.format(content)
+
 class CorrectionChannel(Table):
     classes = ['Relation']
     animal_id = Col('animal ID')
@@ -32,3 +51,15 @@ class ProgressTable(Table):
     finished = Col('Finished')
     total = Col('Total')
     percent = Col('Percentage')
+
+class SegmentationTask(Table):
+    classes = ['Relation']
+    animal_id = Col('animal ID')
+    session = Col('Session')
+    scan_idx = Col('Scan')
+    reso_version = Col('Reso Version')
+    slice = Col('Slice')
+    channel = Col('Channel')
+    compartment = ChoiceCol('Compartment')
+    select = SelectCol('Insert', checked=False)
+    exclude = SelectCol('Exclude', checked=False)

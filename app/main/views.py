@@ -8,7 +8,7 @@ from .decorators import ping
 from .tables import CorrectionChannel, ProgressTable, SegmentationTask
 from .forms import UserForm, AutoProcessing
 
-from ..schemata import reso, experiment, shared
+from ..schemata import reso, experiment, shared, pupil
 from . import main
 
 
@@ -66,13 +66,15 @@ def user(username):
     return render_template('user.html', form=form)
 
 
+
 @ping
 @main.route('/jobs', methods=['GET', 'POST'])
 def jobs():
-    jobs = reso.schema.jobs
-
-    return render_template('jobs.html',
-                           jobs=Markup(jobs._repr_html_()) if len(jobs) > 0 else None)
+    jobs = dict(
+        reso=Markup(reso.schema.jobs._repr_html_()),
+        pupil=Markup(pupil.schema.jobs._repr_html_())
+    )
+    return render_template('jobs.html', jobs=jobs)
 
 
 @ping
@@ -138,9 +140,7 @@ def segmentation():
            - reso.SegmentationTask() - reso.DoNotSegment() \
            & (experiment.Session() & "username='{}'".format(session['user']))
     pk = jobs.heading.primary_key
-    print(pk, file=sys.stderr)
     djkeys = jobs.fetch(dj.key)
-    print(djkeys, file=sys.stderr)
 
     if request.method == 'POST':
         skeys = [_encode(k, pk) for k in djkeys]

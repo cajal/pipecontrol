@@ -9,10 +9,10 @@
 
 {% block page_content %}
     <div class="post-tabs">
-        {% if jobs %}
-            <h2>Jobs table for "reso" schema</h2>
-            {{ jobs }}
-        {% endif %}
+        {% for schema, jobtable in jobs.items() %}
+            <h3>{{ schema }}</h3>
+            {{ jobtable }}
+        {% endfor %}
     </div>
 {% endblock %}
 

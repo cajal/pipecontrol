@@ -18,6 +18,7 @@ def with_sudo():
     fab with_sudo command
     """
     env.sudo_password = getpass('Please enter sudo password: ')
+    env.password = env.sudo_password 
 
 def down():
     with cd(env.control_dir):

@@ -7,7 +7,7 @@ from getpass import getpass
 from fabric.utils import puts
 
 from fabric.state import env
-env.control_dir = 'pipeline'
+env.control_dir = 'pipecontrol'
 
 def with_sudo():
     """
@@ -18,7 +18,7 @@ def with_sudo():
     fab with_sudo command
     """
     env.sudo_password = getpass('Please enter sudo password: ')
-    env.password = env.sudo_password 
+    env.password = env.sudo_password
 
 def down():
     with cd(env.control_dir):
@@ -55,9 +55,14 @@ def start():
     with cd(env.control_dir):
         sudo('docker-compose up -d pipecontrol')
 
+def sync_files():
+    local('scp dj_local_conf.json ' + env.host_string + ':' + env.control_dir)
+
 
 def deploy():
-    down()
-    pull()
-    build()
-    start()
+    with settings(warn_only=True):
+        down()
+        pull()
+        sync_files()
+        build()
+        start()

@@ -7,3 +7,4 @@ def ping(f):
         return f(*args, **kwargs)
     return ret
 
+

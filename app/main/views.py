@@ -13,17 +13,12 @@ from . import main
 
 
 @ping
-@main.route('/', methods=['GET', 'POST'])
+@main.route('/')
 def index():
-    form = UserForm(request.form)
-    if request.method == 'POST' and form.validate():
-        flash('User switched to {}'.format(form.user.data))
-        session['user'] = form.user.data
-    else:
-        form.user.data = session['user']
+    if not 'user' in session:
+        return redirect(url_for('.user'))
 
-    return render_template('index.html',
-                           form=form)
+    return render_template('index.html')
 
 
 @ping

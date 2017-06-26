@@ -1,15 +1,13 @@
 version: '2'
 services:
   pipecontrol:
-    build:
-      context: .
+    build: .
     ports:
       - "80:5000"
 
-  dev:
-    build:
-      context: .
+  development:
+    build: .
     ports:
       - "80:5000"
     volumes:
-      - $PWD:/server/pipecontrol
+      - .:/server/pipecontrol

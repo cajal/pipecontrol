@@ -1,14 +1,16 @@
 import sys
+from collections import OrderedDict
+
 from flask import render_template, redirect, url_for, abort, flash, request, \
     current_app, make_response, abort, session
 from flask import Markup
 import datajoint as dj
 
 from .decorators import ping
-from .tables import CorrectionChannel, ProgressTable, SegmentationTask
+from .tables import CorrectionChannel, ProgressTable, SegmentationTask, JobTable
 from .forms import UserForm, AutoProcessing
 
-from ..schemata import reso, experiment, shared, pupil
+from ..schemata import reso, experiment, shared, pupil, behavior
 from . import main
 
 
@@ -61,15 +63,39 @@ def user(username):
     return render_template('user.html', form=form)
 
 
-
 @ping
 @main.route('/jobs', methods=['GET', 'POST'])
 def jobs():
-    jobs = dict(
-        reso=Markup(reso.schema.jobs._repr_html_()),
-        pupil=Markup(pupil.schema.jobs._repr_html_())
+    schemas = OrderedDict(
+        reso=reso,
+        behavior=behavior,
+        pupil=pupil
     )
-    return render_template('jobs.html', jobs=jobs)
+
+    if request.method == 'POST':
+        to_delete = [dict(key_hash=e) for e in request.form.getlist('delete_item')]
+        schema = request.form['schema']
+        if schemas[schema].schema.jobs & to_delete & 'status="reserved"':
+            flash('Though shalt not delete reserved jobs')
+        rel = schemas[schema].schema.jobs & to_delete & 'status="error"'
+        n = len(rel)
+        rel.delete()
+        flash('{} entries deleted.'.format(n))
+        return redirect(url_for('.jobs'))
+
+    kwargs= {}
+    if request.method == 'GET' and 'sort' in request.args:
+            kwargs = dict(order_by='{sort} {direction}'.format(**request.args))
+
+    all_jobs = {}
+    for key, schema in schemas.items():
+        jobs = schema.schema.jobs.proj('table_name', 'status', 'key_hash',
+                                       'error_message', 'key','timestamp').fetch(as_dict=True, **kwargs)
+        for r in jobs:
+            r['delete'] = ('delete_item', r['key_hash'])
+        jobs = JobTable(jobs, target='main.jobs', exlude=['key','delete'])
+        all_jobs[key] = jobs
+    return render_template('jobs.html', jobs=all_jobs)
 
 
 @ping
@@ -143,7 +169,7 @@ def segmentation():
                      compartment=request.form[compartment_prefix + s],
                      segmentation_method=2)
                 for s in skeys if request.form.get(select_prefix + s) \
-                    and not request.form.get(exclude_prefix + s)]
+                and not request.form.get(exclude_prefix + s)]
         nkeys = [_decode(s, pk) for s in skeys if request.form.get(exclude_prefix + s)]
 
         reso.SegmentationTask().insert(keys, ignore_extra_fields=True)

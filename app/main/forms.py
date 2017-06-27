@@ -12,3 +12,9 @@ class AutoProcessing(Form):
     animal_id = IntegerField(u"Animal ID", [validators.DataRequired()])
     session = IntegerField(u"Session", [validators.DataRequired()])
     scan_idx = IntegerField(u"Scan IDX", [validators.DataRequired()])
+
+class SummaryForm(Form):
+    animal_id = IntegerField(u"Animal ID", [validators.DataRequired()])
+    session = IntegerField(u"Session", [validators.DataRequired()])
+    scan_idx = IntegerField(u"Scan IDX", [validators.DataRequired()])
+    slice = IntegerField(u"Slice", [validators.DataRequired()])

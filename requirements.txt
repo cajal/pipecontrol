@@ -7,3 +7,4 @@ flask-qrcode
 flask-table
 flask-sslify
 gunicorn
+mpld3

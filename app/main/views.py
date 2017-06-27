@@ -8,10 +8,18 @@ import datajoint as dj
 
 from .decorators import ping
 from .tables import CorrectionChannel, ProgressTable, SegmentationTask, JobTable
-from .forms import UserForm, AutoProcessing
+from .forms import UserForm, AutoProcessing, SummaryForm
 
 from ..schemata import reso, experiment, shared, pupil, behavior
 from . import main
+
+import numpy as np
+
+# -- bokeh
+import matplotlib
+
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt, mpld3
 
 
 @ping
@@ -83,17 +91,17 @@ def jobs():
         flash('{} entries deleted.'.format(n))
         return redirect(url_for('.jobs'))
 
-    kwargs= {}
+    kwargs = {}
     if request.method == 'GET' and 'sort' in request.args:
-            kwargs = dict(order_by='{sort} {direction}'.format(**request.args))
+        kwargs = dict(order_by='{sort} {direction}'.format(**request.args))
 
     all_jobs = {}
     for key, schema in schemas.items():
         jobs = schema.schema.jobs.proj('table_name', 'status', 'key_hash',
-                                       'error_message', 'key','timestamp').fetch(as_dict=True, **kwargs)
+                                       'error_message', 'key', 'timestamp').fetch(as_dict=True, **kwargs)
         for r in jobs:
             r['delete'] = ('delete_item', r['key_hash'])
-        jobs = JobTable(jobs, target='main.jobs', exlude=['key','delete'])
+        jobs = JobTable(jobs, target='main.jobs', exlude=['key', 'delete'])
         all_jobs[key] = jobs
     return render_template('jobs.html', jobs=all_jobs)
 
@@ -188,3 +196,42 @@ def segmentation():
     table = SegmentationTask(keys)
     return render_template('segmentation.html',
                            table=table)
+
+
+@ping
+@main.route('/summary', methods=['GET', 'POST'])
+def summary():
+    form = SummaryForm(request.form)
+    figure = None
+    if request.method == 'POST' and form.validate():
+        key = dict(
+            animal_id=form['animal_id'].data,
+            session=form['session'].data,
+            scan_idx=form['scan_idx'].data,
+            slice=form['slice'].data,
+        )
+        if reso.SummaryImages() & key:
+            # dict(animal_id=8623, slice=1, session=1, scan_idx=15)
+            avg, corr, chan = (reso.SummaryImages() & key).fetch(
+                'average', 'correlation', 'channel')
+
+            Ic = np.zeros(corr[0].shape + (3,))
+            Ia = np.zeros_like(Ic)
+
+            ch2ch = {1: 1, 2: 0}
+            for imgc, imga, c in zip(corr, avg, chan):
+                Ic[..., ch2ch[int(c)]] = imgc.squeeze()
+                Ia[..., ch2ch[int(c)]] = imga.squeeze()
+            Ic = (Ic - Ic.min()) / (Ic.max() - Ic.min())
+            Ia = (Ia - Ia.min()) / (Ia.max() - Ia.min())
+            fig, ax = plt.subplots(1, 2, figsize=(12, 10))
+            ax[0].imshow(Ic, origin='lower', interpolation='nearest')
+            ax[0].set_title('Correlation Image')
+            ax[1].imshow(Ia, origin='lower', interpolation='nearest')
+            ax[1].set_title('Average Image')
+            [a.axis('off') for a in ax.ravel()]
+            figure = mpld3.fig_to_html(fig)
+        else:
+            flash('Could not find figure for key {}'.format(str(key)))
+
+    return render_template('summary.html', figure=figure, form=form)

@@ -10,7 +10,7 @@ from .decorators import ping
 from .tables import CorrectionChannel, ProgressTable, SegmentationTask, JobTable, SummaryTable
 from .forms import UserForm, AutoProcessing, SummaryForm, RestrictionForm
 
-from ..schemata import reso, experiment, shared, pupil, behavior
+from ..schemata import reso, experiment, shared, pupil, behavior, meso
 from . import main
 
 import numpy as np
@@ -77,7 +77,8 @@ def jobs():
     schemas = OrderedDict(
         reso=reso,
         behavior=behavior,
-        pupil=pupil
+        pupil=pupil,
+        meso=meso
     )
 
     if request.method == 'POST':
@@ -109,11 +110,11 @@ def jobs():
 @ping
 @main.route('/progress', methods=['GET', 'POST'])
 def progress():
-    tmp = {e: getattr(reso, e)().progress(experiment.Session() & 'username="{}"'.format(session['user'])) \
+    tmp = {e: getattr(reso, e)().progress(experiment.Session() & 'username="{}"'.format(session['user']), display=False) \
            for e in dir(reso) if not e.startswith('_') \
            and not e == 'schema' \
            and issubclass(getattr(reso, e), dj.Computed)}
-    progress = [dict(relation=e, finished=v[0], total=v[1],
+    progress = [dict(relation=e, remaining=v[0], total=v[1],
                      percent='{:.1f}%'.format(v[0] / v[1] * 100 if v[1] > 0 else 100, 1))
                 for e, v in tmp.items()]
     table = ProgressTable(progress)
@@ -133,7 +134,9 @@ def _decode(s, primary_key, prefix=''):
 @main.route('/correction', methods=['GET', 'POST'])
 def correction():
     channel_prefix = 'channel'
+    field_prefix = 'field'
     select_prefix = 'select'
+    tables = {}
 
     scaninfo = (reso.ScanInfo().proj('nslices', 'nchannels') * shared.Slice() & 'slice <= nslices') \
                - reso.CorrectionChannel() \
@@ -153,8 +156,8 @@ def correction():
                  channel=(c, _encode(k, pk, channel_prefix)),
                  select=_encode(k, pk, select_prefix)) for k, c in zip(djkeys, channels)]
     table = CorrectionChannel(keys)
-    return render_template('correction.html',
-                           table=table)
+    tables['reso'] = table
+    return render_template('correction.html', tables = tables)
 
 @ping
 @main.route('/segmentation', methods=['GET', 'POST'])

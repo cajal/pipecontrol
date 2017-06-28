@@ -71,7 +71,7 @@ class CorrectionChannel(Table):
 class ProgressTable(Table):
     classes = ['Relation']
     relation = Col('Relation')
-    finished = Col('Finished')
+    remaining = Col('Remaining')
     total = Col('Total')
     percent = Col('Percentage')
 

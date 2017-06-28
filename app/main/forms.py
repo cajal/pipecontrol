@@ -18,3 +18,6 @@ class SummaryForm(Form):
     session = IntegerField(u"Session", [validators.DataRequired()])
     scan_idx = IntegerField(u"Scan IDX", [validators.DataRequired()])
     slice = IntegerField(u"Slice", [validators.DataRequired()])
+
+class RestrictionForm(Form):
+    restriction = StringField(u"Restriction", [validators.DataRequired()])

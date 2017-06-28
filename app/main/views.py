@@ -7,20 +7,20 @@ from flask import Markup
 import datajoint as dj
 
 from .decorators import ping
-from .tables import CorrectionChannel, ProgressTable, SegmentationTask, JobTable
-from .forms import UserForm, AutoProcessing, SummaryForm
+from .tables import CorrectionChannel, ProgressTable, SegmentationTask, JobTable, SummaryTable
+from .forms import UserForm, AutoProcessing, SummaryForm, RestrictionForm
 
 from ..schemata import reso, experiment, shared, pupil, behavior
 from . import main
 
 import numpy as np
 
+
 # -- bokeh
 import matplotlib
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt, mpld3
-
 
 @ping
 @main.route('/')
@@ -156,7 +156,6 @@ def correction():
     return render_template('correction.html',
                            table=table)
 
-
 @ping
 @main.route('/segmentation', methods=['GET', 'POST'])
 def segmentation():
@@ -201,37 +200,87 @@ def segmentation():
 @ping
 @main.route('/summary', methods=['GET', 'POST'])
 def summary():
-    form = SummaryForm(request.form)
-    figure = None
+    form = RestrictionForm(request.form)
+    restriction = None
+    # figure = None
     if request.method == 'POST' and form.validate():
-        key = dict(
-            animal_id=form['animal_id'].data,
-            session=form['session'].data,
-            scan_idx=form['scan_idx'].data,
-            slice=form['slice'].data,
-        )
-        if reso.SummaryImages() & key:
-            # dict(animal_id=8623, slice=1, session=1, scan_idx=15)
-            avg, corr, chan = (reso.SummaryImages() & key).fetch(
-                'average', 'correlation', 'channel')
+        restriction = form['restriction'].data
 
-            Ic = np.zeros(corr[0].shape + (3,))
-            Ia = np.zeros_like(Ic)
+    if restriction is not None:
+        content = (reso.SummaryImages() & restriction).proj().fetch(as_dict=True, limit=40)
+    else:
+        content = reso.SummaryImages().proj().fetch(as_dict=True, limit=40)
 
-            ch2ch = {1: 1, 2: 0}
-            for imgc, imga, c in zip(corr, avg, chan):
-                Ic[..., ch2ch[int(c)]] = imgc.squeeze()
-                Ia[..., ch2ch[int(c)]] = imga.squeeze()
-            Ic = (Ic - Ic.min()) / (Ic.max() - Ic.min())
-            Ia = (Ia - Ia.min()) / (Ia.max() - Ia.min())
-            fig, ax = plt.subplots(1, 2, figsize=(12, 10))
-            ax[0].imshow(Ic, origin='lower', interpolation='nearest')
-            ax[0].set_title('Correlation Image')
-            ax[1].imshow(Ia, origin='lower', interpolation='nearest')
-            ax[1].set_title('Average Image')
-            [a.axis('off') for a in ax.ravel()]
-            figure = mpld3.fig_to_html(fig)
+    for c in content:
+        c['correlation'] = url_for('main.summary_image', which='correlation', **c)
+        c['average'] = url_for('main.summary_image', which='average', **c)
+        if reso.Activity() & c:
+            c['trace'] = url_for('main.traces', **(reso.Activity() & c & dict(segmentation_method=2, spike_method=5)).fetch1(dj.key))
         else:
-            flash('Could not find figure for key {}'.format(str(key)))
+            c['trace'] = None
 
-    return render_template('summary.html', figure=figure, form=form)
+
+    table = SummaryTable(content)
+
+    return render_template('summary.html', form=form, table=table)
+
+
+@ping
+@main.route('/image/<animal_id>/<session>/<scan_idx>/<slice>/<reso_version>/<which>')
+def summary_image(animal_id, session, scan_idx, slice, reso_version, which):
+    key = dict(
+        animal_id=animal_id, slice=slice, session=session, scan_idx=scan_idx, reso_version=reso_version
+    )
+    figure = None
+    if reso.SummaryImages() & key:
+        corr, chan = (reso.SummaryImages() & key).fetch(which, 'channel')
+
+        I = np.zeros(corr[0].shape + (3,))
+
+        ch2ch = {1: 1, 2: 0}
+        for img, c in zip(corr, chan):
+            I[..., ch2ch[int(c)]] = img.squeeze()
+        I = (I - I.min()) / (I.max() - I.min())
+        if which == 'average':
+            I = np.log(255 * I + 1)
+        fig, ax = plt.subplots(figsize=(12, 12))
+        ax.imshow(I, origin='lower', interpolation='bicubic')
+        ax.set_title('{} Image'.format(which))
+        ax.axis('off')
+        ax.set_aspect(1)
+        figure = mpld3.fig_to_html(fig)
+    else:
+        flash('Could not find figure for key {}'.format(str(key)))
+    return render_template('figure.html', figure=figure)
+
+
+@ping
+@main.route(
+    '/traces/<animal_id>/<session>/<scan_idx>/<slice>/<reso_version>/<channel>/<segmentation_method>/<spike_method>')
+def traces(animal_id, session, scan_idx, slice, reso_version, channel, segmentation_method, spike_method):
+    key = dict(
+        animal_id=animal_id, slice=slice, session=session, scan_idx=scan_idx, reso_version=reso_version,
+        channel=channel, segmentation_method=segmentation_method, spike_method=spike_method
+    )
+    figure = None
+    if reso.Activity() & key:
+        traces = (reso.Activity.Trace() & key ).fetch('trace', limit=20)
+        traces = np.vstack(traces)
+        f = traces.var(ddof=1, axis=0, keepdims=True) / traces.mean(axis=0, keepdims=True)
+        traces /= f
+        fps = (reso.ScanInfo() & key).fetch1('fps')
+        t = np.arange(traces.shape[1])/fps
+        w = int(30 * fps)
+        b = traces.shape[1]//2
+        yr = np.max(traces.max(axis=1) -  traces.min(axis=1))
+
+        fig, ax = plt.subplots(figsize=(12, 12))
+        for i, tr in enumerate(traces):
+            ax.plot(t[b-w:b+w], i*yr + tr[b-w:b+w], '-k')
+        ax.set_xlabel('time [s]')
+        ax.set_yticks([])
+        ax.axis('tight')
+        figure = mpld3.fig_to_html(fig)
+    else:
+        flash('Could not find activity for key {}'.format(str(key)))
+    return render_template('figure.html', figure=figure)

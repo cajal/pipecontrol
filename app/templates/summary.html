@@ -15,18 +15,28 @@
 
 {% block page_content %}
     <div class="post-tabs">
-        {% if figure %}
-        {{ figure|safe }}
-        {% endif %}
+    <h3>Showing 40 entries</h3>
+    Use restrictions to narrow down your search.
+
+    <p><p>
         <form method=post>
             <dl>
-                {{ render_field(form.animal_id) }}
-                {{ render_field(form.session) }}
-                {{ render_field(form.scan_idx) }}
-                {{ render_field(form.slice) }}
+                <dt>{{ form.restriction.label }}
+                <dd>{{ form.restriction(style="width: 700px;")|safe }}
+                    {% if form.restriction.errors %}
+                        <ul class=errors>
+                            {% for error in form.restriction.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </dd>
             </dl>
             <p><input type=submit value=Submit>
         </form>
+    <p>
+
+    {{ table }}
     </div>
 {% endblock %}
 

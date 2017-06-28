@@ -88,6 +88,32 @@ class SegmentationTask(Table):
     select = SelectCol('Insert', checked=False)
     exclude = SelectCol('Exclude', checked=False)
 
+class LinkCol(Col):
+
+    def __init__(self, *args, label='link', **kwargs):
+        super().__init__(*args, **kwargs)
+        self.label = label
+
+    def td_format(self, content):
+        if content is not None:
+            return '''<a href="{}">{}</a>'''.format(content, self.label)
+        else:
+            return ''
+
+class SummaryTable(Table):
+    classes = ['Relation']
+
+    animal_id = Col('animal_id')
+    session = Col('session')
+    scan_idx = Col('scanidx')
+    reso_version = Col('reso_version')
+    slice = Col('slice')
+    correlation = LinkCol('Correlation Image')
+    average = LinkCol('Log Average Image')
+    trace = LinkCol('Spike Trace', label='20 trace @ one min')
+
+
+
 
 class JobTable(Table):
 

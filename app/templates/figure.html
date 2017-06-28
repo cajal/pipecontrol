@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='datajoint.css') }}">
+{% endblock %}
+
+{% block title %}Pipeline Control{% endblock %}
+
+
+
+
+{% block page_content %}
+    <div class="post-tabs">
+        {% if figure %}
+            {{ figure|safe }}
+        {% endif %}
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+    {{ super() }}
+{% endblock %}
+
+

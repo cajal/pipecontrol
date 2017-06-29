@@ -165,7 +165,7 @@ def correction():
         selected  = request.form.getlist('selected')
         keys = [dict(_decode(s, pk[name]), channel=int(request.form[channel_prefix + s])) for s in skeys if s in selected]
         schema.CorrectionChannel().insert(keys, ignore_extra_fields=True)
-        flash('{} keys inserted.'.format(len(keys)))
+        flash('{} keys inserted into {}.CorrectionChannel.'.format(len(keys), name))
         return redirect(url_for('.correction')) # redirect to reload the tables
 
     return render_template('correction.html', tables = tables)

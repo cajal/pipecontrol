@@ -7,8 +7,8 @@ from flask import Markup
 import datajoint as dj
 
 from .decorators import ping
-from .tables import ResoCorrectionTable, ProgressTable, SegmentationTask, JobTable, SummaryTable, ChannelCol, \
-    MesoCorrectionTable
+from .tables import ResoCorrectionTable, ProgressTable, JobTable, SummaryTable, ChannelCol, \
+    MesoCorrectionTable, MesoSegmentationTask, ResoSegmentationTask
 from .forms import UserForm, AutoProcessing, SummaryForm, RestrictionForm
 
 from ..schemata import reso, experiment, shared, pupil, behavior, meso
@@ -176,39 +176,53 @@ def segmentation():
     compartment_prefix = 'compartment'
     select_prefix = 'select'
     exclude_prefix = 'exclude'
+    tables = {}
+    djkeys, pk = {}, {}
 
-    info = (reso.MotionCorrection() * reso.ScanInfo()).proj('nchannels')
-    jobs = (info * shared.Channel() & 'channel <= nchannels') \
-           - reso.SegmentationTask() - reso.DoNotSegment() \
-           & (experiment.Session() & "username='{}'".format(session['user']))
-    pk = jobs.heading.primary_key
-    djkeys = jobs.fetch(dj.key)
+    schemata = OrderedDict([('reso',reso), ('meso',meso)])
+    compartments = experiment.Compartment().fetch('compartment')
+    for name, schema in schemata.items():
+        info = (schema.MotionCorrection() * schema.ScanInfo()).proj('nchannels')
+        jobs = (info * shared.Channel() & 'channel <= nchannels') \
+               - schema.SegmentationTask() - schema.DoNotSegment() \
+               & (experiment.Session() & "username='{}'".format(session['user']))
+        pk[name] = jobs.heading.primary_key
+        djkeys[name] = jobs.fetch(dj.key)
+
+        keys = [dict(k,
+                     compartment=(_encode(k, pk[name], compartment_prefix), compartments, 'soma'),
+                     select=('selected', _encode(k, pk[name])),
+                     exclude=('excluded', _encode(k, pk[name])),
+                     ) for k in djkeys[name]]
+        if name == 'reso':
+            table = ResoSegmentationTask(keys)
+        else:
+            table = MesoSegmentationTask(keys)
+        tables[name] = table
+
 
     if request.method == 'POST':
-        skeys = [_encode(k, pk) for k in djkeys]
-        keys = [dict(_decode(s, pk),
+        name = request.form['schema']
+        schema = schemata[name]
+        skeys = [_encode(k, pk[name]) for k in djkeys[name]]
+        selected = request.form.getlist('selected')
+        excluded = request.form.getlist('excluded')
+        keys = [dict(_decode(s, pk[name]),
                      compartment=request.form[compartment_prefix + s],
                      segmentation_method=2)
-                for s in skeys if request.form.get(select_prefix + s) \
-                and not request.form.get(exclude_prefix + s)]
-        nkeys = [_decode(s, pk) for s in skeys if request.form.get(exclude_prefix + s)]
+                for s in skeys if s in selected and not s in excluded]
+        nkeys = [_decode(s, pk[name]) for s in excluded]
 
-        reso.SegmentationTask().insert(keys, ignore_extra_fields=True)
-        flash('{} keys inserted into SegmentationTask.'.format(len(keys)))
+        schema.SegmentationTask().insert(keys, ignore_extra_fields=True)
+        flash('{} keys inserted into {}.SegmentationTask.'.format(len(keys), name))
 
-        reso.DoNotSegment().insert(nkeys, ignore_extra_fields=True)
-        flash('{} excluded.'.format(len(nkeys)))
+        schema.DoNotSegment().insert(nkeys, ignore_extra_fields=True)
+        flash('{} excluded in {}.'.format(len(nkeys), schema))
         return redirect(url_for('.segmentation'))
 
-    compartments = experiment.Compartment().fetch('compartment')
-    keys = [dict(k,
-                 compartment=(_encode(k, pk, compartment_prefix), compartments, 'soma'),
-                 select=_encode(k, pk, select_prefix),
-                 exclude=_encode(k, pk, exclude_prefix)
-                 ) for k in djkeys]
-    table = SegmentationTask(keys)
+
     return render_template('segmentation.html',
-                           table=table)
+                           tables=tables)
 
 
 @ping

@@ -87,7 +87,7 @@ class ProgressTable(Table):
     percent = Col('Percentage')
 
 
-class SegmentationTask(Table):
+class ResoSegmentationTask(Table):
     classes = ['Relation']
     animal_id = Col('animal ID')
     session = Col('Session')
@@ -96,8 +96,24 @@ class SegmentationTask(Table):
     slice = Col('Slice')
     channel = Col('Channel')
     compartment = ChoiceCol('Compartment')
-    select = SelectCol('Insert', checked=False)
-    exclude = SelectCol('Exclude', checked=False)
+
+    select = CheckBoxCol('Insert', checked=False)
+    exclude = CheckBoxCol('Exclude', checked=False)
+
+class MesoSegmentationTask(Table):
+    classes = ['Relation']
+
+    animal_id = Col('animal ID')
+    session = Col('Session')
+    scan_idx = Col('Scan')
+    reso_version = Col('Reso Version')
+    field = Col('Field')
+    channel = Col('Channel')
+    compartment = ChoiceCol('Compartment')
+
+    select = CheckBoxCol('Insert', checked=False)
+    exclude = CheckBoxCol('Exclude', checked=False)
+
 
 class LinkCol(Col):
 

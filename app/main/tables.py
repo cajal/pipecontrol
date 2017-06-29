@@ -154,8 +154,10 @@ class JobTable(Table):
 
     table_name = Col('table name')
     status = Col('Status')
-    error_message = Col('Error Message')
     key = KeyColumn('Key')
+    user = Col('User')
+    connection_id = Col('Connection ID')
+    error_message = Col('Error Message')
     timestamp = DatetimeCol('Timestamp')
 
     delete = CheckBoxCol('Delete', checked=False)

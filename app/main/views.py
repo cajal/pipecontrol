@@ -16,12 +16,12 @@ from . import main
 
 import numpy as np
 
-
 # -- bokeh
 import matplotlib
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt, mpld3
+
 
 @ping
 @main.route('/')
@@ -100,7 +100,8 @@ def jobs():
     all_jobs = {}
     for key, schema in schemas.items():
         jobs = schema.schema.jobs.proj('table_name', 'status', 'key_hash',
-                                       'error_message', 'key', 'timestamp').fetch(as_dict=True, **kwargs)
+                                       'error_message', 'connection_id', 'user',
+                                       'key', 'timestamp').fetch(as_dict=True, **kwargs)
         for r in jobs:
             r['delete'] = ('delete_item', r['key_hash'])
         jobs = JobTable(jobs, target='main.jobs', exlude=['key', 'delete'])
@@ -137,9 +138,9 @@ def correction():
     channel_prefix = 'channel'
     tables = {}
     djkeys, pk = {}, {}
-    schemata = OrderedDict([('reso',reso), ('meso',meso)])
+    schemata = OrderedDict([('reso', reso), ('meso', meso)])
 
-    for (name, schema), (field, Field) in zip(schemata.items(), zip(['slice','field'],[shared.Slice, shared.Field])):
+    for (name, schema), (field, Field) in zip(schemata.items(), zip(['slice', 'field'], [shared.Slice, shared.Field])):
         nfield = 'n{}s'.format(field)
         # -- encode reso table
         scaninfo = (schema.ScanInfo().proj(nfield, 'nchannels') * Field() & '{} <= {}'.format(field, nfield)) \
@@ -162,13 +163,15 @@ def correction():
         schema = schemata[name]
         skeys = [_encode(k, pk[name]) for k in djkeys[name]]
 
-        selected  = request.form.getlist('selected')
-        keys = [dict(_decode(s, pk[name]), channel=int(request.form[channel_prefix + s])) for s in skeys if s in selected]
+        selected = request.form.getlist('selected')
+        keys = [dict(_decode(s, pk[name]), channel=int(request.form[channel_prefix + s])) for s in skeys if
+                s in selected]
         schema.CorrectionChannel().insert(keys, ignore_extra_fields=True)
         flash('{} keys inserted into {}.CorrectionChannel.'.format(len(keys), name))
-        return redirect(url_for('.correction')) # redirect to reload the tables
+        return redirect(url_for('.correction'))  # redirect to reload the tables
 
-    return render_template('correction.html', tables = tables)
+    return render_template('correction.html', tables=tables)
+
 
 @ping
 @main.route('/segmentation', methods=['GET', 'POST'])
@@ -179,7 +182,7 @@ def segmentation():
     tables = {}
     djkeys, pk = {}, {}
 
-    schemata = OrderedDict([('reso',reso), ('meso',meso)])
+    schemata = OrderedDict([('reso', reso), ('meso', meso)])
     compartments = experiment.Compartment().fetch('compartment')
     for name, schema in schemata.items():
         info = (schema.MotionCorrection() * schema.ScanInfo()).proj('nchannels')
@@ -200,7 +203,6 @@ def segmentation():
             table = MesoSegmentationTask(keys)
         tables[name] = table
 
-
     if request.method == 'POST':
         name = request.form['schema']
         schema = schemata[name]
@@ -219,7 +221,6 @@ def segmentation():
         schema.DoNotSegment().insert(nkeys, ignore_extra_fields=True)
         flash('{} excluded in {}.'.format(len(nkeys), schema))
         return redirect(url_for('.segmentation'))
-
 
     return render_template('segmentation.html',
                            tables=tables)
@@ -243,10 +244,10 @@ def summary():
         c['correlation'] = url_for('main.summary_image', which='correlation', **c)
         c['average'] = url_for('main.summary_image', which='average', **c)
         if reso.Activity() & c:
-            c['trace'] = url_for('main.traces', **(reso.Activity() & c & dict(segmentation_method=2, spike_method=5)).fetch1(dj.key))
+            c['trace'] = url_for('main.traces',
+                                 **(reso.Activity() & c & dict(segmentation_method=2, spike_method=5)).fetch1(dj.key))
         else:
             c['trace'] = None
-
 
     table = SummaryTable(content)
 
@@ -292,19 +293,19 @@ def traces(animal_id, session, scan_idx, slice, reso_version, channel, segmentat
     )
     figure = None
     if reso.Activity() & key:
-        traces = (reso.Activity.Trace() & key ).fetch('trace', limit=20)
+        traces = (reso.Activity.Trace() & key).fetch('trace', limit=20)
         traces = np.vstack(traces)
         f = traces.var(ddof=1, axis=0, keepdims=True) / traces.mean(axis=0, keepdims=True)
         traces /= f
         fps = (reso.ScanInfo() & key).fetch1('fps')
-        t = np.arange(traces.shape[1])/fps
+        t = np.arange(traces.shape[1]) / fps
         w = int(30 * fps)
-        b = traces.shape[1]//2
-        yr = np.max(traces.max(axis=1) -  traces.min(axis=1))
+        b = traces.shape[1] // 2
+        yr = np.max(traces.max(axis=1) - traces.min(axis=1))
 
         fig, ax = plt.subplots(figsize=(12, 12))
         for i, tr in enumerate(traces):
-            ax.plot(t[b-w:b+w], i*yr + tr[b-w:b+w], '-k')
+            ax.plot(t[b - w:b + w], i * yr + tr[b - w:b + w], '-k')
         ax.set_xlabel('time [s]')
         ax.set_yticks([])
         ax.axis('tight')

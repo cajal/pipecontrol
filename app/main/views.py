@@ -219,7 +219,7 @@ def segmentation():
         flash('{} keys inserted into {}.SegmentationTask.'.format(len(keys), name))
 
         schema.DoNotSegment().insert(nkeys, ignore_extra_fields=True)
-        flash('{} excluded in {}.'.format(len(nkeys), schema))
+        flash('{} excluded in {}.'.format(len(nkeys), name))
         return redirect(url_for('.segmentation'))
 
     return render_template('segmentation.html',

@@ -32,6 +32,7 @@ class SelectCol(Col):
         super().__init__(*args, **kwargs)
         self.checked = checked
 
+
     def td_format(self, content):
         if self.checked:
             return '''<input type="checkbox" name="{}" value='1' checked="checked">'''.format(content)
@@ -57,7 +58,7 @@ class KeyColumn(Col):
         return '''<code>{}</code>'''.format(str(k))
 
 
-class CorrectionChannel(Table):
+class ResoCorrectionTable(Table):
     classes = ['Relation']
     animal_id = Col('animal ID')
     session = Col('Session')
@@ -65,7 +66,17 @@ class CorrectionChannel(Table):
     reso_version = Col('Reso Version')
     slice = Col('Slice')
     channel = ChannelCol('Channel')
-    select = SelectCol('Insert')
+    select = CheckBoxCol('Insert', checked=False)
+
+class MesoCorrectionTable(Table):
+    classes = ['Relation']
+    animal_id = Col('animal ID')
+    session = Col('Session')
+    scan_idx = Col('Scan')
+    meso_version = Col('Meso Version')
+    field = Col('Field')
+    channel = ChannelCol('Channel')
+    select = CheckBoxCol('Insert', checked=False)
 
 
 class ProgressTable(Table):

@@ -7,7 +7,8 @@ from flask import Markup
 import datajoint as dj
 
 from .decorators import ping
-from .tables import CorrectionChannel, ProgressTable, SegmentationTask, JobTable, SummaryTable
+from .tables import ResoCorrectionTable, ProgressTable, SegmentationTask, JobTable, SummaryTable, ChannelCol, \
+    MesoCorrectionTable
 from .forms import UserForm, AutoProcessing, SummaryForm, RestrictionForm
 
 from ..schemata import reso, experiment, shared, pupil, behavior, meso
@@ -134,29 +135,39 @@ def _decode(s, primary_key, prefix=''):
 @main.route('/correction', methods=['GET', 'POST'])
 def correction():
     channel_prefix = 'channel'
-    field_prefix = 'field'
-    select_prefix = 'select'
     tables = {}
+    djkeys, pk = {}, {}
+    schemata = OrderedDict([('reso',reso), ('meso',meso)])
 
-    scaninfo = (reso.ScanInfo().proj('nslices', 'nchannels') * shared.Slice() & 'slice <= nslices') \
-               - reso.CorrectionChannel() \
-               & (experiment.Session() & "username='{}'".format(session['user']))
-    pk = scaninfo.heading.primary_key
-    djkeys, channels = scaninfo.fetch(dj.key, 'nchannels')
+    for (name, schema), (field, Field) in zip(schemata.items(), zip(['slice','field'],[shared.Slice, shared.Field])):
+        nfield = 'n{}s'.format(field)
+        # -- encode reso table
+        scaninfo = (schema.ScanInfo().proj(nfield, 'nchannels') * Field() & '{} <= {}'.format(field, nfield)) \
+                   - schema.CorrectionChannel() \
+                   & (experiment.Session() & "username='{}'".format(session['user']))
+
+        pk[name] = scaninfo.heading.primary_key
+        djkeys[name], channels = scaninfo.fetch(dj.key, 'nchannels')
+        keys = [dict(k,
+                     channel=(c, _encode(k, pk[name], channel_prefix)),
+                     select=('selected', _encode(k, pk[name]))) for k, c in zip(djkeys[name], channels)]
+        if name == 'reso':
+            table = ResoCorrectionTable(keys)
+        else:
+            table = MesoCorrectionTable(keys)
+        tables[name] = table
 
     if request.method == 'POST':
-        skeys = [_encode(k, pk) for k in djkeys]
-        keys = [dict(_decode(s, pk), channel=int(request.form[channel_prefix + s]))
-                for s in skeys if request.form.get(select_prefix + s)]
-        reso.CorrectionChannel().insert(keys, ignore_extra_fields=True)
-        flash('{} keys inserted.'.format(len(keys)))
-        return redirect(url_for('.correction'))
+        name = request.form['schema']
+        schema = schemata[name]
+        skeys = [_encode(k, pk[name]) for k in djkeys[name]]
 
-    keys = [dict(k,
-                 channel=(c, _encode(k, pk, channel_prefix)),
-                 select=_encode(k, pk, select_prefix)) for k, c in zip(djkeys, channels)]
-    table = CorrectionChannel(keys)
-    tables['reso'] = table
+        selected  = request.form.getlist('selected')
+        keys = [dict(_decode(s, pk[name]), channel=int(request.form[channel_prefix + s])) for s in skeys if s in selected]
+        schema.CorrectionChannel().insert(keys, ignore_extra_fields=True)
+        flash('{} keys inserted.'.format(len(keys)))
+        return redirect(url_for('.correction')) # redirect to reload the tables
+
     return render_template('correction.html', tables = tables)
 
 @ping

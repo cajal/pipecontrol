@@ -1,14 +1,18 @@
 import sys
 from collections import OrderedDict
+from functools import partial
 
 from flask import render_template, redirect, url_for, abort, flash, request, \
-    current_app, make_response, abort, session
+    current_app, make_response, abort, session, send_from_directory
 from flask import Markup
+from .. import schemata
 import datajoint as dj
-
+from datajoint.base_relation import lookup_class_name
+from datajoint.erd import _get_tier
+from .utils import namehash
 from .decorators import ping
 from .tables import ResoCorrectionTable, ProgressTable, JobTable, SummaryTable, ChannelCol, \
-    MesoCorrectionTable, MesoSegmentationTask, ResoSegmentationTask
+    MesoCorrectionTable, MesoSegmentationTask, ResoSegmentationTask, djtable
 from .forms import UserForm, AutoProcessing, SummaryForm, RestrictionForm
 
 from ..schemata import reso, experiment, shared, pupil, behavior, meso
@@ -16,11 +20,12 @@ from . import main
 
 import numpy as np
 
-# -- bokeh
 import matplotlib
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt, mpld3
+
+from graphviz import Digraph
 
 
 @ping
@@ -313,3 +318,88 @@ def traces(animal_id, session, scan_idx, slice, reso_version, channel, segmentat
     else:
         flash('Could not find activity for key {}'.format(str(key)))
     return render_template('figure.html', figure=figure)
+
+
+@main.route('/tmp/<path:filename>')
+def tmpfile(filename):
+    return send_from_directory('/tmp/', filename)
+
+
+@main.route('/schema/<schema>/<table>', defaults={'subtable': None}, methods=['GET', 'POST'])
+@main.route('/schema/', defaults={'schema':'experiment','table':'Scan','subtable': None}, methods=['GET', 'POST'])
+@main.route('/schema/<schema>/<table>/<subtable>', methods=['GET', 'POST'])
+def relation(schema, table, subtable):
+    form = RestrictionForm(request.form)
+    restriction = {}
+    if request.method == 'POST' and form.validate():
+        restriction = form['restriction'].data
+
+    if restriction is not None:
+        content = (reso.SummaryImages() & restriction).proj().fetch(as_dict=True, limit=40)
+    else:
+        content = reso.SummaryImages().proj().fetch(as_dict=True, limit=40)
+
+
+    node_attr = dict(style='filled',
+                     shape='note',
+                     align='left',
+                     ranksep='0.1',
+                     fontsize='10',
+                     fontfamily='opensans',
+                     height='0.2',
+                     fontname='Sans-Serif'
+                     )
+    server = current_app.config['SERVERNAME']
+    dot = Digraph(node_attr=node_attr, graph_attr=dict(size="12,12", rankdir='LR'), engine='dot')
+    dot.format = 'svg'
+
+    f = partial(lookup_class_name, context=schemata.__dict__)
+    if subtable is not None:
+        rel = getattr(getattr(getattr(schemata, schema), table), subtable)
+    else:
+        rel = getattr(getattr(schemata, schema), table)
+    conn = rel.connection
+    conn.dependencies.load()
+    root = rel().full_table_name
+    root_node = f(root) or root
+
+    node_props = {  # http://matplotlib.org/examples/color/named_colors.html
+        None: dict(fillcolor="azure4"),
+        dj.Manual: dict(fillcolor ='green3'),
+        dj.Lookup: dict(fillcolor ='azure3'),
+        dj.Computed: dict(fillcolor ='coral1'),
+        dj.Imported: dict(fillcolor ='cornflowerblue'),
+        dj.Part: dict(fillcolor ='azure3', fontsize='8'),
+    }
+
+    def add_node(v):
+
+        tier = _get_tier(v)
+        tmp = f(v)
+        sc, *_ = tmp.split('.')
+        with dot.subgraph(name='cluster_' + sc,
+                          node_attr=node_attr,
+                          graph_attr=dict(color='silver', style='filled', label=sc)) as c:
+            if tmp is not None:
+                v = tmp
+                kwargs = dict(zip(['schema', 'table', 'subtable'], v.split('.')))
+                c.node(v, v, URL=server + url_for('main.relation', **kwargs),
+                         target='_top', **node_props[tier])
+            else:
+                c.node(v, v, **node_props[tier])
+        return v
+
+    add_node(root)
+    for node, _ in conn.dependencies.in_edges(root):
+        node = add_node(node)
+        dot.edge(node, root_node)
+
+    for _, node in conn.dependencies.out_edges(root):
+        node = add_node(node)
+        dot.edge(root_node, node)
+    print(dot.source, file=sys.stderr)
+    filename = namehash()
+    dot.render('/tmp/' + filename)
+
+    table = djtable(rel() & restriction, limit=20)
+    return render_template('schema.html', filename=filename + '.svg', table=table, form=form)

@@ -4,7 +4,6 @@ from config import config
 from flask_qrcode import QRcode
 
 bootstrap = Bootstrap()
-
 def create_app(config_name):
     app = Flask(__name__)
     QRcode(app)

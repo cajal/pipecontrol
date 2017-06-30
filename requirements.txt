@@ -8,3 +8,4 @@ flask-table
 flask-sslify
 gunicorn
 mpld3
+graphviz

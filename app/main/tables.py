@@ -1,6 +1,6 @@
 # import things
 from flask import url_for, flash
-from flask_table import Table, Col, DatetimeCol
+from flask_table import Table, Col, DatetimeCol, create_table
 
 
 class ChannelCol(Col):
@@ -141,6 +141,22 @@ class SummaryTable(Table):
 
 
 
+def djtable(table, **kwargs):
+    tbl_cls = create_table(table.__class__.__name__)
+    for col in table.heading.non_blobs:
+        tbl_cls.add_column(col, Col(col))
+    for col in table.heading.blobs:
+        tbl_cls.add_column(col, Col(col))
+
+    content = table.proj(*table.heading.non_blobs).fetch(as_dict=True, **kwargs)
+    for d in content:
+        for col in table.heading.blobs:
+            d[col] = '- blob -'
+
+    tbl_cls.classes = ['Relation']
+    table = tbl_cls(content)
+
+    return table
 
 class JobTable(Table):
 

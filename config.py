@@ -22,12 +22,13 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    SERVERNAME='http://localhost'
     TEMPLATES_AUTO_RELOAD = True
 
 
 class ProductionConfig(Config):
     DEBUG = False
-
+    SERVERNAME='http://shikigami.ad.bcm.edu'
     @classmethod
     def init_app(cls, app):
         Config.init_app(app)

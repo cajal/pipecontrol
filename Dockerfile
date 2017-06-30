@@ -8,6 +8,8 @@ WORKDIR /server/
 # Install pipecontrol
 COPY . /server/pipecontrol
 
+RUN apt-get update -y && apt-get install -y graphviz python3-pygraphviz
+
 RUN pip3 install -r pipecontrol/requirements.txt
 
 WORKDIR /server/pipecontrol

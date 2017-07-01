@@ -10,7 +10,18 @@
 {% endblock %}
 
 {% block page_content %}
-    <h3>Showing 20 entries</h3>
+    <h3>ERD neighborhood</h3>
+    Click on a table to get to it. 
+    <div class="post-tabs">
+        <object data="{{ url_for('main.tmpfile', filename=filename) }}" type="image/svg+xml" class="Svg"
+                target="_top">
+        </object>
+
+
+    </div>
+    <h3>Content</h3>
+    Showing the first 20 entries. Use the restriction to narrow it
+    down. E.g. <code>animal_id=8623 and session=1</code>
     <div class="post-tabs">
         <form method=post>
             <dl>
@@ -30,13 +41,6 @@
     {{ table }}
     </div>
 
-    <div class="post-tabs">
-        <object data="{{ url_for('main.tmpfile', filename=filename) }}" type="image/svg+xml" class="Svg"
-                target="_top">
-        </object>
-
-
-    </div>
 
 {% endblock %}
 

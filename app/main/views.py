@@ -334,12 +334,6 @@ def relation(schema, table, subtable):
     if request.method == 'POST' and form.validate():
         restriction = form['restriction'].data
 
-    if restriction is not None:
-        content = (reso.SummaryImages() & restriction).proj().fetch(as_dict=True, limit=40)
-    else:
-        content = reso.SummaryImages().proj().fetch(as_dict=True, limit=40)
-
-
     node_attr = dict(style='filled',
                      shape='note',
                      align='left',
@@ -350,7 +344,7 @@ def relation(schema, table, subtable):
                      fontname='Sans-Serif'
                      )
     server = current_app.config['SERVERNAME']
-    dot = Digraph(node_attr=node_attr, graph_attr=dict(size="12,12", rankdir='LR'), engine='dot')
+    dot = Digraph(node_attr=node_attr, graph_attr=dict(size="12,12", rankdir='LR', splines='ortho'), engine='dot')
     dot.format = 'svg'
 
     f = partial(lookup_class_name, context=schemata.__dict__)
@@ -375,11 +369,11 @@ def relation(schema, table, subtable):
     def add_node(v):
 
         tier = _get_tier(v)
-        tmp = f(v)
+        tmp = f(v) or v
         sc, *_ = tmp.split('.')
         with dot.subgraph(name='cluster_' + sc,
                           node_attr=node_attr,
-                          graph_attr=dict(color='silver', style='filled', label=sc)) as c:
+                          graph_attr=dict(color='grey80', style='filled', label=sc)) as c:
             if tmp is not None:
                 v = tmp
                 kwargs = dict(zip(['schema', 'table', 'subtable'], v.split('.')))
@@ -397,7 +391,6 @@ def relation(schema, table, subtable):
     for _, node in conn.dependencies.out_edges(root):
         node = add_node(node)
         dot.edge(root_node, node)
-    print(dot.source, file=sys.stderr)
     filename = namehash()
     dot.render('/tmp/' + filename)
 

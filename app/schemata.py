@@ -1,6 +1,7 @@
 import datajoint as dj
 
 
+stimlus = dj.create_virtual_module('stimulus','pipeline_stimulus')
 vis = dj.create_virtual_module('vis','pipeline_vis')
 virus = dj.create_virtual_module('virus','common_virus')
 reso = dj.create_virtual_module('reso','pipeline_reso')

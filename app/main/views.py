@@ -275,8 +275,6 @@ def summary_image(animal_id, session, scan_idx, slice, reso_version, which):
         for img, c in zip(corr, chan):
             I[..., ch2ch[int(c)]] = img.squeeze()
         I = (I - I.min()) / (I.max() - I.min())
-        if which == 'average':
-            I = np.log(255 * I + 1)
         fig, ax = plt.subplots(figsize=(12, 12))
         ax.imshow(I, origin='lower', interpolation='bicubic')
         ax.set_title('{} Image'.format(which))

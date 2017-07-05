@@ -136,7 +136,7 @@ class SummaryTable(Table):
     reso_version = Col('reso_version')
     slice = Col('slice')
     correlation = LinkCol('Correlation Image')
-    average = LinkCol('Log Average Image')
+    average = LinkCol('Average Image')
     trace = LinkCol('Spike Trace', label='20 trace @ one min')
 
 

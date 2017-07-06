@@ -5,6 +5,8 @@ from functools import partial
 from flask import render_template, redirect, url_for, abort, flash, request, \
     current_app, make_response, abort, session, send_from_directory
 from flask import Markup
+from scipy.signal import convolve2d
+
 from .. import schemata
 import datajoint as dj
 from datajoint.base_relation import lookup_class_name
@@ -267,17 +269,33 @@ def summary_image(animal_id, session, scan_idx, slice, reso_version, which):
     )
     figure = None
     if reso.SummaryImages() & key:
-        corr, chan = (reso.SummaryImages() & key).fetch(which, 'channel')
+        corr, chan = (reso.SummaryImages() \
+                      * reso.SummaryImages.Average() \
+                      * reso.SummaryImages.Correlation() & key).fetch('{}_image'.format(which), 'channel')
 
         I = np.zeros(corr[0].shape + (3,))
 
         ch2ch = {1: 1, 2: 0}
         for img, c in zip(corr, chan):
+            if which == 'average':
+                img = img.squeeze()
+                h = np.hamming(51)
+                h -= h.min()
+                h /= h.sum()
+                H = h[:, None] * h[None, :]
+                mu = convolve2d(img, H, mode='same', boundary='symm')
+                img = (img - mu) / np.sqrt(convolve2d(img ** 2, H, mode='same', boundary='symm') - mu ** 2)
+                img = (img - img.min())/(img.max()-img.min())
+                img = np.log(img + 1)
+                preprocess = 'log(... + 1) of scaled, locally contrast normalized'
+            else:
+                preprocess = ''
             I[..., ch2ch[int(c)]] = img.squeeze()
+
         I = (I - I.min()) / (I.max() - I.min())
         fig, ax = plt.subplots(figsize=(12, 12))
         ax.imshow(I, origin='lower', interpolation='bicubic')
-        ax.set_title('{} Image'.format(which))
+        ax.set_title('{} {} image'.format(preprocess, which))
         ax.axis('off')
         ax.set_aspect(1)
         figure = mpld3.fig_to_html(fig)
@@ -324,7 +342,7 @@ def tmpfile(filename):
 
 
 @main.route('/schema/<schema>/<table>', defaults={'subtable': None}, methods=['GET', 'POST'])
-@main.route('/schema/', defaults={'schema':'experiment','table':'Scan','subtable': None}, methods=['GET', 'POST'])
+@main.route('/schema/', defaults={'schema': 'experiment', 'table': 'Scan', 'subtable': None}, methods=['GET', 'POST'])
 @main.route('/schema/<schema>/<table>/<subtable>', methods=['GET', 'POST'])
 def relation(schema, table, subtable):
     form = RestrictionForm(request.form)
@@ -357,11 +375,11 @@ def relation(schema, table, subtable):
 
     node_props = {  # http://matplotlib.org/examples/color/named_colors.html
         None: dict(fillcolor="azure4"),
-        dj.Manual: dict(fillcolor ='green3'),
-        dj.Lookup: dict(fillcolor ='azure3'),
-        dj.Computed: dict(fillcolor ='coral1'),
-        dj.Imported: dict(fillcolor ='cornflowerblue'),
-        dj.Part: dict(fillcolor ='azure3', fontsize='8'),
+        dj.Manual: dict(fillcolor='green3'),
+        dj.Lookup: dict(fillcolor='azure3'),
+        dj.Computed: dict(fillcolor='coral1'),
+        dj.Imported: dict(fillcolor='cornflowerblue'),
+        dj.Part: dict(fillcolor='azure3', fontsize='8'),
     }
 
     def add_node(v):
@@ -376,7 +394,7 @@ def relation(schema, table, subtable):
                 v = tmp
                 kwargs = dict(zip(['schema', 'table', 'subtable'], v.split('.')))
                 c.node(v, v, URL=server + url_for('main.relation', **kwargs),
-                         target='_top', **node_props[tier])
+                       target='_top', **node_props[tier])
             else:
                 c.node(v, v, **node_props[tier])
         return v

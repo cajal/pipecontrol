@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='datajoint.css') }}">
+{% endblock %}
+
+{% block title %}Pipeline Control{% endblock %}
+
+
+
+
+{% block page_content %}
+    <div class="post-tabs">
+        {% if figure %}
+            {{ figure|safe }}
+        {% endif %}
+
+        {% from "_macros.html" import render_field %}
+        <form method=post>
+            <dl>
+                {{ render_field(form.relative_area_threshold) }}
+                {{ render_field(form.ratio_threshold) }}
+                {{ render_field(form.error_threshold) }}
+                {{ render_field(form.min_countour_len) }}
+                {{ render_field(form.margin) }}
+                {{ render_field(form.contrast_threshold) }}
+                {{ render_field(form.speed_threshold) }}
+                {{ render_field(form.dr_threshold) }}
+                {{ render_field(form.gaussian_blur) }}
+                {{ render_field(form.exclude) }}
+            </dl>
+            <p><input type=submit value=Submit>
+        </form>
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+    {{ super() }}
+{% endblock %}
+
+

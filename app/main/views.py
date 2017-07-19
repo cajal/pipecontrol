@@ -15,7 +15,7 @@ from .utils import namehash
 from .decorators import ping
 from .tables import ResoCorrectionTable, ProgressTable, JobTable, SummaryTable, ChannelCol, \
     MesoCorrectionTable, MesoSegmentationTask, ResoSegmentationTask, djtable
-from .forms import UserForm, AutoProcessing, SummaryForm, RestrictionForm
+from .forms import UserForm, AutoProcessing, SummaryForm, RestrictionForm, TrackingForm
 
 from ..schemata import reso, experiment, shared, pupil, behavior, meso
 from . import main
@@ -26,7 +26,7 @@ import matplotlib
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt, mpld3
-
+from mpld3 import plugins, utils
 from graphviz import Digraph
 
 
@@ -57,6 +57,35 @@ def autoprocessing():
 
     return render_template('autoprocessing.html',
                            form=form)
+
+@ping
+@main.route('/tracking/<animal_id>/<session>/<scan_idx>', methods=['GET', 'POST'])
+def tracking(animal_id, session, scan_idx):
+    form = TrackingForm(request.form)
+    key = dict(
+        animal_id=animal_id,
+        session=session,
+        scan_idx=scan_idx,
+    )
+    figure = None
+    if pupil.Eye() & key:
+        prev = (pupil.Eye() & key).fetch1('preview_frames')
+
+        fig, ax = plt.subplots(4,4,figsize=(10, 8), sharex="col", sharey="row")
+        for a, fr in zip(ax.ravel(), prev.transpose([2,0,1])):
+            a.imshow(fr, cmap='gray', interpolation='bicubic')
+            a.axis('off')
+            a.set_aspect(1)
+        plugins.connect(fig, plugins.LinkedBrush([])) # TODO Edgar change that here
+        figure = mpld3.fig_to_html(fig)
+    else:
+        flash('Could not find figure for key {}'.format(str(key)))
+    if request.method == 'POST' and form.validate():
+        pass
+
+    return render_template('trackingtask.html',
+                           form=form, figure=figure)
+
 
 
 @ping

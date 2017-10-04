@@ -27,7 +27,7 @@ class DevelopmentConfig(Config):
 
 
 class ProductionConfig(Config):
-    DEBUG = False
+    DEBUG = True
     SERVERNAME='http://shikigami.ad.bcm.edu'
     @classmethod
     def init_app(cls, app):

@@ -106,7 +106,7 @@ class MesoSegmentationTask(Table):
     animal_id = Col('animal ID')
     session = Col('Session')
     scan_idx = Col('Scan')
-    reso_version = Col('Reso Version')
+    meso_version = Col('Meso Version')
     field = Col('Field')
     channel = Col('Channel')
     compartment = ChoiceCol('Compartment')

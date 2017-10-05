@@ -247,7 +247,7 @@ def segmentation():
         excluded = request.form.getlist('excluded')
         keys = [dict(_decode(s, pk[name]),
                      compartment=request.form[compartment_prefix + s],
-                     segmentation_method=2)
+                     segmentation_method=3)
                 for s in skeys if s in selected and not s in excluded]
         nkeys = [_decode(s, pk[name]) for s in excluded]
 
@@ -281,7 +281,7 @@ def summary():
         c['average'] = url_for('main.summary_image', which='average', **c)
         if reso.Activity() & c:
             c['trace'] = url_for('main.traces',
-                                 **(reso.Activity() & c & dict(segmentation_method=2, spike_method=5)).fetch1(dj.key))
+                                 **(reso.Activity() & c & dict(segmentation_method=3, spike_method=5)).fetch1(dj.key))
         else:
             c['trace'] = None
 

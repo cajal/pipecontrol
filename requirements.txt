@@ -1,11 +1,7 @@
-Flask
-Flask-Bootstrap==3.3.7.1
-Flask-WTF
-Flask-Script
-qrcode
-flask-qrcode
+flask
+flask-bootstrap>=3.3.7.1
+flask-WTF
 flask-table
 flask-sslify
-gunicorn
-mpld3
 graphviz
+mpld3

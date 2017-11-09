@@ -1,15 +1,4 @@
 {% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
-{% import "_macros.html" as macros %}
-
-{% block head %}
-    {{ super() }}
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='datajoint.css') }}">
-{% endblock %}
-
-{% block title %}Pipeline Control{% endblock %}
-
-
 
 
 {% block page_content %}
@@ -36,10 +25,3 @@
         </form>
     </div>
 {% endblock %}
-
-
-{% block scripts %}
-    {{ super() }}
-{% endblock %}
-
-

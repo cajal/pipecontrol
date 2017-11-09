@@ -1,16 +1,10 @@
 {% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
-{% import "_macros.html" as macros %}
-
-{% block title %}Pipeline Control{% endblock %}
 
 
 {% block page_content %}
-
-
     <div class="post-tabs">
         {% from "_macros.html" import render_field %}
-        <h3>Please select user</h3>
+        <h3>Select user</h3>
         <form method=post>
             <dl>
                 {{ render_field(form.user) }}
@@ -19,10 +13,3 @@
         </form>
     </div>
 {% endblock %}
-
-
-{% block scripts %}
-    {{ super() }}
-{% endblock %}
-
-

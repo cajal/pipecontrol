@@ -1,23 +1,28 @@
 from flask import Flask
 from flask_bootstrap import Bootstrap
-from config import config
-from flask_qrcode import QRcode
+import os
 
-bootstrap = Bootstrap()
-def create_app(config_name):
-    app = Flask(__name__)
-    QRcode(app)
-    app.config.from_object(config[config_name])
-    config[config_name].init_app(app)
+from . import config
 
-    bootstrap.init_app(app)
+# Create flask application
+app = Flask(__name__)
 
-    if not app.debug and not app.testing and not app.config['SSL_DISABLE']:
-        from flask.ext.sslify import SSLify
-        sslify = SSLify(app)
+# Configure app
+config = config.options[os.getenv('PIPELINE_CONFIG') or 'default']
+app.config.from_object(config)
 
-    from .main import main as main_blueprint
-    app.register_blueprint(main_blueprint)
+# Register extensions
+bootstrap = Bootstrap(app)
+if not (app.debug or app.testing or app.config['SSL_DISABLE']):
+    from flask_sslify import SSLify
+    sslify = SSLify(app)
+
+# Create views and error handlers
+from . import views, errors
 
 
-    return app
+from flask import flash
+@app.route('/debug')
+def debug():
+    flash('What up!')
+    return 'sks'

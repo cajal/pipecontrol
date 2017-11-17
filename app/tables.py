@@ -1,152 +1,104 @@
-# import things
-from flask import url_for
-from flask_table import Table, Col, DatetimeCol, create_table
+import flask_table
 
 
-class ChannelCol(Col):
+class SelectCol(flask_table.Col):
     def td_format(self, content):
-        n = content[0]
-        ret = "<select name='{}'>".format(content[1])
-        for i in range(1, n):
-            ret += "<option value='{channel}'>{channel}</option>".format(channel=i)
-        ret += "<option selected='selected' value='{channel}'>{channel}</option>".format(channel=n)
-        ret += "</select>"
-        return ret
+        html = '<select name="{}">'.format(content['name'])
+        html += '<option></option>'
+        for option, value in zip(content['options'], content.get('values',
+                                                                 content['options'])):
+            html += '<option value="{}"{}>{}</option>'.format(value, ' selected' if
+                           option == content.get('default', None) else '', option)
+        html += "</select>"
+        return html
 
 
-class ChoiceCol(Col):
-    def td_format(self, content):
-        name, choices, default = content
-        ret = "<select name='{}'>".format(name)
-        for choice in choices:
-            if not choice == default:
-                ret += "<option value='{choice}'>{choice}</option>".format(choice=choice)
-            else:
-                ret += "<option selected='selected' value='{choice}'>{choice}</option>".format(choice=choice)
-        ret += "</select>"
-        return ret
-
-
-class SelectCol(Col):
-    def __init__(self, *args, checked=True, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.checked = checked
-
-
-    def td_format(self, content):
-        if self.checked:
-            return '''<input type="checkbox" name="{}" value='1' checked="checked">'''.format(content)
-        else:
-            return '''<input type="checkbox" name="{}" value='1'>'''.format(content)
-
-
-class CheckBoxCol(Col):
-    def __init__(self, *args, checked=True, **kwargs):
+class CheckBoxCol(flask_table.Col):
+    def __init__(self, *args, checked=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.checked = checked
 
     def td_format(self, content):
-        if self.checked:
-            return '''<input type="checkbox" name="{}" value='{}' checked="checked">'''.format(*content)
-        else:
-            return '''<input type="checkbox" name="{}" value='{}'>'''.format(*content)
+        html = '<input type="checkbox" name="{}" value="{}"{}>'.format(content['name'],
+                        content['value'], ' checked' if self.checked else '')
+        return html
 
 
-class KeyColumn(Col):
+class KeyColumn(flask_table.Col):
     def td_format(self, content):
-        k = {kk:content[kk][0] for kk in content.dtype.fields.keys()}
-        return '''<code>{}</code>'''.format(str(k))
+        key = {name:content[name][0] for name in content.dtype.names} # recarray to dict
+        return '<code>{}</code>'.format(key)
 
 
-class ResoCorrectionTable(Table):
+class CorrectionTable(flask_table.Table):
     classes = ['Relation']
-    animal_id = Col('animal ID')
-    session = Col('Session')
-    scan_idx = Col('Scan')
-    reso_version = Col('Reso Version')
-    field = Col('Field')
-    channel = ChannelCol('Channel')
-    select = CheckBoxCol('Insert', checked=False)
+    animal_id = flask_table.Col('Animal Id')
+    session = flask_table.Col('Session')
+    scan_idx = flask_table.Col('Scan')
+    pipe_version = flask_table.Col('Pipe Version')
+    field = flask_table.Col('Field')
 
-class MesoCorrectionTable(Table):
+    channel = SelectCol('Channel')
+
+
+class SegmentationTable(flask_table.Table):
     classes = ['Relation']
-    animal_id = Col('animal ID')
-    session = Col('Session')
-    scan_idx = Col('Scan')
-    meso_version = Col('Meso Version')
-    field = Col('Field')
-    channel = ChannelCol('Channel')
-    select = CheckBoxCol('Insert', checked=False)
+    animal_id = flask_table.Col('Animal Id')
+    session = flask_table.Col('Session')
+    scan_idx = flask_table.Col('Scan')
+    pipe_version = flask_table.Col('Pipe Version')
+    field = flask_table.Col('Field')
+    channel = flask_table.Col('Channel')
+
+    compartment = SelectCol('Compartment')
+    ignore = CheckBoxCol('Ignore')
 
 
-class ProgressTable(Table):
+class ProgressTable(flask_table.Table):
     classes = ['Relation']
-    relation = Col('Relation')
-    total = Col('Total')
-    remaining = Col('Remaining')
-    percent = Col('Percentage')
+    table = flask_table.Col('Table')
+    processed = flask_table.Col('Processed')
+    percentage = flask_table.Col('Percentage')
 
 
-class ResoSegmentationTask(Table):
+class JobTable(flask_table.Table):
     classes = ['Relation']
-    animal_id = Col('animal ID')
-    session = Col('Session')
-    scan_idx = Col('Scan')
-    reso_version = Col('Reso Version')
-    slice = Col('Slice')
-    channel = Col('Channel')
-    compartment = ChoiceCol('Compartment')
+    table_name = flask_table.Col('Table Name')
+    status = flask_table.Col('Status')
+    key = KeyColumn('Key')
+    user = flask_table.Col('User')
+    connection_id = flask_table.Col('Connection Id')
+    error_message = flask_table.Col('Error Message')
+    timestamp = flask_table.DatetimeCol('Timestamp')
 
-    select = CheckBoxCol('Insert', checked=False)
-    exclude = CheckBoxCol('Exclude', checked=False)
+    delete = CheckBoxCol('Delete')
 
-class MesoSegmentationTask(Table):
+
+class SummaryTable(flask_table.Table):
     classes = ['Relation']
+    animal_id = flask_table.Col('Animal Id')
+    session = flask_table.Col('Session')
+    scan_idx = flask_table.Col('Scan Idx')
+    field = flask_table.Col('Field')
+    pipe_version = flask_table.Col('Pipe Version')
 
-    animal_id = Col('animal ID')
-    session = Col('Session')
-    scan_idx = Col('Scan')
-    meso_version = Col('Meso Version')
-    field = Col('Field')
-    channel = Col('Channel')
-    compartment = ChoiceCol('Compartment')
-
-    select = CheckBoxCol('Insert', checked=False)
-    exclude = CheckBoxCol('Exclude', checked=False)
-
-
-class LinkCol(Col):
-
-    def __init__(self, *args, label='link', **kwargs):
-        super().__init__(*args, **kwargs)
-        self.label = label
-
-    def td_format(self, content):
-        if content is not None:
-            return '''<a href="{}">{}</a>'''.format(content, self.label)
-        else:
-            return ''
-
-class SummaryTable(Table):
-    classes = ['Relation']
-
-    animal_id = Col('animal_id')
-    session = Col('session')
-    scan_idx = Col('scanidx')
-    reso_version = Col('reso_version')
-    slice = Col('slice')
-    correlation = LinkCol('Correlation Image')
-    average = LinkCol('Average Image')
-    trace = LinkCol('Spike Trace', label='20 trace @ one min')
-
+    kwargs = {'animal_id': 'animal_id', 'session': 'session', 'scan_idx': 'scan_idx',
+              'field': 'field', 'pipe_version': 'pipe_version'}
+    correlation = flask_table.LinkCol('Correlation Image', 'figure', url_kwargs=kwargs,
+                                      url_kwargs_extra={'which': 'correlation'})
+    average = flask_table.LinkCol('Average Image', 'figure', url_kwargs=kwargs,
+                                  url_kwargs_extra={'which': 'average'})
+    traces = flask_table.LinkCol('Spike Traces', 'traces', url_kwargs=kwargs,
+                                 url_kwargs_extra={'channel': 1, 'segmentation_method': 3,
+                                                   'spike_method': 5})
 
 
 def djtable(table, **kwargs):
-    tbl_cls = create_table(table.__class__.__name__)
+    tbl_cls = flask_table.create_table(table.__class__.__name__)
     for col in table.heading.non_blobs:
-        tbl_cls.add_column(col, Col(col))
+        tbl_cls.add_column(col, flask_table.Col(col))
     for col in table.heading.blobs:
-        tbl_cls.add_column(col, Col(col))
+        tbl_cls.add_column(col, flask_table.Col(col))
 
     content = table.proj(*table.heading.non_blobs).fetch(as_dict=True, **kwargs)
     for d in content:
@@ -157,33 +109,3 @@ def djtable(table, **kwargs):
     table = tbl_cls(content)
 
     return table
-
-class JobTable(Table):
-
-    def __init__(self, *args, target, exlude=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.target = target
-        self.exclude = exlude
-
-    classes = ['Relation']
-    allow_sort = True
-
-    table_name = Col('table name')
-    status = Col('Status')
-    key = KeyColumn('Key')
-    user = Col('User')
-    connection_id = Col('Connection ID')
-    error_message = Col('Error Message')
-    timestamp = DatetimeCol('Timestamp')
-
-    delete = CheckBoxCol('Delete', checked=False)
-
-    def sort_url(self, col_key, reverse=False):
-        if reverse:
-            direction =  'desc'
-        else:
-            direction = 'asc'
-        if self.exclude is not None and not col_key in self.exclude:
-            return url_for(self.target, sort=col_key, direction=direction)
-        else:
-            return url_for(self.target)

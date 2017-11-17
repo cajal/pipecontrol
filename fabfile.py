@@ -1,21 +1,17 @@
-from distutils.util import strtobool
-
-from fabric.api import local, abort, run, sudo
-from fabric.context_managers import cd, settings, hide, shell_env
-from fabric.contrib.console import confirm
+from fabric.api import local, run, sudo
+from fabric.context_managers import cd, settings
 from getpass import getpass
-from fabric.utils import puts
-
 from fabric.state import env
+
+
 env.control_dir = 'pipecontrol'
 
+
 def with_sudo():
-    """
-    Prompts and sets the sudo password for all following commands.
+    """  Prompts and sets the sudo password for all following commands.
 
-    Use like
-
-    fab with_sudo command
+    Example:
+        fab with_sudo command
     """
     env.sudo_password = getpass('Please enter sudo password: ')
     env.password = env.sudo_password
@@ -26,14 +22,13 @@ def down():
 
 
 def get_branch(gitdir):
-    """
-    Gets the branch of a git directory.
+    """ Gets the branch of a git directory.
 
     Args:
         gitdir: path of the git directory
 
-    Returns: current active branch
-
+    Returns:
+        current active branch
     """
     return local('git symbolic-ref --short HEAD', capture=True)
 

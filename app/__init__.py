@@ -1,3 +1,10 @@
+# Disable matplotlib display
+import matplotlib
+matplotlib.use('Agg')
+del matplotlib
+
+
+
 from flask import Flask
 from flask_bootstrap import Bootstrap
 import os
@@ -19,10 +26,3 @@ if not (app.debug or app.testing or app.config['SSL_DISABLE']):
 
 # Create views and error handlers
 from . import views, errors
-
-
-from flask import flash
-@app.route('/debug')
-def debug():
-    flash('What up!')
-    return 'sks'

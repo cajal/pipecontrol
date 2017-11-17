@@ -9,13 +9,13 @@
 
 {% block page_content %}
     <div class="post-tabs">
-        {% for schema, table in tables.items() %}
-            <h3>Available keys for schema {{ schema }}</h3>
-            <form action={{ url_for('segmentation') }} method="post">
+        {% for module_name, table in segmentation_tables %}
+            <h3>Available keys for segmentation in {{ module_name }}</h3>
+            <form action="{{ url_for('segmentation') }}" method="post">
                 {{ table }}
                 <p><p>
-                <input type="hidden" name="schema" value="{{ schema }}">
-                <input type="submit" value="enter in table">
+                <input type="hidden" name="module_name" value="{{ module_name }}">
+                <input type="submit" value="Insert">
             </form>
         {% endfor %}
     </div>

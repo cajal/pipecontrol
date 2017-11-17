@@ -9,7 +9,10 @@
 
 {% block page_content %}
     <div class="post-tabs">
-        <h2>Progress for "reso" schema</h2>
-        {{ table }}
+        {% for module_name, table in progress_tables %}
+            <h2>Progress for {{ module_name }}</h2>
+            {{ table }}
+            <br>
+        {% endfor %}
     </div>
 {% endblock %}

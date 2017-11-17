@@ -21,12 +21,12 @@
         <code>animal_id=8623 and scan_idx>1 and software="scanimage"</code>
     <div class="post-tabs">
         {% from "_macros.html" import render_field %}
-        <form method=post>
+        <form method="post">
             <dl>
                 {{ render_field(form.restriction, style="width: 700px;") }}
             </dl>
-            <p><input type=submit value=Restrict>
+            <input type="submit" value="Restrict">
         </form>
-    {{ table }}
     </div>
+    {{ table }}
 {% endblock %}

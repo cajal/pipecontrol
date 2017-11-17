@@ -10,17 +10,17 @@
 {% block page_content %}
     <div class="post-tabs">
         <h3>Showing first entries</h3>
-        Restrict results using SQl-like restrictions, e.g.,
-            <code>animal_id=11521 and session=2 and scan_idx>4</code>
-        <p><p>
+        Restrict results using SQL-like restrictions, e.g.,
+            <code>animal_id=11521 and session=2 and scan_idx<3</code>
+        <p>
         {% from "_macros.html" import render_field %}
-        <form method=post>
+        <form method="post">
             <dl>
                 {{ render_field(form.restriction, style="width: 700px;") }}
             </dl>
-            <p><input type=submit value=Restrict>
+            <input type="submit" value="Restrict">
         </form>
-        <p>
+        <br>
         {{ table }}
     </div>
 {% endblock %}

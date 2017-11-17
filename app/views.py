@@ -1,7 +1,6 @@
 from collections import OrderedDict
 from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
 import datajoint as dj
-import functools
 import uuid
 import numpy as np
 import matplotlib.pyplot as plt
@@ -177,7 +176,7 @@ def summary():
     if request.method == 'POST' and form.validate():
         summary_rel = summary_rel & form['restriction'].data
 
-    items = summary_rel.fetch(as_dict=True, limit=20)
+    items = summary_rel.fetch(as_dict=True, limit=25)
     table = tables.SummaryTable(items)
 
     return render_template('summary.html', form=form, table=table)
@@ -222,7 +221,7 @@ def traces(animal_id, session, scan_idx, field, pipe_version, segmentation_metho
     source = reso if reso.Activity() & key else meso if meso.Activity() & key else None
 
     if source is not None:
-        traces = np.stack((source.Activity.Trace() & key).fetch('trace', limit=20))
+        traces = np.stack((source.Activity.Trace() & key).fetch('trace', limit=25))
         f = traces.var(ddof=1, axis=0, keepdims=True) / traces.mean(axis=0, keepdims=True)
         traces /= f
 
@@ -253,58 +252,57 @@ def tmpfile(filename):
 
 
 @ping
+@app.route('/schema/', defaults={'schema': 'experiment', 'table': 'Scan', 'subtable': None},
+           methods=['GET', 'POST'])
 @app.route('/schema/<schema>/<table>', defaults={'subtable': None}, methods=['GET', 'POST'])
-@app.route('/schema/', defaults={'schema': 'experiment', 'table': 'Scan', 'subtable': None}, methods=['GET', 'POST'])
 @app.route('/schema/<schema>/<table>/<subtable>', methods=['GET', 'POST'])
 def relation(schema, table, subtable):
-    f = functools.partial(dj.base_relation.lookup_class_name, context=schemata.__dict__)
-    if subtable is not None:
-        rel = getattr(getattr(getattr(schemata, schema), table), subtable)
-    else:
-        rel = getattr(getattr(schemata, schema), table)
-    conn = rel.connection
-    conn.dependencies.load()
-    root = rel().full_table_name
-    root_node = f(root) or root
-
+    graph_attr = {'size': '12, 12', 'rankdir': 'LR', 'splines': 'ortho'}
     node_attr = {'style': 'filled', 'shape': 'note', 'align': 'left', 'ranksep': '0.1',
                  'fontsize': '10', 'fontfamily': 'opensans', 'height': '0.2',
                  'fontname': 'Sans-Serif'}
-    node_props = {None: {'fillcolor': 'azure4'}, dj.Manual: {'fillcolor': 'green3'},
-                  dj.Lookup: {'fillcolor': 'azure3'}, dj.Computed: {'fillcolor': 'coral1'},
-                  dj.Imported: {'fillcolor': 'cornflowerblue'},
+    dot = graphviz.Digraph(graph_attr=graph_attr, node_attr=node_attr, engine='dot',
+                           format='svg')
+
+    def add_node(name, node_attr={}):
+        """ Add a node/table to the current graph (adding subgraphs if needed). """
+        table_names = dict(zip(['schema', 'table', 'subtable'], name.split('.')))
+        graph_attr = {'color': 'grey80', 'style': 'filled', 'label': table_names['schema']}
+        with dot.subgraph(name='cluster_{}'.format(table_names['schema']), node_attr=node_attr,
+                          graph_attr=graph_attr) as subgraph:
+            subgraph.node(name, label=name, URL=url_for('relation', **table_names),
+                          target='_top', **node_attr)
+        return name
+
+    def name_lookup(full_name):
+        """ Look for a table's class name given its full name. """
+        pretty_name = dj.base_relation.lookup_class_name(full_name, schemata.__dict__)
+        return pretty_name or full_name
+
+    root_rel = getattr(getattr(schemata, schema), table)
+    root_rel = root_rel if subtable is None else getattr(root_rel, subtable)
+    root_dependencies = root_rel.connection.dependencies
+    root_dependencies.load()
+
+    node_attrs = {dj.Manual: {'fillcolor': 'green3'}, dj.Computed: {'fillcolor': 'coral1'},
+                  dj.Lookup: {'fillcolor': 'azure3'}, dj.Imported: {'fillcolor': 'cornflowerblue'},
                   dj.Part: {'fillcolor': 'azure3', 'fontsize': '8'}}
-    dot = graphviz.Digraph(node_attr=node_attr, graph_attr={'size': '12, 12', 'rankdir': 'LR',
-                                                   'splines': 'ortho'}, engine='dot')
-    dot.format = 'svg'
-    def add_node(v):
-        tier = dj.erd._get_tier(v)
-        tmp = f(v) or v
-        sc, *_ = tmp.split('.')
-        with dot.subgraph(name='cluster_{}'.format(sc), node_attr=node_attr,
-                          graph_attr={'color': 'grey80', 'style': 'filled', 'label': sc}) as c:
-            if tmp is not None:
-                v = tmp
-                kwargs = dict(zip(['schema', 'table', 'subtable'], v.split('.')))
-                c.node(v, v, URL=url_for('relation', **kwargs),
-                       target='_top', **node_props[tier])
-            else:
-                c.node(v, v, **node_props[tier])
-        return v
-    add_node(root)
-    for node, _ in conn.dependencies.in_edges(root):
-        node = add_node(node)
-        dot.edge(node, root_node)
-    for _, node in conn.dependencies.out_edges(root):
-        node = add_node(node)
-        dot.edge(root_node, node)
+    root_name = root_rel().full_table_name
+    root_id = add_node(name_lookup(root_name), node_attrs[dj.erd._get_tier(root_name)])
+    for node_name, _ in root_dependencies.in_edges(root_name):
+        node_id = add_node(name_lookup(node_name), node_attrs[dj.erd._get_tier(node_name)])
+        dot.edge(node_id, root_id)
+    for _, node_name in root_dependencies.out_edges(root_name):
+        node_id = add_node(name_lookup(node_name), node_attrs[dj.erd._get_tier(node_name)])
+        dot.edge(root_id, node_id)
+
     filename = uuid.uuid4()
     dot.render('/tmp/{}'.format(filename))
 
     form = forms.RestrictionForm(request.form)
     if request.method == 'POST' and form.validate():
-        rel = rel() & form['restriction'].data
-    table = tables.djtable(rel(), limit=20)
+        root_rel = root_rel() & form['restriction'].data
+    table = tables.create_datajoint_table(root_rel(), limit=25)
 
     return render_template('schema.html', filename='{}.svg'.format(filename), table=table,
                            form=form)
@@ -317,21 +315,21 @@ def tracking(animal_id, session, scan_idx):
     form = forms.TrackingForm(request.form)
 
     if request.method == 'POST' and form.validate():
+        #TODO: Process input
         pass
 
     key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx}
     if pupil.Eye() & key:
-        prev = (pupil.Eye() & key).fetch1('preview_frames')
-
-        fig, ax = plt.subplots(4,4,figsize=(10, 8), sharex="col", sharey="row")
-        for a, fr in zip(ax.ravel(), prev.transpose([2,0,1])):
-            a.imshow(fr, cmap='gray', interpolation='bicubic')
-            a.axis('off')
-            a.set_aspect(1)
-        mpld3.plugins.connect(fig, mpld3.plugins.LinkedBrush([])) # TODO Edgar change that here
+        preview_frames = (pupil.Eye() & key).fetch1('preview_frames')
+        fig, axes = plt.subplots(4, 4, figsize=(10, 8), sharex=True, sharey=True)
+        for ax, frame in zip(axes.ravel(), preview_frames.transpose([2,0,1])):
+            ax.imshow(frame, cmap='gray', interpolation='bicubic')
+            ax.axis('off')
+            ax.set_aspect(1)
+        #mpld3.plugins.connect(fig, mpld3.plugins.LinkedBrush([]))
         figure = mpld3.fig_to_html(fig)
     else:
         figure = None
-        flash('Could not find pupil traces for key {}'.format(str(key)))
+        flash('Could not find eye frames for {}'.format(key))
 
     return render_template('trackingtask.html', form=form, figure=figure)

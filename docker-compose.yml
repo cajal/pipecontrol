@@ -5,8 +5,11 @@ services:
     build: .
     ports:
       - "80:5000"
+    volumes:
+      - /tmp:/tmp
     environment:
       - PIPELINE_CONFIG=production
+    env_file: .env
 
   development:
     build: .
@@ -14,6 +17,7 @@ services:
       - "80:5000"
     volumes:
       - .:/server/pipecontrol
-      - $HOME/code/pipecontrol/tmp/:/tmp
+      - $HOME/Documents/pipecontrol/tmp/:/tmp
     environment:
       - PIPELINE_CONFIG=development
+    env_file: .env

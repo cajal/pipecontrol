@@ -93,19 +93,17 @@ class SummaryTable(flask_table.Table):
                                                    'spike_method': 5})
 
 
-def djtable(table, **kwargs):
-    tbl_cls = flask_table.create_table(table.__class__.__name__)
-    for col in table.heading.non_blobs:
-        tbl_cls.add_column(col, flask_table.Col(col))
-    for col in table.heading.blobs:
-        tbl_cls.add_column(col, flask_table.Col(col))
+def create_datajoint_table(rel, **fetch_kwargs):
+    table_class = flask_table.create_table('{}Table'.format(rel.__class__.__name__))
+    for col in rel.heading.attributes:
+        table_class.add_column(col, flask_table.Col(col))
 
-    content = table.proj(*table.heading.non_blobs).fetch(as_dict=True, **kwargs)
-    for d in content:
-        for col in table.heading.blobs:
-            d[col] = '- blob -'
+    items = rel.proj(*rel.heading.non_blobs).fetch(as_dict=True, **fetch_kwargs)
+    for item in items:
+        for blob_col in rel.heading.blobs:
+            item[blob_col] = '<BLOB>'
 
-    tbl_cls.classes = ['Relation']
-    table = tbl_cls(content)
+    table_class.classes = ['Relation']
+    table = table_class(items)
 
     return table

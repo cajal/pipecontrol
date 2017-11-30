@@ -10,4 +10,4 @@ RUN apt-get update -y && apt-get install -y graphviz
 RUN pip3 install -r requirements.txt
 
 # Start server
-ENTRYPOINT ./startserver.sh
+ENTRYPOINT ["./startserver.sh"]

@@ -323,7 +323,7 @@ def tracking(animal_id, session, scan_idx):
         preview_frames = (pupil.Eye() & key).fetch1('preview_frames')
         fig, axes = plt.subplots(4, 4, figsize=(10, 8), sharex=True, sharey=True)
         for ax, frame in zip(axes.ravel(), preview_frames.transpose([2,0,1])):
-            ax.imshow(frame, cmap='gray', interpolation='bicubic')
+            ax.imshow(frame, cmap='gray', interpolation='lanczos')
             ax.axis('off')
             ax.set_aspect(1)
         #mpld3.plugins.connect(fig, mpld3.plugins.LinkedBrush([]))

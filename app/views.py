@@ -9,7 +9,7 @@ import graphviz
 import json
 
 from . import app, schemata, forms, tables
-from .schemata import experiment, shared, reso, meso, pupil, behavior
+from .schemata import experiment, shared, reso, meso, stack, pupil, treadmill
 
 
 
@@ -65,7 +65,7 @@ def autoprocessing():
 @ping
 @app.route('/correction', methods=['GET', 'POST'])
 def correction():
-    modules = OrderedDict([('reso', reso), ('meso', meso)])
+    modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack)])
 
     if request.method == 'POST':
         keys = [json.loads(k) for k in request.form.getlist('channel') if k]
@@ -76,14 +76,20 @@ def correction():
     all_tables = []
     user_sessions = experiment.Session() & {'username': session['user']}
     for module_name, module in modules.items():
-        field_rel = ((module.ScanInfo() * module.ScanInfo.Field().proj() & user_sessions) -
-                     module.CorrectionChannel())
-        items = field_rel.proj('nchannels').fetch(as_dict=True)
+        if module_name in ['reso', 'meso']:
+            keys_rel = ((module.ScanInfo() * module.ScanInfo.Field().proj()
+                         & user_sessions) - module.CorrectionChannel())
+            correction_table = tables.CorrectionTable
+        else: # stack
+            keys_rel = (module.StackInfo() & user_sessions) - module.CorrectionChannel()
+            correction_table = tables.StackCorrectionTable
+
+        items = keys_rel.proj('nchannels').fetch(as_dict=True)
         for item in items:
             channels = list(range(1, item['nchannels'] + 1))
             values = [escape_json(json.dumps({**item, 'channel': c})) for c in channels]
             item['channel'] = {'name': 'channel', 'options': channels, 'values': values}
-        all_tables.append((module_name, tables.CorrectionTable(items)))
+        all_tables.append((module_name, correction_table(items)))
 
     return render_template('correction.html', correction_tables=all_tables)
 
@@ -127,7 +133,7 @@ def segmentation():
 def progress():
     all_tables = []
     user_sessions = experiment.Session() & {'username': session['user']}
-    for module_name, module in [('reso', reso), ('meso', meso)]:
+    for module_name, module in [('reso', reso), ('meso', meso), ('stack', stack)]:
         items = []
         for rel_name, possible_rel in module.__dict__.items():
             try:
@@ -144,8 +150,8 @@ def progress():
 @ping
 @app.route('/jobs', methods=['GET', 'POST'])
 def jobs():
-    modules = OrderedDict([('reso', reso), ('meso', meso), ('behavior', behavior),
-                           ('pupil', pupil)])
+    modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack),
+                           ('threadmill', treadmill), ('pupil', pupil)])
 
     if request.method == 'POST':
         to_delete = [{'key_hash': kh} for kh in request.form.getlist('delete_item')]

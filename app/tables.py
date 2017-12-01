@@ -34,9 +34,19 @@ class CorrectionTable(flask_table.Table):
     classes = ['Relation']
     animal_id = flask_table.Col('Animal Id')
     session = flask_table.Col('Session')
-    scan_idx = flask_table.Col('Scan')
+    scan_idx = flask_table.Col('Scan Idx')
     pipe_version = flask_table.Col('Pipe Version')
     field = flask_table.Col('Field')
+
+    channel = SelectCol('Channel')
+
+
+class StackCorrectionTable(flask_table.Table):
+    classes = ['Relation']
+    animal_id = flask_table.Col('Animal Id')
+    session = flask_table.Col('Session')
+    stack_idx = flask_table.Col('Stack Idx')
+    pipe_version = flask_table.Col('Pipe Version')
 
     channel = SelectCol('Channel')
 

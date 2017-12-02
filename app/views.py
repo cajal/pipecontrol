@@ -308,7 +308,7 @@ def relation(schema, table, subtable):
     form = forms.RestrictionForm(request.form)
     if request.method == 'POST' and form.validate():
         root_rel = root_rel() & form['restriction'].data
-    table = tables.create_datajoint_table(root_rel(), limit=25)
+    table = tables.create_datajoint_table(root_rel, limit=25)
 
     return render_template('schema.html', filename='{}.svg'.format(filename), table=table,
                            form=form)

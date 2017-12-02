@@ -151,7 +151,7 @@ def progress():
 @app.route('/jobs', methods=['GET', 'POST'])
 def jobs():
     modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack),
-                           ('threadmill', treadmill), ('pupil', pupil)])
+                           ('treadmill', treadmill), ('pupil', pupil)])
 
     if request.method == 'POST':
         to_delete = [{'key_hash': kh} for kh in request.form.getlist('delete_item')]

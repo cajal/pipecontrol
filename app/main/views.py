@@ -8,8 +8,9 @@ import mpld3
 import graphviz
 import json
 
-from . import app, schemata, forms, tables
-from .schemata import experiment, shared, reso, meso, stack, pupil, treadmill
+from . import main, forms, tables
+from .. import schemata
+from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill
 
 
 
@@ -27,16 +28,16 @@ def escape_json(json_string):
 
 
 @ping
-@app.route('/')
+@main.route('/')
 def index():
     if not 'user' in session:
-        return redirect(url_for('user'))
+        return redirect(url_for('main.user'))
 
     return render_template('index.html')
 
 
 @ping
-@app.route('/user', methods=['GET', 'POST'])
+@main.route('/user', methods=['GET', 'POST'])
 def user():
     form = forms.UserForm(request.form)
     if request.method == 'POST' and form.validate():
@@ -49,7 +50,7 @@ def user():
 
 
 @ping
-@app.route('/autoprocessing', methods=['GET', 'POST'])
+@main.route('/autoprocessing', methods=['GET', 'POST'])
 def autoprocessing():
     form = forms.AutoProcessing(request.form)
     if request.method == 'POST' and form.validate():
@@ -63,7 +64,7 @@ def autoprocessing():
 
 
 @ping
-@app.route('/correction', methods=['GET', 'POST'])
+@main.route('/correction', methods=['GET', 'POST'])
 def correction():
     modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack)])
 
@@ -95,7 +96,7 @@ def correction():
 
 
 @ping
-@app.route('/segmentation', methods=['GET', 'POST'])
+@main.route('/segmentation', methods=['GET', 'POST'])
 def segmentation():
     modules = OrderedDict([('reso', reso), ('meso', meso)])
 
@@ -129,7 +130,7 @@ def segmentation():
 
 
 @ping
-@app.route('/progress', methods=['GET', 'POST'])
+@main.route('/progress', methods=['GET', 'POST'])
 def progress():
     all_tables = []
     user_sessions = experiment.Session() & {'username': session['user']}
@@ -148,7 +149,7 @@ def progress():
 
 
 @ping
-@app.route('/jobs', methods=['GET', 'POST'])
+@main.route('/jobs', methods=['GET', 'POST'])
 def jobs():
     modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack),
                            ('treadmill', treadmill), ('pupil', pupil)])
@@ -173,7 +174,7 @@ def jobs():
 
 
 @ping
-@app.route('/summary', methods=['GET', 'POST'])
+@main.route('/summary', methods=['GET', 'POST'])
 def summary():
     form = forms.RestrictionForm(request.form)
 
@@ -189,7 +190,7 @@ def summary():
 
 
 @ping
-@app.route('/figure/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/<which>')
+@main.route('/figure/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/<which>')
 def figure(animal_id, session, scan_idx, field, pipe_version, which):
     key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
            'field': field, 'pipe_version': pipe_version}
@@ -217,7 +218,7 @@ def figure(animal_id, session, scan_idx, field, pipe_version, which):
 
 
 @ping
-@app.route('/traces/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/'
+@main.route('/traces/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/'
            '<segmentation_method>/<spike_method>')
 def traces(animal_id, session, scan_idx, field, pipe_version, segmentation_method,
            spike_method):
@@ -252,16 +253,16 @@ def traces(animal_id, session, scan_idx, field, pipe_version, segmentation_metho
     return render_template('figure.html', figure=figure)
 
 
-@app.route('/tmp/<path:filename>')
+@main.route('/tmp/<path:filename>')
 def tmpfile(filename):
     return send_from_directory('/tmp/', filename)
 
 
 @ping
-@app.route('/schema/', defaults={'schema': 'experiment', 'table': 'Scan', 'subtable': None},
+@main.route('/schema/', defaults={'schema': 'experiment', 'table': 'Scan', 'subtable': None},
            methods=['GET', 'POST'])
-@app.route('/schema/<schema>/<table>', defaults={'subtable': None}, methods=['GET', 'POST'])
-@app.route('/schema/<schema>/<table>/<subtable>', methods=['GET', 'POST'])
+@main.route('/schema/<schema>/<table>', defaults={'subtable': None}, methods=['GET', 'POST'])
+@main.route('/schema/<schema>/<table>/<subtable>', methods=['GET', 'POST'])
 def relation(schema, table, subtable):
     graph_attr = {'size': '12, 12', 'rankdir': 'LR', 'splines': 'ortho'}
     node_attr = {'style': 'filled', 'shape': 'note', 'align': 'left', 'ranksep': '0.1',
@@ -276,7 +277,7 @@ def relation(schema, table, subtable):
         graph_attr = {'color': 'grey80', 'style': 'filled', 'label': table_names['schema']}
         with dot.subgraph(name='cluster_{}'.format(table_names['schema']), node_attr=node_attr,
                           graph_attr=graph_attr) as subgraph:
-            subgraph.node(name, label=name, URL=url_for('relation', **table_names),
+            subgraph.node(name, label=name, URL=url_for('main.relation', **table_names),
                           target='_top', **node_attr)
         return name
 
@@ -318,7 +319,7 @@ def relation(schema, table, subtable):
 
 
 @ping
-@app.route('/tracking/<animal_id>/<session>/<scan_idx>', methods=['GET', 'POST'])
+@main.route('/tracking/<animal_id>/<session>/<scan_idx>', methods=['GET', 'POST'])
 def tracking(animal_id, session, scan_idx):
     form = forms.TrackingForm(request.form)
 

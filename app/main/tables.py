@@ -94,11 +94,11 @@ class SummaryTable(flask_table.Table):
 
     kwargs = {'animal_id': 'animal_id', 'session': 'session', 'scan_idx': 'scan_idx',
               'field': 'field', 'pipe_version': 'pipe_version'}
-    correlation = flask_table.LinkCol('Correlation Image', 'figure', url_kwargs=kwargs,
+    correlation = flask_table.LinkCol('Correlation Image', 'main.figure', url_kwargs=kwargs,
                                       url_kwargs_extra={'which': 'correlation'})
-    average = flask_table.LinkCol('Average Image', 'figure', url_kwargs=kwargs,
+    average = flask_table.LinkCol('Average Image', 'main.figure', url_kwargs=kwargs,
                                   url_kwargs_extra={'which': 'average'})
-    traces = flask_table.LinkCol('Spike Traces', 'traces', url_kwargs=kwargs,
+    traces = flask_table.LinkCol('Spike Traces', 'main.traces', url_kwargs=kwargs,
                                  url_kwargs_extra={'channel': 1, 'segmentation_method': 3,
                                                    'spike_method': 5})
 

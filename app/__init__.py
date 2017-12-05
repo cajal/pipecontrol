@@ -24,5 +24,6 @@ if not (app.debug or app.testing or app.config['SSL_DISABLE']):
     from flask_sslify import SSLify
     sslify = SSLify(app)
 
-# Create views and error handlers
-from . import views, errors
+# Register blueprints
+from .main import main as main_blueprint
+app.register_blueprint(main_blueprint)

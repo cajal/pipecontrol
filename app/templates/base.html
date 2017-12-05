@@ -20,16 +20,16 @@
 {% block navbar %}
     <div class="navbar navbar-inverse" role="navigation">
 
-        <a class="navbar-brand" href="{{ url_for('user') }}">
+        <a class="navbar-brand" href="{{ url_for('main.user') }}">
                 {{ session['user'] if 'user' in session else 'Select user' }}
         </a>
-        <a class="navbar-brand" href="{{ url_for('relation') }}">ERD</a>
-        <a class="navbar-brand" href="{{ url_for('autoprocessing') }}">Auto Processing</a>
-        <a class="navbar-brand" href="{{ url_for('correction') }}">Correction Channel</a>
-        <a class="navbar-brand" href="{{ url_for('segmentation') }}">Segmentation Task</a>
-        <a class="navbar-brand" href="{{ url_for('progress') }}">Progress</a>
-        <a class="navbar-brand" href="{{ url_for('jobs') }}">Jobs</a>
-        <a class="navbar-brand" href="{{ url_for('summary') }}">Summary Images</a>
+        <a class="navbar-brand" href="{{ url_for('main.relation') }}">ERD</a>
+        <a class="navbar-brand" href="{{ url_for('main.autoprocessing') }}">Auto Processing</a>
+        <a class="navbar-brand" href="{{ url_for('main.correction') }}">Correction Channel</a>
+        <a class="navbar-brand" href="{{ url_for('main.segmentation') }}">Segmentation Task</a>
+        <a class="navbar-brand" href="{{ url_for('main.progress') }}">Progress</a>
+        <a class="navbar-brand" href="{{ url_for('main.jobs') }}">Jobs</a>
+        <a class="navbar-brand" href="{{ url_for('main.summary') }}">Summary Images</a>
     </div>
 {% endblock %}
 

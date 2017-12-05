@@ -1,4 +1,4 @@
-from .schemata import experiment
+from ..schemata import experiment
 import wtforms
 from wtforms import validators
 

@@ -1,15 +1,4 @@
 {% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
-{% import "_macros.html" as macros %}
-
-{% block head %}
-    {{ super() }}
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='datajoint.css') }}">
-{% endblock %}
-
-{% block title %}Pipeline Control{% endblock %}
-
-
 
 
 {% block page_content %}
@@ -19,7 +8,7 @@
         {% endif %}
 
         {% from "_macros.html" import render_field %}
-        <form method=post>
+        <form method="post">
             <dl>
                 {{ render_field(form.relative_area_threshold) }}
                 {{ render_field(form.ratio_threshold) }}
@@ -32,14 +21,7 @@
                 {{ render_field(form.gaussian_blur) }}
                 {{ render_field(form.exclude) }}
             </dl>
-            <p><input type=submit value=Submit>
+            <input type="submit" value="Submit">
         </form>
     </div>
 {% endblock %}
-
-
-{% block scripts %}
-    {{ super() }}
-{% endblock %}
-
-

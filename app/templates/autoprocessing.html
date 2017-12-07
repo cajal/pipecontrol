@@ -1,15 +1,4 @@
 {% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
-{% import "_macros.html" as macros %}
-
-{% block head %}
-    {{ super() }}
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='datajoint.css') }}">
-{% endblock %}
-
-{% block title %}Pipeline Control{% endblock %}
-
-
 
 
 {% block page_content %}
@@ -20,15 +9,9 @@
                 {{ render_field(form.animal_id) }}
                 {{ render_field(form.session) }}
                 {{ render_field(form.scan_idx) }}
+                {{ render_field(form.priority) }}
             </dl>
-            <p><input type=submit value=Submit>
+            <input type="submit" value="Insert">
         </form>
     </div>
 {% endblock %}
-
-
-{% block scripts %}
-    {{ super() }}
-{% endblock %}
-
-

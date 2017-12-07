@@ -1,50 +1,38 @@
 {% extends "bootstrap/base.html" %}
 
-{% macro render_field(field) %}
-    <dt>{{ field.label }}
-    <dd>{{ field(**kwargs)|safe }}
-        {% if field.errors %}
-            <ul class=errors>
-                {% for error in field.errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    </dd>
-{% endmacro %}
 
-{% block title %}Row-Bot{% endblock %}
+{% block title %}Pipeline Control{% endblock %}
+
 
 {% block head %}
     {{ super() }}
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {#    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">#}
-    <link href="//netdna.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet"
-          type="text/css"/>
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="stylesheet" type="text/css"
-          href="{{ url_for('static', filename='metro-bootstrap/dist/css/metro-bootstrap.css') }}">
+          href="//netdna.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon"/>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon"/>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}"/>
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static', filename='metro-bootstrap/dist/css/metro-bootstrap.css') }}"/>
 {% endblock %}
+
 
 {% block navbar %}
     <div class="navbar navbar-inverse" role="navigation">
 
         <a class="navbar-brand" href="{{ url_for('main.user') }}">
-                {{ session['user'] if 'user' in session else 'Please choose user' }}
+                {{ session['user'] if 'user' in session else 'Select user' }}
         </a>
-{#        <a class="navbar-brand" href="{{ url_for('main.index') }}">Home</a>#}
-
+        <a class="navbar-brand" href="{{ url_for('main.relation') }}">ERD</a>
+        <a class="navbar-brand" href="{{ url_for('main.autoprocessing') }}">Auto Processing</a>
         <a class="navbar-brand" href="{{ url_for('main.correction') }}">Correction Channel</a>
         <a class="navbar-brand" href="{{ url_for('main.segmentation') }}">Segmentation Task</a>
-        <a class="navbar-brand" href="{{ url_for('main.autoprocessing') }}">Auto Processing</a>
         <a class="navbar-brand" href="{{ url_for('main.progress') }}">Progress</a>
-        <a class="navbar-brand" href="{{ url_for('main.relation') }}">ERD</a>
         <a class="navbar-brand" href="{{ url_for('main.jobs') }}">Jobs</a>
         <a class="navbar-brand" href="{{ url_for('main.summary') }}">Summary Images</a>
     </div>
 {% endblock %}
+
 
 {% block content %}
     <div class="container">
@@ -58,6 +46,7 @@
         {% block page_content %}{% endblock %}
     </div>
 {% endblock %}
+
 
 {% block scripts %}
     {{ super() }}

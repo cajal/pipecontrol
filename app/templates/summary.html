@@ -1,6 +1,4 @@
 {% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
-{% import "_macros.html" as macros %}
 
 
 {% block head %}
@@ -8,41 +6,21 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='datajoint.css') }}">
 {% endblock %}
 
-{% block title %}Pipeline Control{% endblock %}
-
-
-
 
 {% block page_content %}
     <div class="post-tabs">
-    <h3>Showing 40 entries</h3>
-    Use restrictions to narrow down your search.
-
-    <p><p>
-        <form method=post>
+        <h3>Showing first entries</h3>
+        Restrict results using SQL-like restrictions, e.g.,
+            <code>animal_id=11521 and session=2 and scan_idx<3</code>
+        <p>
+        {% from "_macros.html" import render_field %}
+        <form method="post">
             <dl>
-                <dt>{{ form.restriction.label }}
-                <dd>{{ form.restriction(style="width: 700px;")|safe }}
-                    {% if form.restriction.errors %}
-                        <ul class=errors>
-                            {% for error in form.restriction.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </dd>
+                {{ render_field(form.restriction, style="width: 700px;") }}
             </dl>
-            <p><input type=submit value=Submit>
+            <input type="submit" value="Restrict">
         </form>
-    <p>
-
-    {{ table }}
+        <br>
+        {{ table }}
     </div>
 {% endblock %}
-
-
-{% block scripts %}
-    {{ super() }}
-{% endblock %}
-
-

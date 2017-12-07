@@ -1,52 +1,33 @@
 {% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
-{% import "_macros.html" as macros %}
 
-{% block title %}Pipeline Control{% endblock %}
 
 {% block head %}
     {{ super() }}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='datajoint.css') }}">
 {% endblock %}
 
+
 {% block page_content %}
     <h3>ERD neighborhood</h3>
-    Click on a table to get to it. 
+    Click on a table to expand it.
     <div class="post-tabs">
-        <object data="{{ url_for('main.tmpfile', filename=filename) }}" type="image/svg+xml" class="Svg"
-                target="_top">
+        <object data="{{ url_for('main.tmpfile', filename=filename) }}" type="image/svg+xml"
+                class="Svg" target="_top">
         </object>
-
-
     </div>
-    <h3>Content</h3>
-    Showing the first 20 entries. Use the restriction to narrow it
-    down. E.g. <code>animal_id=8623 and session=1</code>
+
+    <h3>Table content</h3>
+    Showing first table entries. Restrict results using SQl-like restrictions, e.g.,
+        <code>animal_id=8623 and scan_idx>1 and software="scanimage"</code>
     <div class="post-tabs">
-        <form method=post>
+        {% from "_macros.html" import render_field %}
+        <form method="post">
             <dl>
-                <dt>{{ form.restriction.label }}
-                <dd>{{ form.restriction(style="width: 700px;")|safe }}
-                    {% if form.restriction.errors %}
-                        <ul class=errors>
-                            {% for error in form.restriction.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </dd>
+                {{ render_field(form.restriction, style="width: 700px;") }}
             </dl>
-            <p><input type=submit value=Submit>
+            <input type="submit" value="Restrict">
         </form>
-    {{ table }}
     </div>
-
-
+    <p>
+    {{ table }}
 {% endblock %}
-
-
-{% block scripts %}
-    {{ super() }}
-{% endblock %}
-
-

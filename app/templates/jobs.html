@@ -1,6 +1,4 @@
 {% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
-{% import "_macros.html" as macros %}
 
 
 {% block head %}
@@ -8,30 +6,17 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='datajoint.css') }}">
 {% endblock %}
 
-{% block title %}Pipeline Control{% endblock %}
-
-
-
 
 {% block page_content %}
     <div class="post-tabs">
-        {% for schema, jobtable in jobs.items() %}
-            <h3>{{ schema }}</h3>
-             <form action={{ url_for('main.jobs') }} method="post">
-            {{ jobtable }}
-             <p>
-             <p>
-             <input type="hidden" name='schema' value="{{ schema }}">
-             <input type="submit"  value="Delete">
-         </form>
-
+        {% for module_name, table in job_tables %}
+            <h3>Jobs for {{ module_name }}</h3>
+            <form action="{{ url_for('main.jobs') }}" method="post">
+                {{ table }}
+                <p><p>
+                <input type="hidden" name="module_name" value="{{ module_name }}">
+                <input type="submit"  value="Delete">
+            </form>
         {% endfor %}
     </div>
 {% endblock %}
-
-
-{% block scripts %}
-    {{ super() }}
-{% endblock %}
-
-

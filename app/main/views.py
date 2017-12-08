@@ -188,6 +188,15 @@ def summary():
 
     return render_template('summary.html', form=form, table=table)
 
+# @main.route('/quality/', defaults={'animal_id': None, 'session': None, 'scan_idx': None}, methods=['GET', 'POST'])
+# @main.route('/quality/<animal_id>/<session>/<scan_idx>/<field>', methods=['GET', 'POST'])
+@ping
+@main.route('/quality/', methods=['GET', 'POST'])
+def quality():
+    form = forms.QualityForm()
+    if request.method == 'POST' and form.validate():
+        pass
+    return render_template('quality.html', form=form)
 
 @ping
 @main.route('/figure/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/<which>')

@@ -19,6 +19,11 @@ class AutoProcessing(wtforms.Form):
     priority = wtforms.IntegerField('Priority [0-100]', [validators.NumberRange(-128, 127)],
                                     default=50)
 
+class QualityForm(wtforms.Form):
+    animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired()])
+    session = wtforms.IntegerField('Session', [validators.InputRequired()])
+    scan_idx = wtforms.IntegerField('Scan Idx', [validators.InputRequired()])
+
 
 class TrackingForm(wtforms.Form):
     exclude = wtforms.BooleanField('Not trackable', [validators.InputRequired()],

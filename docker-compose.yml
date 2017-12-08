@@ -17,7 +17,7 @@ services:
       - "80:5000"
     volumes:
       - .:/server/pipecontrol
-      - $HOME/Documents/pipecontrol/tmp/:/tmp
+      - $PWD/tmp/:/tmp
     environment:
       - PIPELINE_CONFIG=development
     env_file: .env

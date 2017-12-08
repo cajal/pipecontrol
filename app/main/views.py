@@ -203,8 +203,18 @@ def quality():
         key = dict(animal_id=form['animal_id'].data,
                    session=form['session'].data,
                    scan_idx=form['scan_idx'].data)
+        base = None
+        if not experiment.Scan() & key:
+            flash('Scan <code>{}</code> does not exist.'.format(key))
+            return render_template('quality.html', form=form)
+        elif meso.ScanInfo() & key:
+            base = meso
+        elif reso.ScanInfo() & key:
+            base = reso
+        else:
+            flash('Scan is not in meso or reso'.format(key))
+            return render_template('quality.html', form=form)
 
-        base = meso if meso.ScanInfo() & key else reso
 
         oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
         correlation = (base.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')

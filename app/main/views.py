@@ -10,8 +10,7 @@ import json
 
 from . import main, forms, tables
 from .. import schemata
-from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill
-
+from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune
 
 
 def ping(f):
@@ -188,15 +187,24 @@ def summary():
 
     return render_template('summary.html', form=form, table=table)
 
-# @main.route('/quality/', defaults={'animal_id': None, 'session': None, 'scan_idx': None}, methods=['GET', 'POST'])
-# @main.route('/quality/<animal_id>/<session>/<scan_idx>/<field>', methods=['GET', 'POST'])
+
 @ping
 @main.route('/quality/', methods=['GET', 'POST'])
 def quality():
-    form = forms.QualityForm()
+    form = forms.QualityForm(request.form)
+    oracle_map = None
     if request.method == 'POST' and form.validate():
-        pass
-    return render_template('quality.html', form=form)
+        key = dict(animal_id=form['animal_id'].data,
+                   session=form['session'].data,
+                   scan_idx=form['scan_idx'].data, field=1)
+        img = (tune.OracleMap() & key).fetch1('oracle_map')
+        fig, ax = plt.subplots(figsize=(12, 12))
+        import seaborn as sns
+        cmap = sns.blend_palette(['dodgerblue','steelblue','k','lime','orange'], as_cmap=True)
+        ax.imshow(img, origin='lower', interpolation='lanczos', cmap=cmap, vmin=-1, vmax=1)
+        ax.axis('off')
+        oracle_map = mpld3.fig_to_html(fig)
+    return render_template('quality.html', form=form, oracle_map=oracle_map)
 
 @ping
 @main.route('/figure/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/<which>')

@@ -36,5 +36,8 @@
         </form>
         <br>
         {{ table }}
+        {% if oracle_map %}
+            {{ oracle_map|safe }}
+        {% endif %}
     </div>
 {% endblock %}

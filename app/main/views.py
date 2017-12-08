@@ -1,5 +1,8 @@
 from collections import OrderedDict
-from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
+from functools import partial
+from inspect import isclass
+
+from flask import render_template, redirect, url_for, flash, request, session, send_from_directory, make_response
 import datajoint as dj
 import uuid
 import numpy as np
@@ -7,7 +10,8 @@ import matplotlib.pyplot as plt
 import mpld3
 import graphviz
 import json
-
+import pandas as pd
+from app.main.tables import CheckmarkTable, InfoTable
 from . import main, forms, tables
 from .. import schemata
 from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune
@@ -15,15 +19,17 @@ from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, 
 
 def ping(f):
     """ Decorator to keep database connection alive."""
+
     def wrapper(*args, **kwargs):
         dj.conn()
         return f(*args, **kwargs)
+
     return wrapper
+
 
 def escape_json(json_string):
     """ Clean JSON strings so they can be used as html attributes."""
     return json_string.replace('"', '&quot;')
-
 
 
 @ping
@@ -80,7 +86,7 @@ def correction():
             keys_rel = ((module.ScanInfo() * module.ScanInfo.Field().proj()
                          & user_sessions) - module.CorrectionChannel())
             correction_table = tables.CorrectionTable
-        else: # stack
+        else:  # stack
             keys_rel = (module.StackInfo() & user_sessions) - module.CorrectionChannel()
             correction_table = tables.StackCorrectionTable
 
@@ -117,7 +123,7 @@ def segmentation():
     for module_name, module in modules.items():
         segtask_rel = ((module.ScanInfo() * shared.Channel() * module.MotionCorrection() &
                         user_sessions & 'channel <= nchannels') - module.SegmentationTask() -
-                        module.DoNotSegment())
+                       module.DoNotSegment())
         items = segtask_rel.proj().fetch(as_dict=True)
         for item in items:
             values = [escape_json(json.dumps({**item, 'compartment': c})) for c in compartments]
@@ -140,7 +146,7 @@ def progress():
                 remaining, total = possible_rel().progress(user_sessions, display=False)
                 items.append({'table': rel_name, 'processed': '{}/{}'.format(total - remaining, total),
                               'percentage': '{:.1f}%'.format(100 * (1 - remaining / total))})
-            except Exception: # not a dj.Computed class
+            except Exception:  # not a dj.Computed class
                 pass
         all_tables.append((module_name, tables.ProgressTable(items)))
 
@@ -192,19 +198,41 @@ def summary():
 @main.route('/quality/', methods=['GET', 'POST'])
 def quality():
     form = forms.QualityForm(request.form)
-    oracle_map = None
+
     if request.method == 'POST' and form.validate():
         key = dict(animal_id=form['animal_id'].data,
                    session=form['session'].data,
-                   scan_idx=form['scan_idx'].data, field=1)
-        img = (tune.OracleMap() & key).fetch1('oracle_map')
-        fig, ax = plt.subplots(figsize=(12, 12))
-        import seaborn as sns
-        cmap = sns.blend_palette(['dodgerblue','steelblue','k','lime','orange'], as_cmap=True)
-        ax.imshow(img, origin='lower', interpolation='lanczos', cmap=cmap, vmin=-1, vmax=1)
-        ax.axis('off')
-        oracle_map = mpld3.fig_to_html(fig)
-    return render_template('quality.html', form=form, oracle_map=oracle_map)
+                   scan_idx=form['scan_idx'].data)
+
+        base = meso if meso.ScanInfo() & key else reso
+
+        oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
+        correlation = (base.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
+        average = (base.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
+        quality = (base.Quality.Contrast() & key).fetch(dj.key, order_by='field')
+        eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
+
+        info = [dict(attribute=a, value=v) for a, v in (base.ScanInfo() & key).fetch1().items()]
+        info = InfoTable(info)
+
+        progress = []
+        for schem in [base, pupil, tune]:
+            for cls in filter(lambda x: issubclass(x, (dj.Computed, dj.Imported)),
+                              filter(isclass, map(lambda x: getattr(schem, x), dir(schem)))):
+                progress.append(dict(relation=cls.__name__, populated=bool(cls() & key)))
+
+        progress = CheckmarkTable(progress)
+
+        return render_template('quality.html', form=form,
+                               oracle=oracle,
+                               correlation=correlation,
+                               average=average,
+                               quality=quality,
+                               eye=eye,
+                               info=info,
+                               progress=progress)
+    return render_template('quality.html', form=form)
+
 
 @ping
 @main.route('/figure/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/<which>')
@@ -236,7 +264,7 @@ def figure(animal_id, session, scan_idx, field, pipe_version, which):
 
 @ping
 @main.route('/traces/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/'
-           '<segmentation_method>/<spike_method>')
+            '<segmentation_method>/<spike_method>')
 def traces(animal_id, session, scan_idx, field, pipe_version, segmentation_method,
            spike_method):
     key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
@@ -277,7 +305,7 @@ def tmpfile(filename):
 
 @ping
 @main.route('/schema/', defaults={'schema': 'experiment', 'table': 'Scan', 'subtable': None},
-           methods=['GET', 'POST'])
+            methods=['GET', 'POST'])
 @main.route('/schema/<schema>/<table>', defaults={'subtable': None}, methods=['GET', 'POST'])
 @main.route('/schema/<schema>/<table>/<subtable>', methods=['GET', 'POST'])
 def relation(schema, table, subtable):
@@ -334,25 +362,24 @@ def relation(schema, table, subtable):
                            form=form)
 
 
-
 @ping
 @main.route('/tracking/<animal_id>/<session>/<scan_idx>', methods=['GET', 'POST'])
 def tracking(animal_id, session, scan_idx):
     form = forms.TrackingForm(request.form)
 
     if request.method == 'POST' and form.validate():
-        #TODO: Process input
+        # TODO: Process input
         pass
 
     key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx}
     if pupil.Eye() & key:
         preview_frames = (pupil.Eye() & key).fetch1('preview_frames')
         fig, axes = plt.subplots(4, 4, figsize=(10, 8), sharex=True, sharey=True)
-        for ax, frame in zip(axes.ravel(), preview_frames.transpose([2,0,1])):
+        for ax, frame in zip(axes.ravel(), preview_frames.transpose([2, 0, 1])):
             ax.imshow(frame, cmap='gray', interpolation='lanczos')
             ax.axis('off')
             ax.set_aspect(1)
-        #mpld3.plugins.connect(fig, mpld3.plugins.LinkedBrush([]))
+        # mpld3.plugins.connect(fig, mpld3.plugins.LinkedBrush([]))
         figure = mpld3.fig_to_html(fig)
     else:
         figure = None

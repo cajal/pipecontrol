@@ -8,7 +8,7 @@ class SelectCol(flask_table.Col):
         for option, value in zip(content['options'], content.get('values',
                                                                  content['options'])):
             html += '<option value="{}"{}>{}</option>'.format(value, ' selected' if
-                           option == content.get('default', None) else '', option)
+            option == content.get('default', None) else '', option)
         html += "</select>"
         return html
 
@@ -20,13 +20,29 @@ class CheckBoxCol(flask_table.Col):
 
     def td_format(self, content):
         html = '<input type="checkbox" name="{}" value="{}"{}>'.format(content['name'],
-                        content['value'], ' checked' if self.checked else '')
+                                                                       content['value'],
+                                                                       ' checked' if self.checked else '')
+        return html
+
+class CheckMarkCol(flask_table.Col):
+    def __init__(self, *args, checked=False, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def td_format(self, content):
+        if content:
+            html = """<span class ="glyphicon glyphicon-ok" > </span>"""
+        else:
+            html = """<span class ="glyphicon glyphicon-remove" > </span>"""
+
+        # html = '<input type="checkbox" name="{}" value="{}"{}>'.format(content['name'],
+        #                                                                content['value'],
+        #                                                                ' checked' if self.checked else '')
         return html
 
 
 class KeyColumn(flask_table.Col):
     def td_format(self, content):
-        key = {name:content[name][0] for name in content.dtype.names} # recarray to dict
+        key = {name: content[name][0] for name in content.dtype.names}  # recarray to dict
         return '<code>{}</code>'.format(key)
 
 
@@ -82,6 +98,17 @@ class JobTable(flask_table.Table):
     timestamp = flask_table.DatetimeCol('Timestamp')
 
     delete = CheckBoxCol('Delete')
+
+
+class CheckmarkTable(flask_table.Table):
+    classes = ['table']
+    relation = flask_table.Col('Animal Id')
+    populated = CheckMarkCol('Populated')
+
+class InfoTable(flask_table.Table):
+    classes = ['table']
+    attribute = flask_table.Col('Attribute')
+    value = flask_table.Col('Value')
 
 
 class SummaryTable(flask_table.Table):

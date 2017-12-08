@@ -4,6 +4,11 @@
 {% block head %}
     {{ super() }}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='datajoint.css') }}">
+    <style>
+        div.imagetiles div.col-sm-2 div.col-sm-4 {
+            padding: 1px;
+        }
+    </style>
 {% endblock %}
 
 
@@ -35,9 +40,160 @@
             <input type="submit" value="Select">
         </form>
         <br>
-        {{ table }}
-        {% if oracle_map %}
-            {{ oracle_map|safe }}
+
+        <!-- info -->
+
+
+        <!-- Progress-->
+        <h3>Database Status and Scan Info</h3>
+        <div class="row">
+            {% if progress %}
+
+                <div class="col-sm-4">
+                    {{ progress | safe }}
+                </div>
+            {% endif %}
+            {% if info %}
+
+                <div class="col-sm-4">
+
+                    {{ info | safe }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Oracle images-->
+        <h2>Oracle Images</h2>
+        <div class="container">
+            {% for keys in oracle|batch(4) %}
+                <div class="row imagetiles">
+                    {% for key in keys %}
+                        <div class="col-sm-2">
+                            <dl>
+                                <dt>Field {{ key.field }}</dt>
+                                <dd>
+                                    <a href="{{ url_for('images.oracle_map', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='huge') }}">
+                                        <img src="{{ url_for('images.oracle_map', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='thumb') }}">
+                                    </a>
+                                </dd>
+                            </dl>
+                        </div>
+
+
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Correlation images-->
+        <h2>Correlation Images</h2>
+        <div class="container">
+            {% for keys in correlation|batch(4) %}
+                <div class="row imagetiles">
+                    {% for key in keys %}
+                        <div class="col-sm-2">
+                            <dl>
+                                <dt>Field {{ key.field }}</dt>
+                                <dd>
+                                    <a href="{{ url_for('images.correlation_image', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='huge') }}">
+                                        <img src="{{ url_for('images.correlation_image', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='thumb') }}">
+                                    </a>
+                                </dd>
+                            </dl>
+                        </div>
+
+
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Correlation images-->
+        <h2>Average Images</h2>
+        <div class="container">
+            {% for keys in correlation|batch(4) %}
+                <div class="row imagetiles">
+                    {% for key in keys %}
+                        <div class="col-sm-2">
+                            <dl>
+                                <dt>Field {{ key.field }}</dt>
+                                <dd>
+                                    <a href="{{ url_for('images.average_image', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='huge') }}">
+                                        <img src="{{ url_for('images.average_image', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='thumb') }}">
+                                    </a>
+                                </dd>
+                            </dl>
+                        </div>
+
+
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- mean intensity and contrast images-->
+        <h2>Intensity and Contrast Traces</h2>
+        <div class="container">
+            {% for keys in correlation|batch(2) %}
+                <div class="row imagetiles">
+                    {% for key in keys %}
+                        <div class="col-sm-4">
+                            <dl>
+                                <dt>Field {{ key.field }}</dt>
+                                <dd>
+                                    <a href="{{ url_for('images.contrast_intensity', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='huge') }}">
+                                        <img src="{{ url_for('images.contrast_intensity', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='small') }}">
+                                    </a>
+                                </dd>
+                            </dl>
+                        </div>
+
+
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- eye tracking preview-->
+        {% if eye %}
+            <div class="container">
+                <div class="row ">
+
+                    <h2>Eye tracking preview</h2>
+                    <a href="{{ url_for('images.eye', animal_id=eye.animal_id,
+                                         session=eye.session,
+                                         scan_idx=eye.scan_idx, size='huge') }}">
+                        <img src="{{ url_for('images.eye', animal_id=eye.animal_id,
+                                         session=eye.session,
+                                         scan_idx=eye.scan_idx, size='medium') }}">
+                    </a>
+                </div>
+            </div>
         {% endif %}
     </div>
+
 {% endblock %}

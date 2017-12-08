@@ -26,4 +26,6 @@ if not (app.debug or app.testing or app.config['SSL_DISABLE']):
 
 # Register blueprints
 from .main import main as main_blueprint
+from .images import images as image_blueprint
 app.register_blueprint(main_blueprint)
+app.register_blueprint(image_blueprint, )

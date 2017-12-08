@@ -75,7 +75,7 @@ def correction():
         flash('{} key(s) inserted in CorrectionChannel'.format(len(keys)))
 
     all_tables = []
-    user_sessions = experiment.Session() & {'username': session['user']}
+    user_sessions = experiment.Session() & {'username': session.get('user', 'unknown')}
     for module_name, module in modules.items():
         if module_name in ['reso', 'meso']:
             keys_rel = ((module.ScanInfo() * module.ScanInfo.Field().proj()
@@ -113,7 +113,7 @@ def segmentation():
         flash('{} key(s) ignored'.format(len(keys)))
 
     all_tables = []
-    user_sessions = experiment.Session() & {'username': session['user']}
+    user_sessions = experiment.Session() & {'username': session.get('user', 'unknown')}
     compartments = experiment.Compartment().fetch('compartment')
     for module_name, module in modules.items():
         segtask_rel = ((module.ScanInfo() * shared.Channel() * module.MotionCorrection() &
@@ -133,7 +133,7 @@ def segmentation():
 @main.route('/progress', methods=['GET', 'POST'])
 def progress():
     all_tables = []
-    user_sessions = experiment.Session() & {'username': session['user']}
+    user_sessions = experiment.Session() & {'username': session.get('user', 'unknown')}
     for module_name, module in [('reso', reso), ('meso', meso), ('stack', stack)]:
         items = []
         for rel_name, possible_rel in module.__dict__.items():

@@ -21,7 +21,8 @@ def ping(f):
     """ Decorator to keep database connection alive."""
 
     def wrapper(*args, **kwargs):
-        dj.conn()
+        dj.conn().is_connected
+        dj.conn().autocommit(True)
         return f(*args, **kwargs)
 
     return wrapper

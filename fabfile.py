@@ -42,7 +42,6 @@ def pull():
         branch = get_branch(env.control_dir)
         run('git reset --hard')
         run('git clean -fd')
-        run('git pull')
         run('git checkout {}'.format(branch))
         run('git pull origin ' + branch)
 

@@ -47,12 +47,10 @@
         <!-- Progress-->
         <h3>Database Status and Scan Info</h3>
         <div class="row">
-            {% if progress %}
 
-                <div class="col-sm-4">
-                    {{ progress | safe }}
-                </div>
-            {% endif %}
+            <div class="col-sm-4">
+                {{ progress | safe }}
+            </div>
             {% if info %}
 
                 <div class="col-sm-4">
@@ -63,7 +61,7 @@
         </div>
 
         <!-- Oracle images-->
-        <h2>Oracle Images</h2>
+        <h3>Oracle Images</h3>
         <div class="container">
             {% for keys in oracle|batch(4) %}
                 <div class="row imagetiles">
@@ -92,7 +90,7 @@
         </div>
 
         <!-- Correlation images-->
-        <h2>Correlation Images</h2>
+        <h3>Correlation Images</h3>
         <div class="container">
             {% for keys in correlation|batch(4) %}
                 <div class="row imagetiles">
@@ -121,7 +119,7 @@
         </div>
 
         <!-- Correlation images-->
-        <h2>Average Images</h2>
+        <h3>Average Images</h3>
         <div class="container">
             {% for keys in correlation|batch(4) %}
                 <div class="row imagetiles">
@@ -150,7 +148,7 @@
         </div>
 
         <!-- mean intensity and contrast images-->
-        <h2>Intensity and Contrast Traces</h2>
+        <h3>Intensity and Contrast Traces</h3>
         <div class="container">
             {% for keys in correlation|batch(2) %}
                 <div class="row imagetiles">
@@ -183,7 +181,7 @@
             <div class="container">
                 <div class="row ">
 
-                    <h2>Eye tracking preview</h2>
+                    <h3>Eye tracking preview</h3>
                     <a href="{{ url_for('images.eye', animal_id=eye.animal_id,
                                          session=eye.session,
                                          scan_idx=eye.scan_idx, size='huge') }}">

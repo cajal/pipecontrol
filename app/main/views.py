@@ -218,6 +218,7 @@ def quality():
 
 
         oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
+        cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
         correlation = (base.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
         average = (base.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
         quality = (base.Quality.Contrast() & key).fetch(dj.key, order_by='field')
@@ -241,7 +242,8 @@ def quality():
                                quality=quality,
                                eye=eye,
                                info=info,
-                               progress=progress)
+                               progress=progress,
+                               cos2map=cos2map)
     return render_template('quality.html', form=form)
 
 

@@ -89,6 +89,36 @@
             {% endfor %}
         </div>
 
+        <!-- Pixelwise tuning-->
+        <h3>Pixelwise Tuning</h3>
+        <div class="container">
+            {% for keys in cos2map|batch(4) %}
+                <div class="row imagetiles">
+                    {% for key in keys %}
+                        <div class="col-sm-2">
+                            <dl>
+                                <dt>Field {{ key.field }}</dt>
+                                <dd>
+                                    <a href="{{ url_for('images.cos2map', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='huge') }}">
+                                        <img src="{{ url_for('images.cos2map', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='thumb') }}">
+                                    </a>
+                                </dd>
+                            </dl>
+                        </div>
+
+
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+
+
         <!-- Correlation images-->
         <h3>Correlation Images</h3>
         <div class="container">

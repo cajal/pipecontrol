@@ -1,3 +1,5 @@
+import sys
+
 from ..schemata import tune
 from io import BytesIO
 from . import images
@@ -101,21 +103,21 @@ def contrast_intensity(animal_id, session, scan_idx, field, size):
     return savefig(fig)
 
 
-# @images.route("/cos2map-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
-# def cos2map(animal_id, session, scan_idx, field, size):
-#     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field)
-#
-#     a, m = (tune.Cos2Map() & key).fetch1('direction_map', 'amplitude_map')
-#     h = (a / np.pi / 2) % 1
-#     v = np.minimum(m / np.percentile(m, 99.9), 1)
-#
-#     img = mcolors.hsv_to_rgb(np.stack((h, v, v), axis=2))
-#     sz = tuple(i / max(*img.shape) * size_factor[size] for i in reversed(img.shape))
-#     fig, ax = plt.subplots(figsize=sz)
-#     ax.imshow(img, origin='lower', interpolation='nearest')
-#     ax.axis('off')
-#     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-#     return savefig(fig)
+@images.route("/cos2map-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
+def cos2map(animal_id, session, scan_idx, field, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field)
+
+    a, m = (tune.Cos2Map() & key).fetch1('direction_map', 'amplitude_map')
+    h = (a / np.pi / 2) % 1
+    v = np.minimum(m / np.percentile(m, 99.9), 1)
+
+    img = mcolors.hsv_to_rgb(np.stack((h, v, v), axis=2))
+    sz = tuple(i / max(*img.shape) * size_factor[size] for i in reversed(img.shape[:2]))
+    fig, ax = plt.subplots(figsize=sz)
+    ax.imshow(img, origin='lower', interpolation='nearest') 
+    ax.axis('off')
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    return savefig(fig)
 
 
 @images.route("/eye-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")

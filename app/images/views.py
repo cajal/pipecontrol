@@ -114,7 +114,7 @@ def cos2map(animal_id, session, scan_idx, field, size):
     img = mcolors.hsv_to_rgb(np.stack((h, v, v), axis=2))
     sz = tuple(i / max(*img.shape) * size_factor[size] for i in reversed(img.shape[:2]))
     fig, ax = plt.subplots(figsize=sz)
-    ax.imshow(img, origin='lower', interpolation='nearest') 
+    ax.imshow(img, origin='lower', interpolation='nearest')
     ax.axis('off')
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     return savefig(fig)

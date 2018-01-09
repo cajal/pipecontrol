@@ -1,8 +1,7 @@
 from collections import OrderedDict
-from functools import partial
 from inspect import isclass
 
-from flask import render_template, redirect, url_for, flash, request, session, send_from_directory, make_response
+from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
 import datajoint as dj
 import uuid
 import numpy as np
@@ -10,8 +9,6 @@ import matplotlib.pyplot as plt
 import mpld3
 import graphviz
 import json
-import pandas as pd
-from app.main.tables import CheckmarkTable, InfoTable
 from . import main, forms, tables
 from .. import schemata
 from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune
@@ -21,8 +18,7 @@ def ping(f):
     """ Decorator to keep database connection alive."""
 
     def wrapper(*args, **kwargs):
-        dj.conn().is_connected
-        dj.conn().autocommit(True)
+        dj.conn().ping()
         return f(*args, **kwargs)
 
     return wrapper
@@ -201,49 +197,33 @@ def quality():
     form = forms.QualityForm(request.form)
 
     if request.method == 'POST' and form.validate():
-        key = dict(animal_id=form['animal_id'].data,
-                   session=form['session'].data,
-                   scan_idx=form['scan_idx'].data)
-        base = None
-        if not experiment.Scan() & key:
-            flash('Scan <code>{}</code> does not exist.'.format(key))
-            return render_template('quality.html', form=form)
-        elif meso.ScanInfo() & key:
-            base = meso
-        elif reso.ScanInfo() & key:
-            base = reso
+        key = {'animal_id': form['animal_id'].data, 'session': form['session'].data,
+               'scan_idx': form['scan_idx'].data}
+        pipe = reso if reso.ScanInfo() & key else meso if meso.ScanInfo() & key else None
+
+        if pipe is not None:
+            oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
+            cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
+            correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
+            average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
+            quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
+            eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
+
+            info_table = tables.InfoTable(key)
+
+            items = []
+            for schema_ in [pipe, pupil, tune]:
+                for cls in filter(lambda x: issubclass(x, (dj.Computed, dj.Imported)),
+                                  filter(isclass, map(lambda x: getattr(schema_, x), dir(schema_)))):
+                    items.append({'relation': cls.__name__, 'populated': bool(cls() & key)})
+            progress_table = tables.CheckmarkTable(items)
+
+            return render_template('quality.html', form=form, oracle=oracle, correlation=correlation,
+                                   average=average, quality=quality, eye=eye, info=info_table,
+                                   progress=progress_table, cos2map=cos2map)
         else:
-            flash('Scan is not in meso or reso'.format(key))
-            return render_template('quality.html', form=form)
+            flash('<code>{}<\code> is not in reso or meso'.format(key))
 
-
-        oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
-        cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
-        correlation = (base.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
-        average = (base.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
-        quality = (base.Quality.Contrast() & key).fetch(dj.key, order_by='field')
-        eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
-
-        info = [dict(attribute=a, value=v) for a, v in (base.ScanInfo() & key).fetch1().items()]
-        info = InfoTable(info)
-
-        progress = []
-        for schem in [base, pupil, tune]:
-            for cls in filter(lambda x: issubclass(x, (dj.Computed, dj.Imported)),
-                              filter(isclass, map(lambda x: getattr(schem, x), dir(schem)))):
-                progress.append(dict(relation=cls.__name__, populated=bool(cls() & key)))
-
-        progress = CheckmarkTable(progress)
-
-        return render_template('quality.html', form=form,
-                               oracle=oracle,
-                               correlation=correlation,
-                               average=average,
-                               quality=quality,
-                               eye=eye,
-                               info=info,
-                               progress=progress,
-                               cos2map=cos2map)
     return render_template('quality.html', form=form)
 
 

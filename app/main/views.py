@@ -157,7 +157,10 @@ def jobs():
                            ('treadmill', treadmill), ('pupil', pupil)])
 
     if request.method == 'POST':
-        to_delete = [{'key_hash': kh} for kh in request.form.getlist('delete_item')]
+        to_delete = []
+        for tn_plus_kh in request.form.getlist('delete_item'):
+            table_name, key_hash = tn_plus_kh.split('+')
+            to_delete.append({'table_name': table_name, 'key_hash': key_hash})
         jobs_rel = modules[request.form['module_name']].schema.jobs & to_delete
         num_jobs_to_delete = len(jobs_rel)
         jobs_rel.delete()
@@ -169,7 +172,8 @@ def jobs():
     for name, module in modules.items():
         items = module.schema.jobs.proj(*fetch_attributes).fetch(as_dict=True)
         for item in items:
-            item['delete'] = {'name': 'delete_item', 'value': item['key_hash']}
+            value = '{}+{}'.format(item['table_name'], item['key_hash']) # + is separator
+            item['delete'] = {'name': 'delete_item', 'value': value}
         all_tables.append((name, tables.JobTable(items)))
 
     return render_template('jobs.html', job_tables=all_tables)

@@ -227,7 +227,7 @@ def quality():
                                    average=average, quality=quality, eye=eye, info=info_table,
                                    progress=progress_table, cos2map=cos2map)
         else:
-            flash('<code>{}<\code> is not in reso or meso'.format(key))
+            flash('{} is not in reso or meso'.format(key))
 
     return render_template('quality.html', form=form)
 

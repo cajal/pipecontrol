@@ -154,7 +154,7 @@ def progress():
 @main.route('/jobs', methods=['GET', 'POST'])
 def jobs():
     modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack),
-                           ('treadmill', treadmill), ('pupil', pupil)])
+                           ('tune', tune), ('treadmill', treadmill), ('pupil', pupil)])
 
     if request.method == 'POST':
         to_delete = []

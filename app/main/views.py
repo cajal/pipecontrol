@@ -213,7 +213,8 @@ def quality():
             quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
             eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
 
-            info_table = tables.InfoTable(key)
+            items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
+            info_table = tables.InfoTable(items)
 
             items = []
             for schema_ in [pipe, pupil, tune]:

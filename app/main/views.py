@@ -1,8 +1,7 @@
 from collections import OrderedDict
-from functools import partial
 from inspect import isclass
 
-from flask import render_template, redirect, url_for, flash, request, session, send_from_directory, make_response
+from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
 import datajoint as dj
 import uuid
 import numpy as np
@@ -10,8 +9,6 @@ import matplotlib.pyplot as plt
 import mpld3
 import graphviz
 import json
-import pandas as pd
-from app.main.tables import CheckmarkTable, InfoTable
 from . import main, forms, tables
 from .. import schemata
 from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune
@@ -21,8 +18,7 @@ def ping(f):
     """ Decorator to keep database connection alive."""
 
     def wrapper(*args, **kwargs):
-        dj.conn().is_connected
-        dj.conn().autocommit(True)
+        dj.conn().ping()
         return f(*args, **kwargs)
 
     return wrapper
@@ -158,10 +154,13 @@ def progress():
 @main.route('/jobs', methods=['GET', 'POST'])
 def jobs():
     modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack),
-                           ('treadmill', treadmill), ('pupil', pupil)])
+                           ('tune', tune), ('treadmill', treadmill), ('pupil', pupil)])
 
     if request.method == 'POST':
-        to_delete = [{'key_hash': kh} for kh in request.form.getlist('delete_item')]
+        to_delete = []
+        for tn_plus_kh in request.form.getlist('delete_item'):
+            table_name, key_hash = tn_plus_kh.split('+')
+            to_delete.append({'table_name': table_name, 'key_hash': key_hash})
         jobs_rel = modules[request.form['module_name']].schema.jobs & to_delete
         num_jobs_to_delete = len(jobs_rel)
         jobs_rel.delete()
@@ -173,7 +172,8 @@ def jobs():
     for name, module in modules.items():
         items = module.schema.jobs.proj(*fetch_attributes).fetch(as_dict=True)
         for item in items:
-            item['delete'] = {'name': 'delete_item', 'value': item['key_hash']}
+            value = '{}+{}'.format(item['table_name'], item['key_hash']) # + is separator
+            item['delete'] = {'name': 'delete_item', 'value': value}
         all_tables.append((name, tables.JobTable(items)))
 
     return render_template('jobs.html', job_tables=all_tables)
@@ -201,49 +201,34 @@ def quality():
     form = forms.QualityForm(request.form)
 
     if request.method == 'POST' and form.validate():
-        key = dict(animal_id=form['animal_id'].data,
-                   session=form['session'].data,
-                   scan_idx=form['scan_idx'].data)
-        base = None
-        if not experiment.Scan() & key:
-            flash('Scan <code>{}</code> does not exist.'.format(key))
-            return render_template('quality.html', form=form)
-        elif meso.ScanInfo() & key:
-            base = meso
-        elif reso.ScanInfo() & key:
-            base = reso
+        key = {'animal_id': form['animal_id'].data, 'session': form['session'].data,
+               'scan_idx': form['scan_idx'].data}
+        pipe = reso if reso.ScanInfo() & key else meso if meso.ScanInfo() & key else None
+
+        if pipe is not None:
+            oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
+            cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
+            correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
+            average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
+            quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
+            eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
+
+            items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
+            info_table = tables.InfoTable(items)
+
+            items = []
+            for schema_ in [pipe, pupil, tune]:
+                for cls in filter(lambda x: issubclass(x, (dj.Computed, dj.Imported)),
+                                  filter(isclass, map(lambda x: getattr(schema_, x), dir(schema_)))):
+                    items.append({'relation': cls.__name__, 'populated': bool(cls() & key)})
+            progress_table = tables.CheckmarkTable(items)
+
+            return render_template('quality.html', form=form, oracle=oracle, correlation=correlation,
+                                   average=average, quality=quality, eye=eye, info=info_table,
+                                   progress=progress_table, cos2map=cos2map)
         else:
-            flash('Scan is not in meso or reso'.format(key))
-            return render_template('quality.html', form=form)
+            flash('{} is not in reso or meso'.format(key))
 
-
-        oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
-        cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
-        correlation = (base.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
-        average = (base.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
-        quality = (base.Quality.Contrast() & key).fetch(dj.key, order_by='field')
-        eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
-
-        info = [dict(attribute=a, value=v) for a, v in (base.ScanInfo() & key).fetch1().items()]
-        info = InfoTable(info)
-
-        progress = []
-        for schem in [base, pupil, tune]:
-            for cls in filter(lambda x: issubclass(x, (dj.Computed, dj.Imported)),
-                              filter(isclass, map(lambda x: getattr(schem, x), dir(schem)))):
-                progress.append(dict(relation=cls.__name__, populated=bool(cls() & key)))
-
-        progress = CheckmarkTable(progress)
-
-        return render_template('quality.html', form=form,
-                               oracle=oracle,
-                               correlation=correlation,
-                               average=average,
-                               quality=quality,
-                               eye=eye,
-                               info=info,
-                               progress=progress,
-                               cos2map=cos2map)
     return render_template('quality.html', form=form)
 
 

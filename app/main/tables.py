@@ -24,21 +24,11 @@ class CheckBoxCol(flask_table.Col):
                                                                        ' checked' if self.checked else '')
         return html
 
+
 class CheckMarkCol(flask_table.Col):
-    def __init__(self, *args, checked=False, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def td_format(self, content):
-        if content:
-            html = """<span class ="glyphicon glyphicon-ok" > </span>"""
-        else:
-            html = """<span class ="glyphicon glyphicon-remove" > </span>"""
-
-        # html = '<input type="checkbox" name="{}" value="{}"{}>'.format(content['name'],
-        #                                                                content['value'],
-        #                                                                ' checked' if self.checked else '')
-        return html
-
+        return '<span class ="glyphicon {}" > </span>'.format('glyphicon-ok' if content
+                                                              else 'glyphicon-remove')
 
 class KeyColumn(flask_table.Col):
     def td_format(self, content):
@@ -104,6 +94,7 @@ class CheckmarkTable(flask_table.Table):
     classes = ['table']
     relation = flask_table.Col('Animal Id')
     populated = CheckMarkCol('Populated')
+
 
 class InfoTable(flask_table.Table):
     classes = ['table']

@@ -48,14 +48,3 @@ class TrackingForm(wtforms.Form):
                                         [validators.InputRequired()], default=0.1)
     gaussian_blur = wtforms.DecimalField('Gaussian blurring filter size',
                                          [validators.InputRequired()], default=5)
-
-def IsScan(form, field):
-    dict(animal_id=form['animal_id'].data,
-         session=form['session'].data,
-         scan_idx=form['scan_idx'].data)
-
-    if not form.some_checkbox_field.data:
-        # clear out processing errors
-        field.errors[:] = []
-        # Stop further validators running
-        raise StopValidation()

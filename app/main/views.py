@@ -167,13 +167,16 @@ def jobs():
         flash('{} job(s) deleted.'.format(num_jobs_to_delete))
 
     all_tables = []
-    fetch_attributes = ['table_name', 'status', 'key', 'user', 'error_message',
-                        'connection_id', 'timestamp', 'key_hash']
+    fetch_attributes = ['table_name', 'status', 'key', 'user', 'key_hash',
+                        'error_message', 'timestamp']
     for name, module in modules.items():
-        items = module.schema.jobs.proj(*fetch_attributes).fetch(as_dict=True)
+        items = module.schema.jobs.proj(*fetch_attributes).fetch(order_by='table_name, '
+                                                                          'timestamp DESC',
+                                                                 as_dict=True)
         for item in items:
             value = '{}+{}'.format(item['table_name'], item['key_hash']) # + is separator
             item['delete'] = {'name': 'delete_item', 'value': value}
+            item['key_hash'] = item['key_hash'][:8] + '...' # shorten it for display
         all_tables.append((name, tables.JobTable(items)))
 
     return render_template('jobs.html', job_tables=all_tables)

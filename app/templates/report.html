@@ -1,0 +1,64 @@
+{% extends "pdf.html" %}
+
+
+
+
+{% block content %}
+    <h1>Quality Report for animal {{ animal_id }}, session {{ session }}, and scan {{ scan_idx }}</h1>
+    More statistics go here.
+
+    <p style="page-break-before: always"></p>
+    {% for correlation, average, oracle, cos2map in data %}
+        <h2>Field {{ correlation.field }}</h2>
+        <table>
+            <tr>
+                <th>Correlation</th>
+                <th>Average</th>
+            </tr>
+            <tr>
+                <td>
+                    {% if correlation %}
+                        <img src="{{ url_for('images.correlation_image', animal_id=correlation.animal_id,
+                                                     session=correlation.session,
+                                                     scan_idx=correlation.scan_idx,
+                                                     field=correlation.field, size='report') }}">
+                    {% endif %}
+                </td>
+                <td>
+                    {% if average %}
+                        <img src="{{ url_for('images.average_image', animal_id=average.animal_id,
+                                                     session=average.session,
+                                                     scan_idx=average.scan_idx,
+                                                     field=average.field, size='report') }}">
+                    {% endif %}
+                </td>
+
+            </tr>
+
+            <tr>
+                <th>Oracle</th>
+                <th>Pixel Orientation</th>
+            </tr>
+            <tr>
+                <td>
+                    {% if oracle %}
+                        <img src="{{ url_for('images.oracle_map', animal_id=oracle.animal_id,
+                                                     session=oracle.session,
+                                                     scan_idx=oracle.scan_idx,
+                                                     field=oracle.field, size='report') }}">
+                    {% endif %}
+                </td>
+                <td>
+                    {% if cos2map %}
+                        <img src="{{ url_for('images.cos2map', animal_id=cos2map.animal_id,
+                                                     session=cos2map.session,
+                                                     scan_idx=cos2map.scan_idx,
+                                                     field=cos2map.field, size='report') }}">
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+        <p style="page-break-before: always"></p>
+    {% endfor %}
+
+{% endblock %}

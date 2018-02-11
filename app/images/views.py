@@ -14,7 +14,7 @@ import matplotlib.colors as mcolors
 import matplotlib.image as mpimg
 
 size_factor = dict(
-    thumb=2, small=4, medium=8, large=16, huge=32
+    thumb=2, small=4, report=5, medium=8, large=16, huge=32
 )
 corr_cmap = sns.blend_palette(['dodgerblue', 'steelblue', 'k', 'lime', 'orange'], as_cmap=True)
 

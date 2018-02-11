@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from inspect import isclass
+from itertools import zip_longest
 
 from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
 import datajoint as dj
@@ -9,6 +10,9 @@ import matplotlib.pyplot as plt
 import mpld3
 import graphviz
 import json
+
+from flask_weasyprint import render_pdf, HTML, CSS
+
 from . import main, forms, tables
 from .. import schemata
 from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune
@@ -172,7 +176,7 @@ def jobs():
     for name, module in modules.items():
         items = module.schema.jobs.proj(*fetch_attributes).fetch(as_dict=True)
         for item in items:
-            value = '{}+{}'.format(item['table_name'], item['key_hash']) # + is separator
+            value = '{}+{}'.format(item['table_name'], item['key_hash'])  # + is separator
             item['delete'] = {'name': 'delete_item', 'value': value}
         all_tables.append((name, tables.JobTable(items)))
 
@@ -340,12 +344,12 @@ def relation(schema, table, subtable):
     root_name = root_rel().full_table_name
     root_id = add_node(name_lookup(root_name), node_attrs[dj.erd._get_tier(root_name)])
     for node_name, _ in root_dependencies.in_edges(root_name):
-        if dj.erd._get_tier(node_name) is dj.erd._AliasNode: # renamed attribute
+        if dj.erd._get_tier(node_name) is dj.erd._AliasNode:  # renamed attribute
             node_name = root_dependencies.in_edges(node_name)[0][0]
         node_id = add_node(name_lookup(node_name), node_attrs[dj.erd._get_tier(node_name)])
         dot.edge(node_id, root_id)
     for _, node_name in root_dependencies.out_edges(root_name):
-        if dj.erd._get_tier(node_name) is dj.erd._AliasNode: # renamed attribute
+        if dj.erd._get_tier(node_name) is dj.erd._AliasNode:  # renamed attribute
             node_name = root_dependencies.out_edges(node_name)[0][1]
         node_id = add_node(name_lookup(node_name), node_attrs[dj.erd._get_tier(node_name)])
         dot.edge(root_id, node_id)
@@ -388,3 +392,47 @@ def tracking(animal_id, session, scan_idx):
         flash('Could not find eye frames for {}'.format(key))
 
     return render_template('trackingtask.html', form=form, figure=figure)
+
+
+
+@main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>')
+def scanreport(animal_id, session, scan_idx):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+    pipe = reso if reso.ScanInfo() & key else meso if meso.ScanInfo() & key else None
+
+    if pipe is not None:
+        oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
+        cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
+        correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
+        average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
+        quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
+        eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
+
+        items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
+        info_table = tables.InfoTable(items)
+
+        items = []
+        for schema_ in [pipe, pupil, tune]:
+            for cls in filter(lambda x: issubclass(x, (dj.Computed, dj.Imported)),
+                              filter(isclass, map(lambda x: getattr(schema_, x), dir(schema_)))):
+                items.append({'relation': cls.__name__, 'populated': bool(cls() & key)})
+        progress_table = tables.CheckmarkTable(items)
+
+        return render_template('report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
+                               data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)))
+                               # oracle=oracle, correlation=correlation,
+                               # average=average, quality=quality, eye=eye, info=info_table,
+                               # progress=progress_table, cos2map=cos2map)
+    else:
+        flash('{} is not in reso or meso'.format(key))
+        return render_template(url_for('quality'))
+
+@main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')
+def scanreport_pdf(animal_id, session, scan_idx):
+    html = scanreport(animal_id=animal_id, session=session, scan_idx=scan_idx)
+    return render_pdf(HTML(string=html))
+                      # stylesheets=[CSS(url_for('static', filename='styles.css')),
+                      #              CSS(url_for('static', filename='datajoint.css')),
+                      #              CSS('//netdna.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css'),
+                      #              CSS('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css')
+                      #              ])

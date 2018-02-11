@@ -13,6 +13,7 @@ import json
 
 from flask_weasyprint import render_pdf, HTML, CSS
 
+from .tables import StatsTable
 from . import main, forms, tables
 from .. import schemata
 from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune
@@ -394,7 +395,6 @@ def tracking(animal_id, session, scan_idx):
     return render_template('trackingtask.html', form=form, figure=figure)
 
 
-
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>')
 def scanreport(animal_id, session, scan_idx):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
@@ -405,34 +405,34 @@ def scanreport(animal_id, session, scan_idx):
         cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
         correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
         average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
-        quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
-        eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
 
         items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
-        info_table = tables.InfoTable(items)
+        craniatomy_notes, session_notes = (experiment.Session() & key).fetch1('craniotomy_notes', 'session_notes')
 
-        items = []
-        for schema_ in [pipe, pupil, tune]:
-            for cls in filter(lambda x: issubclass(x, (dj.Computed, dj.Imported)),
-                              filter(isclass, map(lambda x: getattr(schema_, x), dir(schema_)))):
-                items.append({'relation': cls.__name__, 'populated': bool(cls() & key)})
-        progress_table = tables.CheckmarkTable(items)
+        fields, somas = pipe.ScanSet().aggr(
+            pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & key & dict(type='soma'),
+            somas='count(*)').fetch('field','somas')
+        stats = StatsTable([dict(field=f, somas=s) for f,s in zip(fields, somas)])
 
         return render_template('report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
-                               data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)))
-                               # oracle=oracle, correlation=correlation,
-                               # average=average, quality=quality, eye=eye, info=info_table,
-                               # progress=progress_table, cos2map=cos2map)
+                               data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)),
+                               craniatomy_notes=craniatomy_notes.split(','),
+                               session_notes=session_notes.split(','),
+                               stats = stats)
     else:
         flash('{} is not in reso or meso'.format(key))
         return render_template(url_for('quality'))
 
+
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')
 def scanreport_pdf(animal_id, session, scan_idx):
     html = scanreport(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    return render_pdf(HTML(string=html))
-                      # stylesheets=[CSS(url_for('static', filename='styles.css')),
-                      #              CSS(url_for('static', filename='datajoint.css')),
-                      #              CSS('//netdna.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css'),
-                      #              CSS('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css')
-                      #              ])
+    return render_pdf(HTML(string=html),
+                      stylesheets=[CSS(url_for('static', filename='styles.css')),
+                                   CSS(url_for('static', filename='datajoint.css'))]
+                      )
+    # stylesheets=[CSS(url_for('static', filename='styles.css')),
+    #              CSS(url_for('static', filename='datajoint.css')),
+    #              CSS('//netdna.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css'),
+    #              CSS('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css')
+    #              ])

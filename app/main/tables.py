@@ -101,6 +101,12 @@ class InfoTable(flask_table.Table):
     attribute = flask_table.Col('Attribute')
     value = flask_table.Col('Value')
 
+class StatsTable(flask_table.Table):
+    classes = ['Relation']
+
+    field = flask_table.Col('Field')
+    somas = flask_table.Col('Somas')
+
 
 class SummaryTable(flask_table.Table):
     classes = ['Relation']

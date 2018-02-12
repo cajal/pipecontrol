@@ -409,16 +409,17 @@ def scanreport(animal_id, session, scan_idx):
         items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
         craniatomy_notes, session_notes = (experiment.Session() & key).fetch1('craniotomy_notes', 'session_notes')
 
-        fields, somas = pipe.ScanSet().aggr(
+        fields, somas, depth, height, width = (pipe.ScanInfo.Field() * pipe.ScanSet()).aggr(
             pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & key & dict(type='soma'),
-            somas='count(*)').fetch('field','somas')
-        stats = StatsTable([dict(field=f, somas=s) for f,s in zip(fields, somas)])
+            'z', 'um_height', 'um_width', somas='count(*)').fetch('field', 'somas', 'z', 'um_height', 'um_width')
+        stats = StatsTable([dict(field=f, somas=s, depth=z, height=h, width=w)
+                            for f, s, z, h, w in zip(fields, somas, depth, height, width)])
 
         return render_template('report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
                                data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)),
                                craniatomy_notes=craniatomy_notes.split(','),
                                session_notes=session_notes.split(','),
-                               stats = stats)
+                               stats=stats)
     else:
         flash('{} is not in reso or meso'.format(key))
         return render_template(url_for('quality'))

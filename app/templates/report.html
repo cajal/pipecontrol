@@ -5,35 +5,35 @@
 
 {% block content %}
     <h1>Quality Report for animal {{ animal_id }}, session {{ session }}, and scan {{ scan_idx }}</h1>
-    More statistics go here.
 
     {% if craniatomy_notes %}
         <h2>Craniatomy notes</h2>
         <ul>
-        {% for note in craniatomy_notes %}
-            <li>{{ note }}</li>
-        {% endfor %}
+            {% for note in craniatomy_notes %}
+                <li>{{ note }}</li>
+            {% endfor %}
         </ul>
     {% endif %}
 
     {% if session_notes %}
-         <h2>Session notes</h2>
+        <h2>Session notes</h2>
         <ul>
-        {% for note in session_notes %}
-            <li>{{ note }}</li>
-        {% endfor %}
+            {% for note in session_notes %}
+                <li>{{ note }}</li>
+            {% endfor %}
         </ul>
     {% endif %}
 
 
     {% if stats %}
-    <h2>Statistics</h2>
-    {{ stats | safe}}
+        <h2>Statistics</h2>
+        {{ stats | safe }}
     {% endif %}
 
+    <h2>Images</h2>
     <p style="page-break-before: always"></p>
     {% for correlation, average, oracle, cos2map in data %}
-        <h2>Field {{ correlation.field }}</h2>
+        <h3>Field {{ correlation.field }}</h3>
         <table>
             <tr>
                 <th>Correlation</th>

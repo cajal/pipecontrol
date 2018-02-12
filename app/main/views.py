@@ -407,7 +407,9 @@ def scanreport(animal_id, session, scan_idx):
         average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
         eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
         eye_track = (pupil.TrackedVideo() & key).fetch1(dj.key) if pupil.TrackedVideo() & key else None
-        # items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
+        quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
+        sta = bool(tune.STA() & tune.STAQual() & key)
+
         craniatomy_notes, session_notes = (experiment.Session() & key).fetch1('craniotomy_notes', 'session_notes')
 
         fields, somas, depth, height, width = (pipe.ScanInfo.Field() * pipe.ScanSet()).aggr(
@@ -415,12 +417,14 @@ def scanreport(animal_id, session, scan_idx):
             'z', 'um_height', 'um_width', somas='count(*)').fetch('field', 'somas', 'z', 'um_height', 'um_width')
         stats = StatsTable([dict(field=f, somas=s, depth=z, height=h, width=w)
                             for f, s, z, h, w in zip(fields, somas, depth, height, width)])
-
+        stats.items.append(
+            dict(field='ALL', somas=sum([d['somas'] for d in stats.items]), depth = '-', height = '-', width = '-')
+        )
         return render_template('report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
                                data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)),
                                craniatomy_notes=craniatomy_notes.split(','),
                                session_notes=session_notes.split(','), eye=eye, eye_track=eye_track,
-                               stats=stats)
+                               stats=stats, sta=sta, quality=quality)
     else:
         flash('{} is not in reso or meso'.format(key))
         return render_template(url_for('quality'))
@@ -436,7 +440,7 @@ def mousereport(animal_id):
     )
     scaninfo = create_datajoint_table(
         [(pipe.ScanInfo() & auto) for pipe in [reso, meso]],
-        selection=['nfields', 'fps', 'scan_idx', 'session', 'nframes', 'nchannels','usecs_per_line']
+        selection=['nfields', 'fps', 'scan_idx', 'session', 'nframes', 'nchannels', 'usecs_per_line']
     )
 
     stats = create_datajoint_table([experiment.Scan().aggr(

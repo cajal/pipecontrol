@@ -1,8 +1,6 @@
 {% extends "pdf.html" %}
 
 
-
-
 {% block content %}
     <h1>Quality Report for animal {{ animal_id }}, session {{ session }}, and scan {{ scan_idx }}</h1>
 
@@ -87,6 +85,28 @@
 
     <p style="page-break-before: always"></p>
 
+    {% if sta %}
+        <h3>Spike Triggered Averages</h3>
+        <h4>From upper percentile of SNR</h4>
+        <div>
+            <img src="{{ url_for('images.sta', animal_id=animal_id,
+                                         session=session,
+                                         scan_idx=scan_idx, size='smedium', t=1, quantile='upper') }}">
+        </div>
+        <h4>From middle percentile of SNR</h4>
+        <div>
+            <img src="{{ url_for('images.sta', animal_id=animal_id,
+                                         session=session,
+                                         scan_idx=scan_idx, size='smedium', t=1, quantile='middle') }}">
+        </div>
+        <h4>From lower percentile of SNR</h4>
+        <div>
+            <img src="{{ url_for('images.sta', animal_id=animal_id,
+                                         session=session,
+                                         scan_idx=scan_idx, size='smedium', t=1, quantile='lower') }}">
+        </div>
+    {% endif %}
+
     {% if eye %}
         <h3>Eye camera</h3>
         <div>
@@ -97,12 +117,26 @@
     {% endif %}
 
     <h2>Traces</h2>
-        {% if eye_track %}
+    {% if eye_track %}
         <h3>Pupil radius and position</h3>
         <div>
             <img src="{{ url_for('images.eye_tracking', animal_id=eye_track.animal_id,
                                          session=eye_track.session,
                                          scan_idx=eye_track.scan_idx, size='medium') }}">
         </div>
+    {% endif %}
+
+    {% if quality %}
+        <h3>Intensity and Contrast Traces</h3>
+        {% for key in quality %}
+            <h4>Field {{ key.field }}</h4>
+            <div>
+                <img src="{{ url_for('images.contrast_intensity', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='smedium') }}">
+            </div>
+
+        {% endfor %}
     {% endif %}
 {% endblock %}

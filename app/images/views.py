@@ -174,3 +174,34 @@ def eye_tracking(animal_id, session, scan_idx, size):
                 a.spines['left'].set_linewidth(1)
                 a.tick_params(axis='both', length=3)
     return savefig(fig)
+
+
+@images.route("/sta-<int:animal_id>-<int:session>-<int:scan_idx>_<int:t>_<quantile>_<size>.png")
+def sta(animal_id, session, scan_idx, t, quantile, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    if quantile == 'upper':
+        rfs = (tune.STA.Map() * tune.STAQual() & key).fetch('map', order_by='snr DESC', limit=49)
+    elif quantile == 'middle':
+        med = np.median((tune.STAQual() & key).fetch('snr'))
+        rfs = (tune.STA.Map() * tune.STAQual() & key).fetch('map', order_by='ABS(snr - {}) ASC'.format(med), limit=49)
+    elif quantile == 'lower':
+        rfs = (tune.STA.Map() * tune.STAQual() & key).fetch('map', order_by='snr ASC', limit=49)
+
+    cmap = plt.cm.get_cmap('bwr')
+    cmap._init()
+    alphas = np.abs(np.linspace(-1.0, 1.0, cmap._lut[:, -1].shape[-1]))
+    cmap._lut[:, -1] = alphas
+
+    sz = tuple(i * size_factor[size] for i in [.9, .5])
+    with  sns.plotting_context('talk' if size == 'huge' else 'paper'):
+        with sns.axes_style('ticks'):
+            fig, ax = plt.subplots(7, 7, figsize=sz)
+            for a, rf in zip(ax.ravel(), rfs):
+                rf = rf[..., t]
+                v = np.abs(rf).max()
+                a.matshow(rf, vmin=-v, vmax=v, cmap=cmap)
+                a.axis('off')
+        fig.tight_layout()
+        fig.subplots_adjust(hspace=0.05, wspace=0.01, top=1, bottom=0, left=0, right=1)
+    return savefig(fig)

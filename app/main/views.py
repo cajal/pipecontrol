@@ -13,7 +13,7 @@ import json
 
 from flask_weasyprint import render_pdf, HTML, CSS
 
-from .tables import StatsTable
+from .tables import StatsTable, CellTable, create_datajoint_table
 from . import main, forms, tables
 from .. import schemata
 from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune
@@ -405,8 +405,9 @@ def scanreport(animal_id, session, scan_idx):
         cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
         correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
         average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
-
-        items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
+        eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
+        eye_track = (pupil.TrackedVideo() & key).fetch1(dj.key) if pupil.TrackedVideo() & key else None
+        # items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
         craniatomy_notes, session_notes = (experiment.Session() & key).fetch1('craniotomy_notes', 'session_notes')
 
         fields, somas, depth, height, width = (pipe.ScanInfo.Field() * pipe.ScanSet()).aggr(
@@ -418,11 +419,33 @@ def scanreport(animal_id, session, scan_idx):
         return render_template('report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
                                data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)),
                                craniatomy_notes=craniatomy_notes.split(','),
-                               session_notes=session_notes.split(','),
+                               session_notes=session_notes.split(','), eye=eye, eye_track=eye_track,
                                stats=stats)
     else:
         flash('{} is not in reso or meso'.format(key))
         return render_template(url_for('quality'))
+
+
+@main.route('/report/mouse/<int:animal_id>')
+def mousereport(animal_id):
+    key = dict(animal_id=animal_id)
+    auto = experiment.AutoProcessing() & key
+
+    scans = create_datajoint_table(
+        (experiment.Scan() & auto), selection=['session', 'scan_idx', 'lens', 'depth', 'site_number', 'scan_ts']
+    )
+    scaninfo = create_datajoint_table(
+        [(pipe.ScanInfo() & auto) for pipe in [reso, meso]],
+        selection=['nfields', 'fps', 'scan_idx', 'session', 'nframes', 'nchannels','usecs_per_line']
+    )
+
+    stats = create_datajoint_table([experiment.Scan().aggr(
+        pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & auto & dict(type='soma'),
+        somas='count(*)', scan_type='"{}"'.format(pipe.__name__)) for pipe in [reso, meso]],
+        selection=['scan_type', 'session', 'scan_idx', 'somas'])
+    stats.items.append(dict(scan_type='', session='ALL', scan_idx='ALL', somas=sum([e['somas'] for e in stats.items])))
+    return render_template('mouse_report.html', animal_id=animal_id, scans=scans,
+                           scaninfo=scaninfo, stats=stats)
 
 
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')
@@ -432,8 +455,12 @@ def scanreport_pdf(animal_id, session, scan_idx):
                       stylesheets=[CSS(url_for('static', filename='styles.css')),
                                    CSS(url_for('static', filename='datajoint.css'))]
                       )
-    # stylesheets=[CSS(url_for('static', filename='styles.css')),
-    #              CSS(url_for('static', filename='datajoint.css')),
-    #              CSS('//netdna.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css'),
-    #              CSS('//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css')
-    #              ])
+
+
+@main.route('/report/mouse/<int:animal_id>.pdf')
+def mousereport_pdf(animal_id):
+    html = mousereport(animal_id=animal_id)
+    return render_pdf(HTML(string=html),
+                      stylesheets=[CSS(url_for('static', filename='styles.css')),
+                                   CSS(url_for('static', filename='pdf.css'))]
+                      )

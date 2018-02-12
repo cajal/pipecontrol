@@ -1,5 +1,6 @@
 import sys
 
+from ._utils import fill_nans
 from ..schemata import tune
 from io import BytesIO
 from . import images
@@ -14,7 +15,7 @@ import matplotlib.colors as mcolors
 import matplotlib.image as mpimg
 
 size_factor = dict(
-    thumb=2, small=4, report=5, medium=8, large=16, huge=32
+    thumb=2, small=4, report=4, smedium=6.5, medium=8, large=16, huge=32
 )
 corr_cmap = sns.blend_palette(['dodgerblue', 'steelblue', 'k', 'lime', 'orange'], as_cmap=True)
 
@@ -126,13 +127,50 @@ def eye(animal_id, session, scan_idx, size):
 
     frames = (pupil.Eye() & key).fetch1('preview_frames')
 
-    sz = tuple(i * size_factor[size] for i in [1,9/16])
+    sz = tuple(i * size_factor[size] for i in [1, 9 / 16])
     with sns.axes_style('white'):
         fig, ax = plt.subplots(4, 4, figsize=sz, sharex=True, sharey=True)
         vmin, vmax = frames.min(), frames.max()
-        for fr, a in zip(frames.transpose([2,0,1]), ax.ravel()):
+        for fr, a in zip(frames.transpose([2, 0, 1]), ax.ravel()):
             a.imshow(fr, vmin=vmin, vmax=vmax, cmap='gray')
             a.axis('off')
         fig.set_facecolor('k')
         fig.subplots_adjust(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
+    return savefig(fig)
+
+
+@images.route("/eye_tracking-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def eye_tracking(animal_id, session, scan_idx, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    r, center = (pupil.TrackedVideo.Frame() & key).fetch('major_r', 'center', order_by='frame_id ASC')
+    detectedFrames = ~np.isnan(r)
+    xy = np.full((len(r), 2), np.nan)
+    xy[detectedFrames, :] = np.vstack(center[detectedFrames])
+    xy = np.vstack(map(fill_nans, xy.T))
+    pupil_radius = fill_nans(r.squeeze())
+    eye_time = (pupil.Eye() & key).fetch1('eye_time').squeeze()
+    eye_time = eye_time - eye_time[0]
+
+    sz = tuple(i * size_factor[size] for i in [.9, .5])
+    with  sns.plotting_context('talk' if size == 'huge' else 'paper'):
+        with sns.axes_style('ticks'):
+            fig, (ax, ax2, ax3) = plt.subplots(3, 1, figsize=sz, sharex=True)
+            ax.plot(eye_time, pupil_radius, color='k', lw=1)
+            ax.set_ylabel('pupil radius')
+
+            ax2.plot(eye_time, xy[0, :], color='k', lw=1)
+            ax2.set_ylabel('x pos. [px]')
+
+            ax3.plot(eye_time, xy[1, :], color='k', lw=1)
+            ax3.set_ylabel('y pos. [px]')
+
+            ax3.set_xlabel('scan time [s]')
+            fig.tight_layout()
+            fig.subplots_adjust(left=.1)
+            sns.despine(fig, trim=True)
+            for a in [ax, ax2]:
+                a.spines['bottom'].set_linewidth(1)
+                a.spines['left'].set_linewidth(1)
+                a.tick_params(axis='both', length=3)
     return savefig(fig)

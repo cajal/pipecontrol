@@ -1,0 +1,19 @@
+{% extends "pdf.html" %}
+
+
+
+
+{% block content %}
+    <h1>Report for mouse {{ animal_id }}</h1>
+    {##}
+    <h2> Scans </h2>
+    {{ scans | safe }}
+    <p style="page-break-before: always"></p>
+
+    <h2> Scan Info </h2>
+    {{ scaninfo | safe }}
+    <p style="page-break-before: always"></p>
+
+    <h2> Statistics </h2>
+    {{ stats | safe }}
+{% endblock %}

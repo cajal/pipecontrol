@@ -110,6 +110,15 @@ class StatsTable(flask_table.Table):
     height = flask_table.Col('Height [um]')
     width = flask_table.Col('Width [um]')
 
+class CellTable(flask_table.Table):
+    classes = ['Relation']
+
+    session = flask_table.Col('Session')
+    scan_idx = flask_table.Col('Scan')
+    somas = flask_table.Col('Detected Somas')
+
+
+
 
 class SummaryTable(flask_table.Table):
     classes = ['Relation']
@@ -129,16 +138,32 @@ class SummaryTable(flask_table.Table):
                                  url_kwargs_extra={'channel': 1, 'segmentation_method': 3,
                                                    'spike_method': 5})
 
+def create_datajoint_table(rels, name='DataJoint Table', selection=None, **fetch_kwargs):
 
-def create_datajoint_table(rel, **fetch_kwargs):
-    table_class = flask_table.create_table('{}Table'.format(rel.__class__.__name__))
-    for col in rel.heading.attributes:
-        table_class.add_column(col, flask_table.Col(col))
+    if not isinstance(rels, list):
+        rels = [rels]
 
-    items = rel.proj(*rel.heading.non_blobs).fetch(as_dict=True, **fetch_kwargs)
-    for item in items:
-        for blob_col in rel.heading.blobs:
-            item[blob_col] = '<BLOB>'
+    table_class = flask_table.create_table(name)
+    if selection is None:
+        selection = set(rels[0].heading.attributes)
+        for rel in rels[1:]:
+            selection &= set(rel.heading.attributes)
+    print(selection)
+    for col in rels[0].heading.attributes:
+        if col in selection:
+            table_class.add_column(col, flask_table.Col(col))
+
+    items = []
+    for rel in rels:
+        new_items = rel.proj(*rel.heading.non_blobs).fetch(as_dict=True, **fetch_kwargs)
+
+        for item in new_items:
+            for blob_col in rel.heading.blobs:
+                item[blob_col] = '<BLOB>'
+        if selection is not None:
+            for i in range(len(new_items)):
+                new_items[i] = {k:v for k,v in new_items[i].items() if k in selection}
+        items.extend(new_items)
 
     table_class.classes = ['Relation']
     table = table_class(items)

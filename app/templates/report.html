@@ -85,4 +85,24 @@
         <p style="page-break-before: always"></p>
     {% endfor %}
 
+    <p style="page-break-before: always"></p>
+
+    {% if eye %}
+        <h3>Eye camera</h3>
+        <div>
+            <img src="{{ url_for('images.eye', animal_id=eye.animal_id,
+                                         session=eye.session,
+                                         scan_idx=eye.scan_idx, size='smedium') }}">
+        </div>
+    {% endif %}
+
+    <h2>Traces</h2>
+        {% if eye_track %}
+        <h3>Pupil radius and position</h3>
+        <div>
+            <img src="{{ url_for('images.eye_tracking', animal_id=eye_track.animal_id,
+                                         session=eye_track.session,
+                                         scan_idx=eye_track.scan_idx, size='medium') }}">
+        </div>
+    {% endif %}
 {% endblock %}

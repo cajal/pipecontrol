@@ -139,4 +139,19 @@
 
         {% endfor %}
     {% endif %}
+
+
+    {% if oracletime %}
+        <h3>Oracle time trace</h3>
+        {% for key in oracletime %}
+            <h4>Field {{ key.field }}</h4>
+            <div>
+                <img src="{{ url_for('images.oraclecourse', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='smedium') }}">
+            </div>
+
+        {% endfor %}
+    {% endif %}
 {% endblock %}

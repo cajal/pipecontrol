@@ -408,6 +408,7 @@ def scanreport(animal_id, session, scan_idx):
         eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
         eye_track = (pupil.TrackedVideo() & key).fetch1(dj.key) if pupil.TrackedVideo() & key else None
         quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
+        oracletime = (tune.MovieOracleTimeCourse() & key).fetch(dj.key, order_by='field')
         sta = bool(tune.STA() & tune.STAQual() & key)
 
         craniatomy_notes, session_notes = (experiment.Session() & key).fetch1('craniotomy_notes', 'session_notes')
@@ -424,7 +425,7 @@ def scanreport(animal_id, session, scan_idx):
                                data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)),
                                craniatomy_notes=craniatomy_notes.split(','),
                                session_notes=session_notes.split(','), eye=eye, eye_track=eye_track,
-                               stats=stats, sta=sta, quality=quality)
+                               stats=stats, sta=sta, quality=quality, oracletime=oracletime)
     else:
         flash('{} is not in reso or meso'.format(key))
         return render_template(url_for('quality'))

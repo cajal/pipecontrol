@@ -13,6 +13,7 @@ import seaborn as sns
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import matplotlib.colors as mcolors
 import matplotlib.image as mpimg
+from ..schemata import stimulus
 
 size_factor = dict(
     thumb=2, small=4, report=4, smedium=6.5, medium=8, large=16, huge=32
@@ -120,6 +121,26 @@ def cos2map(animal_id, session, scan_idx, field, size):
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     return savefig(fig)
 
+@images.route("/oraclecourse-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
+def oraclecourse(animal_id, session, scan_idx, field, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field)
+    t, movie, pearson = (tune.MovieOracleTimeCourse.OracleClipSet() \
+                         * stimulus.Clip() & key).fetch('time', 'movie_name', 'pearson')
+    sz = tuple(i * size_factor[size] for i in [1, 9 / 16])
+    with sns.axes_style('ticks'):
+        fig, ax = plt.subplots(figsize=sz)
+
+        for t, oracle, label in zip(t, pearson, movie):
+            mu, std = oracle.mean(axis=1), oracle.std(axis=1)/np.sqrt(oracle.shape[1])
+            ax.fill_between(t, mu - std, mu + std, alpha=.1)
+            ax.plot(t, mu, 'o-', label=label)
+        ax.legend(ncol=3, loc='upper left', bbox_to_anchor=(0, 1.15))
+        sns.despine(offset=5)
+        ax.set_xlabel('scan time [s]')
+        ax.set_ylabel('oracle correlation')
+        fig.subplots_adjust(bottom=.2)
+    return savefig(fig)
+
 
 @images.route("/eye-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
 def eye(animal_id, session, scan_idx, size):
@@ -205,3 +226,4 @@ def sta(animal_id, session, scan_idx, t, quantile, size):
         fig.tight_layout()
         fig.subplots_adjust(hspace=0.05, wspace=0.01, top=1, bottom=0, left=0, right=1)
     return savefig(fig)
+

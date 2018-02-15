@@ -1,7 +1,7 @@
 import sys
 
 from ._utils import fill_nans
-from ..schemata import tune
+from ..schemata import tune, xcorr
 from io import BytesIO
 from . import images
 import numpy as np
@@ -13,6 +13,7 @@ import seaborn as sns
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import matplotlib.colors as mcolors
 import matplotlib.image as mpimg
+import datajoint as dj
 from ..schemata import stimulus
 
 size_factor = dict(
@@ -121,6 +122,7 @@ def cos2map(animal_id, session, scan_idx, field, size):
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     return savefig(fig)
 
+
 @images.route("/oraclecourse-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
 def oraclecourse(animal_id, session, scan_idx, field, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field)
@@ -131,7 +133,7 @@ def oraclecourse(animal_id, session, scan_idx, field, size):
         fig, ax = plt.subplots(figsize=sz)
 
         for t, oracle, label in zip(t, pearson, movie):
-            mu, std = oracle.mean(axis=1), oracle.std(axis=1)/np.sqrt(oracle.shape[1])
+            mu, std = oracle.mean(axis=1), oracle.std(axis=1) / np.sqrt(oracle.shape[1])
             ax.fill_between(t, mu - std, mu + std, alpha=.1)
             ax.plot(t, mu, 'o-', label=label)
         ax.legend(ncol=3, loc='upper left', bbox_to_anchor=(0, 1.15))
@@ -199,15 +201,16 @@ def eye_tracking(animal_id, session, scan_idx, size):
 
 @images.route("/sta-<int:animal_id>-<int:session>-<int:scan_idx>_<int:t>_<quantile>_<size>.png")
 def sta(animal_id, session, scan_idx, t, quantile, size):
-    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, stimulus_type='stimulus.Monet2')
 
     if quantile == 'upper':
-        rfs = (tune.STA.Map() * tune.STAQual() & key).fetch('map', order_by='snr DESC', limit=49)
+        rfs, keys = (tune.STA.Map() * tune.STAQual() & key).fetch('map', dj.key, order_by='snr DESC', limit=49)
     elif quantile == 'middle':
         med = np.median((tune.STAQual() & key).fetch('snr'))
-        rfs = (tune.STA.Map() * tune.STAQual() & key).fetch('map', order_by='ABS(snr - {}) ASC'.format(med), limit=49)
+        rfs, keys = (tune.STA.Map() * tune.STAQual() & key).fetch('map', dj.key,
+                                                                  order_by='ABS(snr - {}) ASC'.format(med), limit=49)
     elif quantile == 'lower':
-        rfs = (tune.STA.Map() * tune.STAQual() & key).fetch('map', order_by='snr ASC', limit=49)
+        rfs, keys = (tune.STA.Map() * tune.STAQual() & key).fetch('map', dj.key, order_by='snr ASC', limit=49)
 
     cmap = plt.cm.get_cmap('bwr')
     cmap._init()
@@ -215,15 +218,86 @@ def sta(animal_id, session, scan_idx, t, quantile, size):
     cmap._lut[:, -1] = alphas
 
     sz = tuple(i * size_factor[size] for i in [.9, .5])
+    tt = np.linspace(0, 2 * np.pi, 100)
+    cx, cy = np.cos(tt), np.sin(tt)
     with  sns.plotting_context('talk' if size == 'huge' else 'paper'):
         with sns.axes_style('ticks'):
             fig, ax = plt.subplots(7, 7, figsize=sz)
-            for a, rf in zip(ax.ravel(), rfs):
+            for a, rf, k in zip(ax.ravel(), rfs, keys):
                 rf = rf[..., t]
                 v = np.abs(rf).max()
                 a.matshow(rf, vmin=-v, vmax=v, cmap=cmap)
+                if (tune.STAExtent() & k):
+                    x, y, r = (tune.STAExtent() & k).fetch1('x', 'y', 'radius')
+                    a.plot(x, y, 'o', ms=2 * size_factor[size], lw=.5, color='k', mfc='k', alpha=.2)
+                    # a.plot(x + r * cx, y + r * cy, '--k')
+
                 a.axis('off')
         fig.tight_layout()
         fig.subplots_adjust(hspace=0.05, wspace=0.01, top=1, bottom=0, left=0, right=1)
     return savefig(fig)
 
+
+@images.route("/sta_loc-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def sta_loc(animal_id, session, scan_idx, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    x, y = (tune.STAExtent() & key).fetch('x', 'y')
+    sta = (tune.STA.Map() & key).fetch('map', limit=1)[0]
+    ly, lx = sta.shape[:2]
+    sz = tuple(i * size_factor[size] for i in [.9, .5])
+    with  sns.plotting_context('talk' if size == 'huge' else 'paper'):
+        with sns.axes_style('darkgrid'):
+            fig, ax = plt.subplots(figsize=sz)
+            ax.scatter(x, y)
+            ax.set_xlim((0, lx))
+            ax.set_ylim((0, ly))
+            ax.set_title('Estimated RF positions of n={} cell with RF-SNR>5'.format(len(x)))
+            ax.set_xlabel('stimulus x-dimension')
+            ax.set_ylabel('stimulus y-dimension')
+        fig.tight_layout()
+    return savefig(fig)
+
+
+@images.route("/rf_snr-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def rf_snr(animal_id, session, scan_idx, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    snr = (tune.STAQual() & key).fetch('snr')
+    sz = tuple(i * size_factor[size] for i in [.9, .5])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=2):
+        with sns.axes_style('ticks'):
+            fig, ax = plt.subplots(figsize=sz)
+            g = sns.distplot(snr,
+                             hist_kws=dict(cumulative=True),
+                             kde_kws=dict(cumulative=True), ax=ax)
+        sns.despine(ax=ax, trim=True)
+        ax.set_xlabel('RF SNR')
+        ax.set_ylabel('Cumulative Distribution')
+        ax.spines['bottom'].set_linewidth(1)
+        ax.spines['left'].set_linewidth(1)
+        ax.tick_params(axis='both', length=3, width=1)
+        fig.tight_layout()
+    return savefig(fig)
+
+
+@images.route("/signal_xcorr-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def signal_xcorr(animal_id, session, scan_idx, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+    v = (xcorr.XSNR() & key).fetch1('xsnr')
+
+    sz = tuple(i * size_factor[size] for i in [.9, .5])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=2):
+        with sns.axes_style('ticks'):
+            fig, ax = plt.subplots(figsize=sz)
+            g = sns.distplot(v,
+                             hist_kws=dict(cumulative=True),
+                             kde_kws=dict(cumulative=True), ax=ax)
+        sns.despine(ax=ax, trim=True)
+        ax.set_xlabel(r'$\frac{\sigma^2_{inter trial}}{\sigma^2_{inner trial} - \sigma^2_{inter trial}}$')
+        ax.set_ylabel('Cumulative Distribution')
+        ax.spines['bottom'].set_linewidth(1)
+        ax.spines['left'].set_linewidth(1)
+        ax.tick_params(axis='both', length=3, width=1)
+        fig.tight_layout()
+    return savefig(fig)

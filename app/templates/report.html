@@ -4,10 +4,10 @@
 {% block content %}
     <h1>Quality Report for animal {{ animal_id }}, session {{ session }}, and scan {{ scan_idx }}</h1>
 
-    {% if craniatomy_notes %}
-        <h2>Craniatomy notes</h2>
+    {% if craniotomy_notes %}
+        <h2>Craniotomy notes</h2>
         <ul>
-            {% for note in craniatomy_notes %}
+            {% for note in craniotomy_notes %}
                 <li>{{ note }}</li>
             {% endfor %}
         </ul>
@@ -26,7 +26,37 @@
     {% if stats %}
         <h2>Statistics</h2>
         {{ stats | safe }}
+
+
     {% endif %}
+
+    {% if sta %}
+        <h2>Receptive Field SNR</h2>
+        <div>
+            <img src="{{ url_for('images.rf_snr', animal_id=animal_id,
+                                                     session=session,
+                                                     scan_idx=scan_idx, size='smedium') }}">
+        </div>
+    {% endif %}
+
+    {% if sta %}
+        <h2>XSNR</h2>
+        <div>
+            <img src="{{ url_for('images.signal_xcorr', animal_id=animal_id,
+                                                     session=session,
+                                                     scan_idx=scan_idx, size='smedium') }}">
+        </div>
+    {% endif %}
+
+    {% if staext %}
+        <h2>RF Locations</h2>
+        <div>
+            <img src="{{ url_for('images.sta_loc', animal_id=animal_id,
+                                                     session=session,
+                                                     scan_idx=scan_idx, size='smedium') }}">
+        </div>
+    {% endif %}
+
 
     <h2>Images</h2>
     <p style="page-break-before: always"></p>

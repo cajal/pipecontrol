@@ -16,7 +16,7 @@ from flask_weasyprint import render_pdf, HTML, CSS
 from .tables import StatsTable, CellTable, create_datajoint_table
 from . import main, forms, tables
 from .. import schemata
-from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune
+from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr
 
 
 def ping(f):
@@ -410,6 +410,8 @@ def scanreport(animal_id, session, scan_idx):
         quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
         oracletime = (tune.MovieOracleTimeCourse() & key).fetch(dj.key, order_by='field')
         sta = bool(tune.STA() & tune.STAQual() & key)
+        xsnr = bool(xcorr.XSNR() & key)
+        staext = bool(tune.STAExtent() & key)
 
         craniatomy_notes, session_notes = (experiment.Session() & key).fetch1('craniotomy_notes', 'session_notes')
 
@@ -423,9 +425,9 @@ def scanreport(animal_id, session, scan_idx):
         )
         return render_template('report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
                                data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)),
-                               craniatomy_notes=craniatomy_notes.split(','),
+                               craniotomy_notes=craniatomy_notes.split(','),
                                session_notes=session_notes.split(','), eye=eye, eye_track=eye_track,
-                               stats=stats, sta=sta, quality=quality, oracletime=oracletime)
+                               stats=stats, sta=sta, quality=quality, oracletime=oracletime, xsnr=xsnr, staext=staext)
     else:
         flash('{} is not in reso or meso'.format(key))
         return render_template(url_for('quality'))

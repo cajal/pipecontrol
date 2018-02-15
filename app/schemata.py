@@ -10,6 +10,7 @@ tune = dj.create_virtual_module('tune','pipeline_tune')
 pupil = dj.create_virtual_module('pupil','pipeline_eye')
 treadmill = dj.create_virtual_module('behavior','pipeline_treadmill')
 stimulus = dj.create_virtual_module('stimulus','pipeline_stimulus')
+xcorr = dj.create_virtual_module('xcorr','pipeline_xcorr')
 virus = dj.create_virtual_module('virus','common_virus')
 mice = dj.create_virtual_module('mice ','common_mice')
 

@@ -1,0 +1,202 @@
+{% extends "pdf.html" %}
+
+
+{% block content %}
+    <h1>Quality Report for animal {{ animal_id }}, session {{ session }}, and scan {{ scan_idx }}</h1>
+
+    {% if craniotomy_notes %}
+        <h2>Craniotomy notes</h2>
+        <ul>
+            {% for note in craniotomy_notes %}
+                <li>{{ note }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if session_notes %}
+        <h2>Session notes</h2>
+        <ul>
+            {% for note in session_notes %}
+                <li>{{ note }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+
+    {% if stats %}
+        <h2>Statistics</h2>
+        {{ stats | safe }}
+
+
+    {% endif %}
+
+    {% if sta %}
+        <h2>Receptive Field SNR</h2>
+        <div>
+            <img src="{{ url_for('images.rf_snr', animal_id=animal_id,
+                                                     session=session,
+                                                     scan_idx=scan_idx, size='smedium') }}">
+        </div>
+    {% endif %}
+
+    {% if xsnr %}
+        <h2>XSNR</h2>
+        <div>
+            <img src="{{ url_for('images.signal_xcorr', animal_id=animal_id,
+                                                     session=session,
+                                                     scan_idx=scan_idx, size='smedium') }}">
+        </div>
+    {% endif %}
+
+    {% if staext %}
+        <h2>RF Locations</h2>
+        <div>
+            <img src="{{ url_for('images.sta_loc', animal_id=animal_id,
+                                                     session=session,
+                                                     scan_idx=scan_idx, size='smedium') }}">
+        </div>
+    {% endif %}
+
+
+    <h2>Images</h2>
+    <p style="page-break-before: always"></p>
+    {% for correlation, average, oracle, cos2map in data %}
+        <h3>Field {{ correlation.field }}</h3>
+        <table>
+            <tr>
+                <th>Correlation</th>
+                <th>Average</th>
+            </tr>
+            <tr>
+                <td>
+                    {% if correlation %}
+                        <img src="{{ url_for('images.correlation_image', animal_id=correlation.animal_id,
+                                                     session=correlation.session,
+                                                     scan_idx=correlation.scan_idx,
+                                                     field=correlation.field, size='report') }}">
+                    {% endif %}
+                </td>
+                <td>
+                    {% if average %}
+                        <img src="{{ url_for('images.average_image', animal_id=average.animal_id,
+                                                     session=average.session,
+                                                     scan_idx=average.scan_idx,
+                                                     field=average.field, size='report') }}">
+                    {% endif %}
+                </td>
+
+            </tr>
+
+            <tr>
+                <th>Oracle</th>
+                <th>Pixel Orientation</th>
+            </tr>
+            <tr>
+                <td>
+                    {% if oracle %}
+                        <img src="{{ url_for('images.oracle_map', animal_id=oracle.animal_id,
+                                                     session=oracle.session,
+                                                     scan_idx=oracle.scan_idx,
+                                                     field=oracle.field, size='report') }}">
+                    {% endif %}
+                </td>
+                <td>
+                    {% if cos2map %}
+                        <img src="{{ url_for('images.cos2map', animal_id=cos2map.animal_id,
+                                                     session=cos2map.session,
+                                                     scan_idx=cos2map.scan_idx,
+                                                     field=cos2map.field, size='report') }}">
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+        <p style="page-break-before: always"></p>
+    {% endfor %}
+
+    {% if pxori %}
+        <h2>Parametric Tuning Summary</h2>
+        {% for orikey in pxori %}
+            <h3>Field {{ orikey.field }}</h3>
+            <div>
+                <img src="{{ url_for('images.pixelwiseori', animal_id=orikey.animal_id,
+                                                     session=orikey.session,
+                                                     scan_idx=orikey.scan_idx,
+                                                     field=orikey.field, size='marge') }}">
+            </div>
+            <p style="page-break-before: always"></p>
+        {% endfor %}
+    {% endif %}
+
+
+    <p style="page-break-before: always"></p>
+
+    {% if sta %}
+        <h3>Spike Triggered Averages</h3>
+        <h4>From upper percentile of SNR</h4>
+        <div>
+            <img src="{{ url_for('images.sta', animal_id=animal_id,
+                                         session=session,
+                                         scan_idx=scan_idx, size='smedium', t=1, quantile='upper') }}">
+        </div>
+        <h4>From middle percentile of SNR</h4>
+        <div>
+            <img src="{{ url_for('images.sta', animal_id=animal_id,
+                                         session=session,
+                                         scan_idx=scan_idx, size='smedium', t=1, quantile='middle') }}">
+        </div>
+        <h4>From lower percentile of SNR</h4>
+        <div>
+            <img src="{{ url_for('images.sta', animal_id=animal_id,
+                                         session=session,
+                                         scan_idx=scan_idx, size='smedium', t=1, quantile='lower') }}">
+        </div>
+    {% endif %}
+
+    {% if eye %}
+        <h3>Eye camera</h3>
+        <div>
+            <img src="{{ url_for('images.eye', animal_id=eye.animal_id,
+                                         session=eye.session,
+                                         scan_idx=eye.scan_idx, size='smedium') }}">
+        </div>
+    {% endif %}
+
+    <h2>Traces</h2>
+    {% if eye_track %}
+        <h3>Pupil radius and position</h3>
+        <div>
+            <img src="{{ url_for('images.eye_tracking', animal_id=eye_track.animal_id,
+                                         session=eye_track.session,
+                                         scan_idx=eye_track.scan_idx, size='medium') }}">
+        </div>
+    {% endif %}
+
+    {% if quality %}
+        <h3>Intensity and Contrast Traces</h3>
+        {% for key in quality %}
+            <h4>Field {{ key.field }}</h4>
+            <div>
+                <img src="{{ url_for('images.contrast_intensity', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='smedium') }}">
+            </div>
+
+        {% endfor %}
+    {% endif %}
+
+
+    {% if oracletime %}
+        <h3>Oracle time trace</h3>
+        {% for key in oracletime %}
+            <h4>Field {{ key.field }}</h4>
+            <div>
+                <img src="{{ url_for('images.oraclecourse', animal_id=key.animal_id,
+                                                     session=key.session,
+                                                     scan_idx=key.scan_idx,
+                                                     field=key.field, size='smedium') }}">
+            </div>
+
+        {% endfor %}
+    {% endif %}
+{% endblock %}

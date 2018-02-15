@@ -395,6 +395,20 @@ def tracking(animal_id, session, scan_idx):
     return render_template('trackingtask.html', form=form, figure=figure)
 
 
+@main.route('/report/scan/', methods=['GET', 'POST'])
+def report():
+    form = forms.ScanReportForm(request.form)
+    if request.method == 'POST' and form.validate():
+        if form.pdf.data:
+            endpoint = 'main.scanreport_pdf'
+        else:
+            endpoint = 'main.scanreport'
+        return redirect(url_for(endpoint, animal_id=form.animal_id.data,
+                                                   session=form.session.data,
+                                                   scan_idx=form.scan_idx.data))
+    return render_template('report.html', form=form)
+
+
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>')
 def scanreport(animal_id, session, scan_idx):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
@@ -422,10 +436,10 @@ def scanreport(animal_id, session, scan_idx):
         stats = StatsTable([dict(field=f, somas=s, depth=z, height=h, width=w)
                             for f, s, z, h, w in zip(fields, somas, depth, height, width)])
         stats.items.append(
-            dict(field='ALL', somas=sum([d['somas'] for d in stats.items]), depth = '-', height = '-', width = '-')
+            dict(field='ALL', somas=sum([d['somas'] for d in stats.items]), depth='-', height='-', width='-')
         )
 
-        return render_template('report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
+        return render_template('scan_report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
                                data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)),
                                craniotomy_notes=craniatomy_notes.split(','),
                                session_notes=session_notes.split(','), eye=eye, eye_track=eye_track,

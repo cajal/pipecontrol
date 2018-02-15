@@ -26,6 +26,12 @@ class QualityForm(wtforms.Form):
     session = wtforms.IntegerField('Session', [validators.InputRequired()])
     scan_idx = wtforms.IntegerField('Scan Idx', [validators.InputRequired()])
 
+class ScanReportForm(wtforms.Form):
+    animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired()])
+    session = wtforms.IntegerField('Session', [validators.InputRequired()])
+    scan_idx = wtforms.IntegerField('Scan Idx', [validators.InputRequired()])
+    pdf = wtforms.BooleanField('render as pdf', default=False)
+
 
 class TrackingForm(wtforms.Form):
     exclude = wtforms.BooleanField('Not trackable', [validators.InputRequired()],

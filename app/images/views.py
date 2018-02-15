@@ -17,7 +17,7 @@ import datajoint as dj
 from ..schemata import stimulus
 
 size_factor = dict(
-    thumb=2, small=4, report=4, smedium=6.5, medium=8, large=16, huge=32
+    thumb=2, small=4, report=4, smedium=6.5, medium=8, marge=10, large=16, huge=32
 )
 corr_cmap = sns.blend_palette(['dodgerblue', 'steelblue', 'k', 'lime', 'orange'], as_cmap=True)
 
@@ -301,3 +301,34 @@ def signal_xcorr(animal_id, session, scan_idx, size):
         ax.tick_params(axis='both', length=3, width=1)
         fig.tight_layout()
     return savefig(fig)
+
+@images.route("/pixelwiseori-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
+def pixelwiseori(animal_id, session, scan_idx, field, size):
+    from matplotlib import colors
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field)
+
+    def make_ori_map(xc):
+        return colors.hsv_to_rgb(np.minimum(1, np.stack((np.angle(xc) / np.pi / 2 % 1, abs(xc), abs(xc)), axis=-1)))
+
+    xc_monet, xc_trippy = (tune.PixelwiseOri() & key).fetch1('monet_map', 'trippy_map')
+
+    sz = tuple(i * size_factor[size] for i in [.5, .8])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1):
+        with sns.axes_style('ticks'):
+            fig, ax = plt.subplots(2, 2, figsize=sz)
+            ax = ax.ravel()
+            ax[0].imshow(
+                np.maximum(0, np.minimum(1, 4 * (np.stack((abs(xc_monet), abs(xc_trippy), 0 * abs(xc_monet)), axis=-1)))))
+            ax[0].set_title('Combo ori selectivity')
+            ax[1].imshow(make_ori_map(5 * xc_trippy.conj()) ** 1.3)
+            ax[1].set_title('Trippy tuning')
+            ax[2].imshow(make_ori_map(5 * xc_monet) ** 1.3)
+            ax[2].set_title('Monet tuning')
+            ax[3].imshow(make_ori_map(3 * (xc_monet + xc_trippy)) ** 1.3)
+            ax[3].set_title('Average tuning')
+            [a.axis('off') for a in ax.ravel()]
+            fig.subplots_adjust(top=.9, hspace=.1, wspace=.05, left=.01, right=.99, bottom=.01)
+            plt.suptitle('Parametric tuning.  {animal_id}-{session}-{scan_idx} [{field}]'.format(**key))
+    return savefig(fig)
+
+

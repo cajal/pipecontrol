@@ -39,7 +39,7 @@
         </div>
     {% endif %}
 
-    {% if sta %}
+    {% if xsnr %}
         <h2>XSNR</h2>
         <div>
             <img src="{{ url_for('images.signal_xcorr', animal_id=animal_id,
@@ -112,6 +112,21 @@
         </table>
         <p style="page-break-before: always"></p>
     {% endfor %}
+
+    {% if pxori %}
+        <h2>Parametric Tuning Summary</h2>
+        {% for orikey in pxori %}
+            <h3>Field {{ orikey.field }}</h3>
+            <div>
+                <img src="{{ url_for('images.pixelwiseori', animal_id=orikey.animal_id,
+                                                     session=orikey.session,
+                                                     scan_idx=orikey.scan_idx,
+                                                     field=orikey.field, size='marge') }}">
+            </div>
+            <p style="page-break-before: always"></p>
+        {% endfor %}
+    {% endif %}
+
 
     <p style="page-break-before: always"></p>
 

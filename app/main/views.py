@@ -403,6 +403,7 @@ def scanreport(animal_id, session, scan_idx):
     if pipe is not None:
         oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
         cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
+        pxori = (tune.PixelwiseOri() & key).fetch(dj.key, order_by='field')
         correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
         average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
         eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
@@ -423,11 +424,13 @@ def scanreport(animal_id, session, scan_idx):
         stats.items.append(
             dict(field='ALL', somas=sum([d['somas'] for d in stats.items]), depth = '-', height = '-', width = '-')
         )
+
         return render_template('report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
                                data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)),
                                craniotomy_notes=craniatomy_notes.split(','),
                                session_notes=session_notes.split(','), eye=eye, eye_track=eye_track,
-                               stats=stats, sta=sta, quality=quality, oracletime=oracletime, xsnr=xsnr, staext=staext)
+                               stats=stats, sta=sta, quality=quality, oracletime=oracletime, xsnr=xsnr, staext=staext,
+                               pxori=pxori)
     else:
         flash('{} is not in reso or meso'.format(key))
         return render_template(url_for('quality'))

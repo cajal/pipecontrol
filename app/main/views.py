@@ -2,7 +2,7 @@ from collections import OrderedDict
 from inspect import isclass
 from itertools import zip_longest
 
-from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
+from flask import render_template, redirect, url_for, flash, request, session, send_from_directory, Response, send_file
 import datajoint as dj
 import uuid
 import numpy as np
@@ -424,7 +424,7 @@ def scanreport(animal_id, session, scan_idx):
         correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
         average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
         eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
-        eye_track = (pupil.TrackedVideo() & key).fetch1(dj.key) if pupil.TrackedVideo() & key else None
+        eye_track = (pupil.FittedContour() & key).fetch1(dj.key) if pupil.FittedContour() & key else None
         quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
         oracletime = (tune.MovieOracleTimeCourse() & key).fetch(dj.key, order_by='field')
         sta = bool(tune.STA() & tune.STAQual() & key)

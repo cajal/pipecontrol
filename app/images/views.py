@@ -6,7 +6,8 @@ from io import BytesIO
 from . import images
 import numpy as np
 from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune
-from flask import render_template, redirect, url_for, flash, request, session, send_from_directory, make_response
+from flask import render_template, redirect, url_for, flash, request, session, send_from_directory, make_response, \
+    Response
 import matplotlib.pyplot as plt
 import mpld3
 import seaborn as sns
@@ -21,6 +22,9 @@ size_factor = dict(
 )
 corr_cmap = sns.blend_palette(['dodgerblue', 'steelblue', 'k', 'lime', 'orange'], as_cmap=True)
 
+dj.config['external-analysis'] = dict(
+    protocol='file',
+    location='/mnt/scratch05/datajoint-store/analysis')
 
 def savefig(fig, **kwargs):
     canvas = FigureCanvas(fig)
@@ -166,7 +170,7 @@ def eye(animal_id, session, scan_idx, size):
 def eye_tracking(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    r, center = (pupil.TrackedVideo.Frame() & key).fetch('major_r', 'center', order_by='frame_id ASC')
+    r, center = (pupil.FittedContour.Ellipse() & key).fetch('major_r', 'center', order_by='frame_id ASC')
     detectedFrames = ~np.isnan(r)
     xy = np.full((len(r), 2), np.nan)
     xy[detectedFrames, :] = np.vstack(center[detectedFrames])

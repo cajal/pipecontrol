@@ -16,7 +16,7 @@ from flask_weasyprint import render_pdf, HTML, CSS
 from .tables import StatsTable, CellTable, create_datajoint_table
 from . import main, forms, tables
 from .. import schemata
-from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr
+from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus
 
 
 def ping(f):
@@ -181,7 +181,7 @@ def jobs():
         for item in items:
             value = '{}+{}'.format(item['table_name'], item['key_hash'])  # + is separator
             item['delete'] = {'name': 'delete_item', 'value': value}
-            item['key_hash'] = item['key_hash'][:8] + '...' # shorten it for display
+            item['key_hash'] = item['key_hash'][:8] + '...'  # shorten it for display
         all_tables.append((name, tables.JobTable(items)))
 
     return render_template('jobs.html', job_tables=all_tables)
@@ -407,8 +407,8 @@ def report():
         else:
             endpoint = 'main.scanreport'
         return redirect(url_for(endpoint, animal_id=form.animal_id.data,
-                                                   session=form.session.data,
-                                                   scan_idx=form.scan_idx.data))
+                                session=form.session.data,
+                                scan_idx=form.scan_idx.data))
     return render_template('report.html', form=form)
 
 
@@ -458,6 +458,27 @@ def mousereport(animal_id):
     key = dict(animal_id=animal_id)
     auto = experiment.AutoProcessing() & key
 
+    meso_scanh = mice.Mice().aggr(meso.ScanInfo() & dict(animal_id=animal_id),
+                                  time="TIME_FORMAT(SEC_TO_TIME(sum(nframes / fps)),'%%Hh %%im %%Ss')",
+                                  setup="'meso'")
+
+    stim_time = [dj.U('animal_id', 'session', 'scan_idx', 'stimulus_type').aggr(
+        stim * stimulus.Condition() * stimulus.Trial() & key,
+        time="TIME_FORMAT(SEC_TO_TIME(sum({})),'%%Hh %%im %%Ss')".format(duration_field))
+        for duration_field, stim in zip(['cut_after', 'ori_on_secs + ori_off_secs', 'duration', 'duration'],
+                                        [stimulus.Clip(), stimulus.Monet(),
+                                         stimulus.Monet2(), stimulus.Varma()])
+    ]
+
+    def in_auto_proc(k):
+        return bool(experiment.AutoProcessing() & k)
+    stim_time = create_datajoint_table(stim_time,
+                            check_funcs=dict(autoprocessing=in_auto_proc))
+
+    reso_scanh = mice.Mice().aggr(reso.ScanInfo() & dict(animal_id=animal_id),
+                                  time="TIME_FORMAT(SEC_TO_TIME(sum(nframes / fps)),'%%Hh %%im %%Ss')",
+                                  setup="'reso'")
+    scanh = create_datajoint_table([reso_scanh, meso_scanh])
     scans = create_datajoint_table(
         (experiment.Scan() & auto), selection=['session', 'scan_idx', 'lens', 'depth', 'site_number', 'scan_ts']
     )
@@ -472,7 +493,7 @@ def mousereport(animal_id):
         selection=['scan_type', 'session', 'scan_idx', 'somas'])
     stats.items.append(dict(scan_type='', session='ALL', scan_idx='ALL', somas=sum([e['somas'] for e in stats.items])))
     return render_template('mouse_report.html', animal_id=animal_id, scans=scans,
-                           scaninfo=scaninfo, stats=stats)
+                           scaninfo=scaninfo, stats=stats, scanh=scanh, stim_time=stim_time)
 
 
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')

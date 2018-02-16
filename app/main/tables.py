@@ -83,7 +83,7 @@ class JobTable(flask_table.Table):
     status = flask_table.Col('Status')
     key = KeyColumn('Key')
     user = flask_table.Col('User')
-    connection_id = flask_table.Col('Connection Id')
+    key_hash = flask_table.Col('Key Hash')
     error_message = flask_table.Col('Error Message')
     timestamp = flask_table.DatetimeCol('Timestamp')
 

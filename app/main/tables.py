@@ -27,8 +27,13 @@ class CheckBoxCol(flask_table.Col):
 
 class CheckMarkCol(flask_table.Col):
     def td_format(self, content):
-        return '<span class ="glyphicon {}" > </span>'.format('glyphicon-ok' if content
+        return '<span class ="glyphicon {}" ></span>'.format('glyphicon-ok' if content
                                                               else 'glyphicon-remove')
+
+
+class SimpleCheckMarkCol(flask_table.Col):
+    def td_format(self, content):
+        return '{}'.format('yes' if content else '')
 
 class KeyColumn(flask_table.Col):
     def td_format(self, content):
@@ -138,7 +143,8 @@ class SummaryTable(flask_table.Table):
                                  url_kwargs_extra={'channel': 1, 'segmentation_method': 3,
                                                    'spike_method': 5})
 
-def create_datajoint_table(rels, name='DataJoint Table', selection=None, **fetch_kwargs):
+def create_datajoint_table(rels, name='DataJoint Table', selection=None,
+                           check_funcs = None, **fetch_kwargs):
 
     if not isinstance(rels, list):
         rels = [rels]
@@ -148,10 +154,13 @@ def create_datajoint_table(rels, name='DataJoint Table', selection=None, **fetch
         selection = set(rels[0].heading.attributes)
         for rel in rels[1:]:
             selection &= set(rel.heading.attributes)
-    print(selection)
     for col in rels[0].heading.attributes:
         if col in selection:
             table_class.add_column(col, flask_table.Col(col))
+
+    if check_funcs is not None:
+        for col in check_funcs:
+            table_class.add_column(col, SimpleCheckMarkCol(col))
 
     items = []
     for rel in rels:
@@ -162,7 +171,14 @@ def create_datajoint_table(rels, name='DataJoint Table', selection=None, **fetch
                 item[blob_col] = '<BLOB>'
         if selection is not None:
             for i in range(len(new_items)):
-                new_items[i] = {k:v for k,v in new_items[i].items() if k in selection}
+                entry = {k:v for k,v in new_items[i].items() if k in selection}
+                if check_funcs is not None:
+                    add = {}
+                    for col, f in check_funcs.items():
+                        add[col] = f(entry)
+                    entry.update(add)
+                new_items[i] = entry
+
         items.extend(new_items)
 
     table_class.classes = ['Relation']

@@ -5,8 +5,16 @@
 
 {% block content %}
     <h1>Report for mouse {{ animal_id }}</h1>
-    {##}
+
+
     <h2> Scans </h2>
+    <h3>Scan Time</h3>
+    {{ scanh | safe }}
+
+    <h3>Stimulus Time</h3>
+    {{ stim_time | safe }}
+
+    <h3>Scan Info</h3>
     {{ scans | safe }}
     <p style="page-break-before: always"></p>
 

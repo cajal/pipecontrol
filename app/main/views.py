@@ -398,14 +398,15 @@ def tracking(animal_id, session, scan_idx):
     return render_template('trackingtask.html', form=form, figure=figure)
 
 
-@main.route('/report/scan/', methods=['GET', 'POST'])
+@main.route('/report/', methods=['GET', 'POST'])
 def report():
-    form = forms.ScanReportForm(request.form)
+    form = forms.ReportForm(request.form)
     if request.method == 'POST' and form.validate():
+        report_type = 'scan' if form.session.data and form.scan_idx.data else 'mouse'
         if form.pdf.data:
-            endpoint = 'main.scanreport_pdf'
+            endpoint = 'main.{}report_pdf'.format(report_type)
         else:
-            endpoint = 'main.scanreport'
+            endpoint = 'main.{}report'.format(report_type)
         return redirect(url_for(endpoint, animal_id=form.animal_id.data,
                                 session=form.session.data,
                                 scan_idx=form.scan_idx.data))
@@ -450,7 +451,7 @@ def scanreport(animal_id, session, scan_idx):
                                pxori=pxori)
     else:
         flash('{} is not in reso or meso'.format(key))
-        return render_template(url_for('quality'))
+        return redirect(url_for('main.report'))
 
 
 @main.route('/report/mouse/<int:animal_id>')

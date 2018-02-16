@@ -7,6 +7,7 @@ services:
       - "80:5000"
     volumes:
       - /tmp:/tmp
+      - /mnt:/mnt
     environment:
       - PIPELINE_CONFIG=production
     env_file: .env

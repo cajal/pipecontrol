@@ -60,9 +60,9 @@ def sync_files():
 
 def deploy():
     with settings(warn_only=True):
-        with_sudo()
-        down()
         pull()
         sync_files()
+        with_sudo()
+        down()
         build()
         start()

@@ -489,13 +489,17 @@ def mousereport(animal_id):
         selection=['nfields', 'fps', 'scan_idx', 'session', 'nframes', 'nchannels', 'usecs_per_line']
     )
 
+    ori_stats = dj.U('animal_id').aggr(tune.Ori.Cell() & key, percent_above_05='100*AVG(r2>0.05)')
+    ori_stats = create_datajoint_table(ori_stats)
+
     stats = create_datajoint_table([experiment.Scan().aggr(
         pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & auto & dict(type='soma'),
         somas='count(*)', scan_type='"{}"'.format(pipe.__name__)) for pipe in [reso, meso]],
         selection=['scan_type', 'session', 'scan_idx', 'somas'])
     stats.items.append(dict(scan_type='', session='ALL', scan_idx='ALL', somas=sum([e['somas'] for e in stats.items])))
     return render_template('mouse_report.html', animal_id=animal_id, scans=scans,
-                           scaninfo=scaninfo, stats=stats, scanh=scanh, stim_time=stim_time)
+                           scaninfo=scaninfo, stats=stats, scanh=scanh,
+                           stim_time=stim_time, ori_stats=ori_stats)
 
 
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')

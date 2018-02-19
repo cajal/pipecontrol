@@ -422,6 +422,7 @@ def scanreport(animal_id, session, scan_idx):
         oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
         cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
         pxori = (tune.PixelwiseOri() & key).fetch(dj.key, order_by='field')
+        cellori = bool(tune.Ori() & key)
         correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
         average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
         eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
@@ -448,7 +449,7 @@ def scanreport(animal_id, session, scan_idx):
                                craniotomy_notes=craniatomy_notes.split(','),
                                session_notes=session_notes.split(','), eye=eye, eye_track=eye_track,
                                stats=stats, sta=sta, quality=quality, oracletime=oracletime, xsnr=xsnr, staext=staext,
-                               pxori=pxori)
+                               pxori=pxori, cellori=cellori)
     else:
         flash('{} is not in reso or meso'.format(key))
         return redirect(url_for('main.report'))

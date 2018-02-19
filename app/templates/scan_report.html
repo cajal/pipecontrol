@@ -48,6 +48,27 @@
 
     {% endif %}
 
+    <h2>Orientation Selectivity Distribution</h2>
+    {% if cellori %}
+        <div>
+            <img src="{{ url_for('images.cellori', animal_id=animal_id,
+                                                     session=session,
+                                                     scan_idx=scan_idx, size='marge') }}">
+        </div>
+    {% else %}
+        <div>No cell orientation found. Populate <code>stimline.tune.Ori()</code></div>
+    {% endif %}
+
+    <h2>Orientation Selectivity R2 distribution</h2>
+    {% if cellori %}
+        <div>
+            <img src="{{ url_for('images.ori_r2', animal_id=animal_id,
+                                                     session=session,
+                                                     scan_idx=scan_idx, size='smedium') }}">
+        </div>
+    {% else %}
+        <div>No cell orientation found. Populate <code>stimline.tune.Ori()</code></div>
+    {% endif %}
 
     <h2>XSNR</h2>
     {% if xsnr %}
@@ -130,7 +151,7 @@
         <p style="page-break-before: always"></p>
     {% endfor %}
 
-        <h2>Parametric Tuning Summary</h2>
+    <h2>Parametric Tuning Summary</h2>
     {% if pxori %}
         {% for orikey in pxori %}
             <h3>Field {{ orikey.field }}</h3>

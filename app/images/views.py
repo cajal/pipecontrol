@@ -26,6 +26,7 @@ dj.config['external-analysis'] = dict(
     protocol='file',
     location='/mnt/scratch05/datajoint-store/analysis')
 
+
 def savefig(fig, **kwargs):
     canvas = FigureCanvas(fig)
     png_output = BytesIO()
@@ -306,6 +307,7 @@ def signal_xcorr(animal_id, session, scan_idx, size):
         fig.tight_layout()
     return savefig(fig)
 
+
 @images.route("/pixelwiseori-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
 def pixelwiseori(animal_id, session, scan_idx, field, size):
     from matplotlib import colors
@@ -322,7 +324,8 @@ def pixelwiseori(animal_id, session, scan_idx, field, size):
             fig, ax = plt.subplots(2, 2, figsize=sz)
             ax = ax.ravel()
             ax[0].imshow(
-                np.maximum(0, np.minimum(1, 4 * (np.stack((abs(xc_monet), abs(xc_trippy), 0 * abs(xc_monet)), axis=-1)))))
+                np.maximum(0,
+                           np.minimum(1, 4 * (np.stack((abs(xc_monet), abs(xc_trippy), 0 * abs(xc_monet)), axis=-1)))))
             ax[0].set_title('Combo ori selectivity')
             ax[1].imshow(make_ori_map(5 * xc_trippy.conj()) ** 1.3)
             ax[1].set_title('Trippy tuning')
@@ -336,3 +339,50 @@ def pixelwiseori(animal_id, session, scan_idx, field, size):
     return savefig(fig)
 
 
+@images.route("/cellwiseori-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def cellori(animal_id, session, scan_idx, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+    r2, angle = (tune.Ori.Cell() & key).fetch('r2', 'angle')
+    sz = tuple(i * size_factor[size] for i in [.5, .5])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style('ticks'):
+            sns.set_palette(sns.color_palette("Set2", 5))
+            fig = plt.figure(figsize=sz)
+            ax = fig.add_subplot(111)
+            bins = np.linspace(-np.pi / 2, np.pi / 2, 15)
+            bin_centers = (bins[:-1] + bins[1:]) / 2
+            for p in np.arange(20, 120, 20):
+                h, _ = np.histogram(angle[r2 < np.percentile(r2, p)], normed=True, bins=bins)
+                ax.plot(bin_centers,  h,  label='<{}% percentile R$^2$'.format(p))
+            ax.legend(ncol=2)
+            ax.set_xticks([-np.pi/2, -np.pi/4,  0, np.pi/4, np.pi/2])
+            ax.set_xticklabels([r'$-\frac{\pi}{2}$',r'$\frac{\pi}{4}$', '0', r'$\frac{\pi}{4}$', r'$\frac{\pi}{2}$'])
+        sns.despine(trim=True)
+        ax.set_ylabel('normalized histogram of orientations')
+        ax.set_title('cardinal bias for {animal_id}-{session}-{scan_idx}'.format(**key))
+        ax.spines['bottom'].set_linewidth(1)
+        ax.spines['left'].set_linewidth(1)
+        ax.tick_params(axis='both', length=3, width=1)
+
+    return savefig(fig)
+
+@images.route("/ori_r2-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def ori_r2(animal_id, session, scan_idx, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    r2 = (tune.Ori.Cell() & key).fetch('r2')
+    sz = tuple(i * size_factor[size] for i in [.9, .5])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=2):
+        with sns.axes_style('ticks'):
+            fig, ax = plt.subplots(figsize=sz)
+            g = sns.distplot(r2,
+                             hist_kws=dict(cumulative=True),
+                             kde_kws=dict(cumulative=True), ax=ax)
+        sns.despine(ax=ax, trim=True)
+        ax.set_xlabel(r'$R^2$')
+        ax.set_ylabel('Cumulative Distribution')
+        ax.spines['bottom'].set_linewidth(1)
+        ax.spines['left'].set_linewidth(1)
+        ax.tick_params(axis='both', length=3, width=1)
+        fig.tight_layout()
+    return savefig(fig)

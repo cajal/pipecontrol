@@ -529,7 +529,7 @@ def dsi_vs_r2(animal_id, session, scan_idx, size):
             g.ax_joint.grid('on')
         g.fig.set_size_inches(sz)
         ax = g.ax_joint
-        ax.set_xlabel('OSI')
+        ax.set_xlabel('DSI')
         ax.set_ylabel(r'$R^2$')
         ax.spines['bottom'].set_linewidth(1)
         ax.spines['left'].set_linewidth(1)

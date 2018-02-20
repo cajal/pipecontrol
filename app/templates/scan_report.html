@@ -59,12 +59,23 @@
         <div>No cell orientation found. Populate <code>stimline.tune.Ori()</code></div>
     {% endif %}
 
-    <h2>Orientation Selectivity R2 distribution</h2>
+    <h2>OSI vs. R2</h2>
     {% if cellori %}
         <div>
-            <img src="{{ url_for('images.ori_r2', animal_id=animal_id,
+            <img src="{{ url_for('images.osi_vs_r2', animal_id=animal_id,
                                                      session=session,
-                                                     scan_idx=scan_idx, size='smedium') }}">
+                                                     scan_idx=scan_idx, size='medium') }}">
+        </div>
+    {% else %}
+        <div>No cell orientation found. Populate <code>stimline.tune.Ori()</code></div>
+    {% endif %}
+
+    <h2>DSI vs. R2</h2>
+    {% if cellori %}
+        <div>
+            <img src="{{ url_for('images.dsi_vs_r2', animal_id=animal_id,
+                                                     session=session,
+                                                     scan_idx=scan_idx, size='medium') }}">
         </div>
     {% else %}
         <div>No cell orientation found. Populate <code>stimline.tune.Ori()</code></div>

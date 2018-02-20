@@ -370,7 +370,7 @@ def cellori(animal_id, session, scan_idx, size):
 def ori_r2(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    r2 = (tune.Ori.Cell() & key).fetch('r2')
+    r2 = (tune.Ori.Cell() & key & dict(ori_type='ori')).fetch('r2')
     sz = tuple(i * size_factor[size] for i in [.9, .5])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=2):
         with sns.axes_style('ticks'):
@@ -386,3 +386,153 @@ def ori_r2(animal_id, session, scan_idx, size):
         ax.tick_params(axis='both', length=3, width=1)
         fig.tight_layout()
     return savefig(fig)
+
+@images.route("/ori_r2-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def dir_r2(animal_id, session, scan_idx, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    r2 = (tune.Ori.Cell() & key & dict(ori_type='dir')).fetch('r2')
+    sz = tuple(i * size_factor[size] for i in [.9, .5])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=2):
+        with sns.axes_style('ticks'):
+            fig, ax = plt.subplots(figsize=sz)
+            g = sns.distplot(r2,
+                             hist_kws=dict(cumulative=True),
+                             kde_kws=dict(cumulative=True), ax=ax)
+        sns.despine(ax=ax, trim=True)
+        ax.set_xlabel(r'$R^2$')
+        ax.set_ylabel('Cumulative Distribution')
+        ax.spines['bottom'].set_linewidth(1)
+        ax.spines['left'].set_linewidth(1)
+        ax.tick_params(axis='both', length=3, width=1)
+        fig.tight_layout()
+    return savefig(fig)
+
+@images.route("/osi-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def osi(animal_id, session, scan_idx, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    osi = (tune.Ori.Cell() & key & dict(ori_type='ori')).fetch('selectivity')
+    sz = tuple(i * size_factor[size] for i in [.9, .5])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=2):
+        with sns.axes_style('ticks'):
+            fig, ax = plt.subplots(figsize=sz)
+            g = sns.distplot(osi,
+                             hist_kws=dict(cumulative=True),
+                             kde_kws=dict(cumulative=True), ax=ax)
+        sns.despine(ax=ax, trim=True)
+        ax.set_xlabel(r'$R^2$')
+        ax.set_ylabel('Cumulative Distribution')
+        ax.spines['bottom'].set_linewidth(1)
+        ax.spines['left'].set_linewidth(1)
+        ax.tick_params(axis='both', length=3, width=1)
+        fig.tight_layout()
+    return savefig(fig)
+
+@images.route("/dsi-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def dsi(animal_id, session, scan_idx, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    dsi = (tune.Ori.Cell() & key & dict(ori_type='dir')).fetch('selectivity')
+    sz = tuple(i * size_factor[size] for i in [.9, .5])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=2):
+        with sns.axes_style('ticks'):
+            fig, ax = plt.subplots(figsize=sz)
+            g = sns.distplot(dsi,
+                             hist_kws=dict(cumulative=True),
+                             kde_kws=dict(cumulative=True), ax=ax)
+        sns.despine(ax=ax, trim=True)
+        ax.set_xlabel(r'$R^2$')
+        ax.set_ylabel('Cumulative Distribution')
+        ax.spines['bottom'].set_linewidth(1)
+        ax.spines['left'].set_linewidth(1)
+        ax.tick_params(axis='both', length=3, width=1)
+        fig.tight_layout()
+    return savefig(fig)
+
+
+@images.route("/osi_vs_r2-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def osi_vs_r2(animal_id, session, scan_idx, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    r2, osi = (tune.Ori.Cell() & key & dict(ori_type='ori')).fetch('r2','selectivity')
+    sz = tuple(i * size_factor[size] for i in [.7, .7])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style('ticks'):
+            # g = sns.jointplot(osi, r2, marginal_kws=dict(hist_kws=dict(cumulative=True),
+            #                                              kde_kws=dict(cumulative=True)), )
+            g = sns.JointGrid(osi, r2)
+            g = g.plot_joint(plt.scatter, color='#334f6d', s=5)
+            g = g.plot_marginals(sns.distplot, color='#334f6d', hist_kws=dict(cumulative=True),
+                                                         kde_kws=dict(cumulative=True))
+
+            plt.setp(g.ax_marg_y.get_xticklabels(), visible=True, rotation=-60)
+            plt.setp(g.ax_marg_y.xaxis.get_majorticklines(), visible=True)
+            plt.setp(g.ax_marg_y.xaxis.get_minorticklines(), visible=True)
+            g.ax_marg_y.set_xticks(np.linspace(0,1,5))
+            g.ax_marg_y.tick_params(axis='both', length=3, width=1)
+            g.ax_marg_y.grid('on')
+            sns.despine(left=False, trim=True, ax=g.ax_marg_y)
+
+            plt.setp(g.ax_marg_x.get_yticklabels(), visible=True)
+            plt.setp(g.ax_marg_x.yaxis.get_majorticklines(), visible=True)
+            plt.setp(g.ax_marg_x.yaxis.get_minorticklines(), visible=True)
+            g.ax_marg_x.set_yticks(np.linspace(0,1,5))
+            g.ax_marg_x.tick_params(axis='both', length=3, width=1)
+            g.ax_marg_x.grid('on')
+            sns.despine(left=False, trim=True, ax=g.ax_marg_x)
+
+            sns.despine(ax=g.ax_joint, trim=True)
+            g.ax_joint.grid('on')
+        g.fig.set_size_inches(sz)
+        ax = g.ax_joint
+        ax.set_xlabel('OSI')
+        ax.set_ylabel(r'$R^2$')
+        ax.spines['bottom'].set_linewidth(1)
+        ax.spines['left'].set_linewidth(1)
+        ax.tick_params(axis='both', length=3, width=1)
+        g.fig.subplots_adjust(left=.15)
+    return savefig(g.fig)
+
+@images.route("/dsi_vs_r2-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def dsi_vs_r2(animal_id, session, scan_idx, size):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    r2, osi = (tune.Ori.Cell() & key & dict(ori_type='dir')).fetch('r2','selectivity')
+    sz = tuple(i * size_factor[size] for i in [.7, .7])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style('ticks'):
+            # g = sns.jointplot(osi, r2, marginal_kws=dict(hist_kws=dict(cumulative=True),
+            #                                              kde_kws=dict(cumulative=True)), )
+            g = sns.JointGrid(osi, r2)
+            g = g.plot_joint(plt.scatter, color='#334f6d', s=5)
+            g = g.plot_marginals(sns.distplot, color='#334f6d', hist_kws=dict(cumulative=True),
+                                                         kde_kws=dict(cumulative=True))
+
+            plt.setp(g.ax_marg_y.get_xticklabels(), visible=True, rotation=-60)
+            plt.setp(g.ax_marg_y.xaxis.get_majorticklines(), visible=True)
+            plt.setp(g.ax_marg_y.xaxis.get_minorticklines(), visible=True)
+            g.ax_marg_y.set_xticks(np.linspace(0,1,5))
+            g.ax_marg_y.tick_params(axis='both', length=3, width=1)
+            g.ax_marg_y.grid('on')
+            sns.despine(left=False, trim=True, ax=g.ax_marg_y)
+
+            plt.setp(g.ax_marg_x.get_yticklabels(), visible=True)
+            plt.setp(g.ax_marg_x.yaxis.get_majorticklines(), visible=True)
+            plt.setp(g.ax_marg_x.yaxis.get_minorticklines(), visible=True)
+            g.ax_marg_x.set_yticks(np.linspace(0,1,5))
+            g.ax_marg_x.tick_params(axis='both', length=3, width=1)
+            g.ax_marg_x.grid('on')
+            sns.despine(left=False, trim=True, ax=g.ax_marg_x)
+
+            sns.despine(ax=g.ax_joint, trim=True)
+            g.ax_joint.grid('on')
+        g.fig.set_size_inches(sz)
+        ax = g.ax_joint
+        ax.set_xlabel('OSI')
+        ax.set_ylabel(r'$R^2$')
+        ax.spines['bottom'].set_linewidth(1)
+        ax.spines['left'].set_linewidth(1)
+        ax.tick_params(axis='both', length=3, width=1)
+        g.fig.subplots_adjust(left=.15)
+    return savefig(g.fig)

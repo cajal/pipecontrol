@@ -474,8 +474,9 @@ def mousereport(animal_id):
 
     def in_auto_proc(k):
         return bool(experiment.AutoProcessing() & k)
+
     stim_time = create_datajoint_table(stim_time,
-                            check_funcs=dict(autoprocessing=in_auto_proc))
+                                       check_funcs=dict(autoprocessing=in_auto_proc))
 
     reso_scanh = mice.Mice().aggr(reso.ScanInfo() & dict(animal_id=animal_id),
                                   time="TIME_FORMAT(SEC_TO_TIME(sum(nframes / fps)),'%%Hh %%im %%Ss')",
@@ -489,7 +490,10 @@ def mousereport(animal_id):
         selection=['nfields', 'fps', 'scan_idx', 'session', 'nframes', 'nchannels', 'usecs_per_line']
     )
 
-    ori_stats = dj.U('animal_id').aggr(tune.Ori.Cell() & key, percent_above_05='100*AVG(r2>0.05)')
+    ori_stats = [dj.U('animal_id').aggr(tune.Ori.Cell() & key & dict(ori_type='ori'),
+                                        ori_type="'orientation'", percent_above_05='100*AVG(r2>0.01)'),
+                 dj.U('animal_id').aggr(tune.Ori.Cell() & key & dict(ori_type='dir'),
+                                        ori_type="'direction'", percent_above_05='100*AVG(r2>0.01)')]
     ori_stats = create_datajoint_table(ori_stats)
 
     stats = create_datajoint_table([experiment.Scan().aggr(

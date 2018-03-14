@@ -11,6 +11,7 @@ treadmill = dj.create_virtual_module('behavior','pipeline_treadmill')
 stimulus = dj.create_virtual_module('stimulus','pipeline_stimulus')
 xcorr = dj.create_virtual_module('xcorr','pipeline_xcorr')
 mice = dj.create_virtual_module('mice ','common_mice')
+stack = dj.create_virtual_module('stack ','pipeline_stack')
 
 dj.config['external-analysis'] = dict(
     protocol='file',

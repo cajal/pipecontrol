@@ -413,6 +413,7 @@ def osi(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
     osi = (tune.Ori.Cell() & key & dict(ori_type='ori')).fetch('selectivity')
+    perc = np.percentile(osi, 98)
     sz = tuple(i * size_factor[size] for i in [.9, .5])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=2):
         with sns.axes_style('ticks'):
@@ -420,6 +421,7 @@ def osi(animal_id, session, scan_idx, size):
             g = sns.distplot(osi,
                              hist_kws=dict(cumulative=True),
                              kde_kws=dict(cumulative=True), ax=ax)
+        ax.set_xlim((osi.min(), perc))
         sns.despine(ax=ax, trim=True)
         ax.set_xlabel(r'$R^2$')
         ax.set_ylabel('Cumulative Distribution')
@@ -432,8 +434,8 @@ def osi(animal_id, session, scan_idx, size):
 @images.route("/dsi-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
 def dsi(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-
     dsi = (tune.Ori.Cell() & key & dict(ori_type='dir')).fetch('selectivity')
+    perc = np.percentile(dsi, 98)
     sz = tuple(i * size_factor[size] for i in [.9, .5])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=2):
         with sns.axes_style('ticks'):
@@ -441,6 +443,7 @@ def dsi(animal_id, session, scan_idx, size):
             g = sns.distplot(dsi,
                              hist_kws=dict(cumulative=True),
                              kde_kws=dict(cumulative=True), ax=ax)
+        ax.set_xlim((dsi.min(), perc))
         sns.despine(ax=ax, trim=True)
         ax.set_xlabel(r'$R^2$')
         ax.set_ylabel('Cumulative Distribution')
@@ -456,16 +459,21 @@ def osi_vs_r2(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
     r2, osi = (tune.Ori.Cell() & key & dict(ori_type='ori')).fetch('r2','selectivity')
+
+
     sz = tuple(i * size_factor[size] for i in [.7, .7])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
         with sns.axes_style('ticks'):
             # g = sns.jointplot(osi, r2, marginal_kws=dict(hist_kws=dict(cumulative=True),
             #                                              kde_kws=dict(cumulative=True)), )
             g = sns.JointGrid(osi, r2)
-            g = g.plot_joint(plt.scatter, color='#334f6d', s=5)
+            g = g.plot_joint(plt.scatter, color='#334f6d', s=1)
             g = g.plot_marginals(sns.distplot, color='#334f6d', hist_kws=dict(cumulative=True),
                                                          kde_kws=dict(cumulative=True))
-
+            perc = np.percentile(osi, 98)
+            g.ax_joint.set_xlim((osi.min(), perc))
+            perc = np.percentile(r2, 98)
+            g.ax_joint.set_ylim((r2.min(), perc))
             plt.setp(g.ax_marg_y.get_xticklabels(), visible=True, rotation=-60)
             plt.setp(g.ax_marg_y.xaxis.get_majorticklines(), visible=True)
             plt.setp(g.ax_marg_y.xaxis.get_minorticklines(), visible=True)
@@ -498,14 +506,17 @@ def osi_vs_r2(animal_id, session, scan_idx, size):
 def dsi_vs_r2(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    r2, osi = (tune.Ori.Cell() & key & dict(ori_type='dir')).fetch('r2','selectivity')
+    r2, dsi = (tune.Ori.Cell() & key & dict(ori_type='dir')).fetch('r2','selectivity')
     sz = tuple(i * size_factor[size] for i in [.7, .7])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
         with sns.axes_style('ticks'):
-            # g = sns.jointplot(osi, r2, marginal_kws=dict(hist_kws=dict(cumulative=True),
-            #                                              kde_kws=dict(cumulative=True)), )
-            g = sns.JointGrid(osi, r2)
-            g = g.plot_joint(plt.scatter, color='#334f6d', s=5)
+            g = sns.JointGrid(dsi, r2)
+            g = g.plot_joint(plt.scatter, color='#334f6d', s=1)
+            perc = np.percentile(dsi, 98)
+            g.ax_joint.set_xlim((dsi.min(), perc))
+            perc = np.percentile(r2, 98)
+            g.ax_joint.set_ylim((r2.min(), perc))
+
             g = g.plot_marginals(sns.distplot, color='#334f6d', hist_kws=dict(cumulative=True),
                                                          kde_kws=dict(cumulative=True))
 

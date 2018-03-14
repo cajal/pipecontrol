@@ -32,30 +32,24 @@ def validate_session(form, field):
     if not form.session.data and form.scan_idx.data:
         raise ValidationError('Must specify session when scan_idx is specified')
 
+def validate_animal(form, field):
+    key = dict(animal_id=form.animal_id.data)
+    if not (experiment.Scan() & key):
+        raise ValidationError('Key {} not in the database'.format(repr(key)))
+
 def validate_scan(form, field):
     if form.scan_idx.data and not form.session.data:
         raise ValidationError('Must specify scan_idx when session is specified')
-
+    key = dict(animal_id=form.animal_id.data, session=form.session.data, scan_idx=form.scan_idx.data)
+    if not (experiment.Scan() & key):
+        raise ValidationError('Key {} not in the database'.format(repr(key)))
 
 class ReportForm(wtforms.Form):
-    animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired()])
+    animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired(), validate_animal])
     session = wtforms.IntegerField('Session', [validators.optional(), validate_session])
     scan_idx = wtforms.IntegerField('Scan Idx', [validators.optional(), validate_scan])
     pdf = wtforms.BooleanField('render as pdf', default=False)
 
-    def validate(self):
-        rv = wtforms.Form.validate(self)
-        if not rv:
-            return False
-        animal_id = self.animal_id.data
-        if self.scan_idx.data and self.session.data:
-            key = dict(animal_id=animal_id, session=self.session.data, scan_idx=self.scan_idx.data)
-        else:
-            key = dict(animal_id=animal_id)
-        if not (experiment.Scan() & key):
-            self.errors.append('Key {} not in the database'.format(repr(key)))
-            return False
-        return True
 
 class TrackingForm(wtforms.Form):
     exclude = wtforms.BooleanField('Not trackable', [validators.InputRequired()],

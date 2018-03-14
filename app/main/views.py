@@ -11,7 +11,7 @@ import graphviz
 import json
 from . import main, forms, tables
 from .. import schemata
-from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune
+from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, stimulus
 
 
 def ping(f):
@@ -154,7 +154,8 @@ def progress():
 @main.route('/jobs', methods=['GET', 'POST'])
 def jobs():
     modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack),
-                           ('tune', tune), ('treadmill', treadmill), ('pupil', pupil)])
+                           ('tune', tune), ('treadmill', treadmill), ('pupil', pupil),
+                           ('stimulus', stimulus)])
 
     if request.method == 'POST':
         to_delete = []

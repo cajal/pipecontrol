@@ -1,6 +1,10 @@
+body {
+  font-family: Helvetica, Arial, Sans-Serif;
+}
+
 .Relation {
     border-collapse: collapse;
-    font-size: 100%;
+    font-size: 80%;
 }
 
 .Relation th {
@@ -10,13 +14,13 @@
     border: #f0e0e0 1px solid;
     font-weight: normal;
     font-family: monospace;
-    font-size: 100%;
+    font-size: 80%;
 }
 
 .Relation td {
     padding: 4px;
     border: #f0e0e0 1px solid;
-    font-size: 100%;
+    font-size: 80%;
 }
 
 .Relation tr:nth-child(odd) {

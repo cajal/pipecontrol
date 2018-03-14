@@ -16,7 +16,7 @@ from flask_weasyprint import render_pdf, HTML, CSS
 from .tables import StatsTable, CellTable, create_datajoint_table
 from . import main, forms, tables
 from .. import schemata
-from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus
+from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus, stack
 
 
 def ping(f):
@@ -501,9 +501,12 @@ def mousereport(animal_id):
         somas='count(*)', scan_type='"{}"'.format(pipe.__name__)) for pipe in [reso, meso]],
         selection=['scan_type', 'session', 'scan_idx', 'somas'])
     stats.items.append(dict(scan_type='', session='ALL', scan_idx='ALL', somas=sum([e['somas'] for e in stats.items])))
+    scan_movie_oracle = bool(tune.MovieOracle() & key)
+    mouse_per_stack_oracle = bool(stack.StackSet() * tune.MovieOracle() & key)
     return render_template('mouse_report.html', animal_id=animal_id, scans=scans,
                            scaninfo=scaninfo, stats=stats, scanh=scanh,
-                           stim_time=stim_time, ori_stats=ori_stats)
+                           stim_time=stim_time, ori_stats=ori_stats,
+                           scan_movie_oracle=scan_movie_oracle, mouse_per_stack_oracle=mouse_per_stack_oracle)
 
 
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')

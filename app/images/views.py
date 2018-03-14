@@ -1,7 +1,7 @@
 import sys
 
 from ._utils import fill_nans
-from ..schemata import tune, xcorr
+from ..schemata import tune, xcorr, stack
 from io import BytesIO
 from . import images
 import numpy as np
@@ -16,6 +16,7 @@ import matplotlib.colors as mcolors
 import matplotlib.image as mpimg
 import datajoint as dj
 from ..schemata import stimulus
+import pandas as pd
 
 size_factor = dict(
     thumb=2, small=4, report=4, smedium=6.5, medium=8, marge=10, large=16, huge=32
@@ -353,10 +354,10 @@ def cellori(animal_id, session, scan_idx, size):
             bin_centers = (bins[:-1] + bins[1:]) / 2
             for p in np.arange(20, 120, 20):
                 h, _ = np.histogram(angle[r2 < np.percentile(r2, p)], normed=True, bins=bins)
-                ax.plot(bin_centers,  h,  label='<{}% percentile R$^2$'.format(p))
+                ax.plot(bin_centers, h, label='<{}% percentile R$^2$'.format(p))
             ax.legend(ncol=2)
-            ax.set_xticks([-np.pi/2, -np.pi/4,  0, np.pi/4, np.pi/2])
-            ax.set_xticklabels([r'$-\frac{\pi}{2}$',r'$\frac{\pi}{4}$', '0', r'$\frac{\pi}{4}$', r'$\frac{\pi}{2}$'])
+            ax.set_xticks([-np.pi / 2, -np.pi / 4, 0, np.pi / 4, np.pi / 2])
+            ax.set_xticklabels([r'$-\frac{\pi}{2}$', r'$\frac{\pi}{4}$', '0', r'$\frac{\pi}{4}$', r'$\frac{\pi}{2}$'])
         sns.despine(trim=True)
         ax.set_ylabel('normalized histogram of orientations')
         ax.set_title('cardinal bias for {animal_id}-{session}-{scan_idx}'.format(**key))
@@ -365,6 +366,7 @@ def cellori(animal_id, session, scan_idx, size):
         ax.tick_params(axis='both', length=3, width=1)
 
     return savefig(fig)
+
 
 @images.route("/ori_r2-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
 def ori_r2(animal_id, session, scan_idx, size):
@@ -387,6 +389,7 @@ def ori_r2(animal_id, session, scan_idx, size):
         fig.tight_layout()
     return savefig(fig)
 
+
 @images.route("/ori_r2-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
 def dir_r2(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
@@ -407,6 +410,7 @@ def dir_r2(animal_id, session, scan_idx, size):
         ax.tick_params(axis='both', length=3, width=1)
         fig.tight_layout()
     return savefig(fig)
+
 
 @images.route("/osi-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
 def osi(animal_id, session, scan_idx, size):
@@ -430,6 +434,7 @@ def osi(animal_id, session, scan_idx, size):
         ax.tick_params(axis='both', length=3, width=1)
         fig.tight_layout()
     return savefig(fig)
+
 
 @images.route("/dsi-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
 def dsi(animal_id, session, scan_idx, size):
@@ -458,8 +463,7 @@ def dsi(animal_id, session, scan_idx, size):
 def osi_vs_r2(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    r2, osi = (tune.Ori.Cell() & key & dict(ori_type='ori')).fetch('r2','selectivity')
-
+    r2, osi = (tune.Ori.Cell() & key & dict(ori_type='ori')).fetch('r2', 'selectivity')
 
     sz = tuple(i * size_factor[size] for i in [.7, .7])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
@@ -469,7 +473,7 @@ def osi_vs_r2(animal_id, session, scan_idx, size):
             g = sns.JointGrid(osi, r2)
             g = g.plot_joint(plt.scatter, color='#334f6d', s=1)
             g = g.plot_marginals(sns.distplot, color='#334f6d', hist_kws=dict(cumulative=True),
-                                                         kde_kws=dict(cumulative=True))
+                                 kde_kws=dict(cumulative=True))
             perc = np.percentile(osi, 98)
             g.ax_joint.set_xlim((osi.min(), perc))
             perc = np.percentile(r2, 98)
@@ -477,7 +481,7 @@ def osi_vs_r2(animal_id, session, scan_idx, size):
             plt.setp(g.ax_marg_y.get_xticklabels(), visible=True, rotation=-60)
             plt.setp(g.ax_marg_y.xaxis.get_majorticklines(), visible=True)
             plt.setp(g.ax_marg_y.xaxis.get_minorticklines(), visible=True)
-            g.ax_marg_y.set_xticks(np.linspace(0,1,5))
+            g.ax_marg_y.set_xticks(np.linspace(0, 1, 5))
             g.ax_marg_y.tick_params(axis='both', length=3, width=1)
             g.ax_marg_y.grid('on')
             sns.despine(left=False, trim=True, ax=g.ax_marg_y)
@@ -485,7 +489,7 @@ def osi_vs_r2(animal_id, session, scan_idx, size):
             plt.setp(g.ax_marg_x.get_yticklabels(), visible=True)
             plt.setp(g.ax_marg_x.yaxis.get_majorticklines(), visible=True)
             plt.setp(g.ax_marg_x.yaxis.get_minorticklines(), visible=True)
-            g.ax_marg_x.set_yticks(np.linspace(0,1,5))
+            g.ax_marg_x.set_yticks(np.linspace(0, 1, 5))
             g.ax_marg_x.tick_params(axis='both', length=3, width=1)
             g.ax_marg_x.grid('on')
             sns.despine(left=False, trim=True, ax=g.ax_marg_x)
@@ -502,11 +506,12 @@ def osi_vs_r2(animal_id, session, scan_idx, size):
         g.fig.subplots_adjust(left=.15)
     return savefig(g.fig)
 
+
 @images.route("/dsi_vs_r2-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
 def dsi_vs_r2(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    r2, dsi = (tune.Ori.Cell() & key & dict(ori_type='dir')).fetch('r2','selectivity')
+    r2, dsi = (tune.Ori.Cell() & key & dict(ori_type='dir')).fetch('r2', 'selectivity')
     sz = tuple(i * size_factor[size] for i in [.7, .7])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
         with sns.axes_style('ticks'):
@@ -518,12 +523,12 @@ def dsi_vs_r2(animal_id, session, scan_idx, size):
             g.ax_joint.set_ylim((r2.min(), perc))
 
             g = g.plot_marginals(sns.distplot, color='#334f6d', hist_kws=dict(cumulative=True),
-                                                         kde_kws=dict(cumulative=True))
+                                 kde_kws=dict(cumulative=True))
 
             plt.setp(g.ax_marg_y.get_xticklabels(), visible=True, rotation=-60)
             plt.setp(g.ax_marg_y.xaxis.get_majorticklines(), visible=True)
             plt.setp(g.ax_marg_y.xaxis.get_minorticklines(), visible=True)
-            g.ax_marg_y.set_xticks(np.linspace(0,1,5))
+            g.ax_marg_y.set_xticks(np.linspace(0, 1, 5))
             g.ax_marg_y.tick_params(axis='both', length=3, width=1)
             g.ax_marg_y.grid('on')
             sns.despine(left=False, trim=True, ax=g.ax_marg_y)
@@ -531,7 +536,7 @@ def dsi_vs_r2(animal_id, session, scan_idx, size):
             plt.setp(g.ax_marg_x.get_yticklabels(), visible=True)
             plt.setp(g.ax_marg_x.yaxis.get_majorticklines(), visible=True)
             plt.setp(g.ax_marg_x.yaxis.get_minorticklines(), visible=True)
-            g.ax_marg_x.set_yticks(np.linspace(0,1,5))
+            g.ax_marg_x.set_yticks(np.linspace(0, 1, 5))
             g.ax_marg_x.tick_params(axis='both', length=3, width=1)
             g.ax_marg_x.grid('on')
             sns.despine(left=False, trim=True, ax=g.ax_marg_x)
@@ -547,3 +552,118 @@ def dsi_vs_r2(animal_id, session, scan_idx, size):
         ax.tick_params(axis='both', length=3, width=1)
         g.fig.subplots_adjust(left=.15)
     return savefig(g.fig)
+
+
+@images.route("/mouse_per_scan_oracle-<int:animal_id>_<size>.png")
+def mouse_per_scan_oracle(animal_id, size):
+    key = dict(animal_id=animal_id)
+    sz = tuple(i * size_factor[size] for i in [.7, .7])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style(style="white", rc={"axes.facecolor": (0, 0, 0, 0)}):
+            df = pd.DataFrame((tune.MovieOracle.Total() & key).fetch(order_by='session ASC, scan_idx ASC'))
+            df['scan'] = ['{}-{}-{}'.format(ai, s, sa) for ai, s, sa in zip(df.animal_id, df.session, df.scan_idx)]
+
+            # Initialize the FacetGrid object
+            N = len(dj.U('session', 'scan_idx') & (tune.MovieOracle() & key))
+
+            pal = sns.cubehelix_palette(N, rot=-.25, light=.7)
+            g = sns.FacetGrid(df, row="scan", hue="scan", aspect=15, size=.5, palette=pal)
+
+            # Draw the densities in a few steps
+            g.map(sns.kdeplot, "pearson", clip_on=False, shade=True, alpha=1, lw=1.5, bw=.01)
+            g.map(sns.kdeplot, "pearson", clip_on=False, color="w", lw=2, bw=.01)
+            g.map(plt.axhline, y=0, lw=2, clip_on=False)
+
+            # Define and use a simple function to label the plot in axes coordinates
+            def label(x, color, label):
+                ax = plt.gca()
+                low, high = ax.get_xlim()
+                low -= .02
+                ax.set_xlim((low, high))
+                ax.text(0, .2, label, fontweight="bold", color=color,
+                        ha="left", va="center", transform=ax.transAxes)
+
+            g.map(label, "scan")
+
+            # Set the subplots to overlap
+            g.fig.subplots_adjust(hspace=-.25, bottom=.1)
+
+            g.fig.set_size_inches(sz)
+
+            # Remove axes details that don't play will with overlap
+            g.set_titles("")
+            g.fig.suptitle("Movie Oracle Correlations")
+            g.set(yticks=[])
+            g.despine(bottom=True, left=True)
+            g.axes.ravel()[-1].set_xlabel('Pearson Correlation')
+    return savefig(g.fig)
+
+
+@images.route("/mouse_per_stack_oracle-<int:animal_id>_<size>.png")
+def mouse_per_stack_oracle(animal_id, size):
+    key = dict(animal_id=animal_id)
+    sz = tuple(i * size_factor[size] for i in [.7, .7])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style(style="white", rc={"axes.facecolor": (0, 0, 0, 0)}):
+            rel = (stack.StackSet.Unit()).aggr(stack.StackSet.Match().proj('munit_id', session='scan_session')
+                                               * tune.MovieOracle.Total() & key, pearson='MAX(pearson)')
+            df = pd.DataFrame(rel.fetch(order_by='stack_session ASC, stack_idx ASC'))
+            df['stack'] = ['{}-{}-{}'.format(ai, s, sa) for ai, s, sa in
+                           zip(df.animal_id, df.stack_session, df.stack_idx)]
+
+            # Initialize the FacetGrid object
+            N = len(dj.U('stack_session', 'stack_idx') & rel)
+
+            pal = sns.cubehelix_palette(N, rot=-.25, light=.7)
+
+            if N > 1:
+                g = sns.FacetGrid(df, row="stack", hue='stack', aspect=15, size=.5, palette=pal)
+
+                # Draw the densities in a few steps
+                g.map(sns.kdeplot, "pearson", clip_on=False, shade=True, alpha=1, lw=1.5, bw=.01)
+                g.map(sns.kdeplot, "pearson", clip_on=False, color="w", lw=2, bw=.01)
+                g.map(plt.axhline, y=0, lw=2, clip_on=False)
+
+                # Define and use a simple function to label the plot in axes coordinates
+                def label(x, color, label):
+                    ax = plt.gca()
+                    low, high = ax.get_xlim()
+                    low -= .02
+                    ax.set_xlim((low, high))
+                    ax.text(0, .2, label, fontweight="bold", color=color,
+                            ha="left", va="center", transform=ax.transAxes)
+
+                g.map(label, "stack")
+
+                # Set the subplots to overlap
+                g.fig.subplots_adjust(hspace=-.25)
+
+                g.fig.set_size_inches(sz)
+
+                # Remove axes details that don't play will with overlap
+                g.set_titles("")
+                g.fig.suptitle("Movie Oracle Correlations")
+                g.set(yticks=[])
+                g.despine(bottom=True, left=True)
+                g.axes.ravel()[-1].set_xlabel('Pearson Correlation')
+                return savefig(g.fig)
+            else:
+                with sns.axes_style('ticks', rc={"axes.facecolor": (0, 0, 0, 0)}):
+                    fig, ax = plt.subplots()
+
+                # Draw the densities in a few steps
+                sns.kdeplot(df.pearson, shade=True, alpha=1, lw=1.5, bw=.01, label='n={} neurons'.format(len(df)))
+                # Set the subplots to overlap
+                fig.set_size_inches(sz)
+
+                # Remove axes details that don't play will with overlap
+                fig.suptitle("Movie Oracle Correlations Stack " + np.unique(df['stack']).item())
+                ax.set(yticks=[])
+                low, high = ax.get_ylim()
+                ax.set_ylim((0, high))
+                sns.despine(fig=fig, trim=True, left=True)
+                ax.set_xlabel('Pearson Correlation')
+                ax.spines['bottom'].set_linewidth(1)
+                ax.tick_params(axis='both', length=3, width=1)
+
+                return savefig(fig)

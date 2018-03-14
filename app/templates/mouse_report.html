@@ -16,14 +16,34 @@
 
     <h3>Scan Info</h3>
     {{ scans | safe }}
-    <p style="page-break-before: always"></p>
+{#    <p style="page-break-before: always"></p>#}
 
     <h2> Scan Info </h2>
     {{ scaninfo | safe }}
-    <p style="page-break-before: always"></p>
+{#    <p style="page-break-before: always"></p>#}
 
     <h2> Statistics </h2>
     {{ stats | safe }}
+
+    <h2>Oracle Statistics</h2>
+    {% if scan_movie_oracle %}
+        <div>
+            These histograms show the oracle scores over scans. Different scans might contain the same cell.
+            <img src="{{ url_for('images.mouse_per_scan_oracle', animal_id=animal_id, size='medium') }}">
+        </div>
+    {% else %}
+        <div>No movie oracle scores found. Populate <code>stimline.tune.MovieOracle()</code></div>
+    {% endif %}
+
+    {% if mouse_per_stack_oracle %}
+        <div>
+            This histogram shows the best oracle scores over unique cells. Since each cell could be scanned several times.
+            <img src="{{ url_for('images.mouse_per_stack_oracle', animal_id=animal_id, size='medium') }}">
+        </div>
+    {% else %}
+        <div>No movie oracle scores found. Populate <code>stimline.tune.MovieOracle()</code>
+                    and <code>pipeline.stack.StackSet()</code> </div>
+    {% endif %}
 
     <h2> Orientation Selectivity Statistics </h2>
     Percent cells above 0.01 R2.

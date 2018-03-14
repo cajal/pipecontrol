@@ -5,3 +5,5 @@ flask-table
 flask-sslify
 graphviz
 mpld3
+flask-weasyprint
+statsmodels

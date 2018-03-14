@@ -39,11 +39,12 @@ def get_branch(gitdir):
 
 def pull():
     with cd(env.control_dir):
+        puts(run('pwd'))
         branch = get_branch(env.control_dir)
-        sudo('git reset --hard')
-        sudo('git clean -fd')
-        sudo('git checkout {}'.format(branch))
-        sudo('git pull origin ' + branch)
+        run('git reset --hard')
+        run('git clean -fd')
+        run('git checkout {}'.format(branch))
+        run('git pull origin ' + branch)
 
 
 def build():
@@ -60,9 +61,9 @@ def sync_files():
 
 def deploy():
     with settings(warn_only=True):
-        with_sudo()
-        down()
         pull()
         sync_files()
+        with_sudo()
+        down()
         build()
         start()

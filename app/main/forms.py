@@ -1,4 +1,4 @@
-from wtforms.validators import StopValidation
+from wtforms.validators import StopValidation, ValidationError
 
 from ..schemata import experiment
 import wtforms
@@ -21,11 +21,41 @@ class AutoProcessing(wtforms.Form):
     priority = wtforms.IntegerField('Priority [0-100]', [validators.NumberRange(-128, 127)],
                                     default=50)
 
+
 class QualityForm(wtforms.Form):
     animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired()])
     session = wtforms.IntegerField('Session', [validators.InputRequired()])
     scan_idx = wtforms.IntegerField('Scan Idx', [validators.InputRequired()])
 
+
+def validate_session(form, field):
+    if not form.session.data and form.scan_idx.data:
+        raise ValidationError('Must specify session when scan_idx is specified')
+
+def validate_scan(form, field):
+    if form.scan_idx.data and not form.session.data:
+        raise ValidationError('Must specify scan_idx when session is specified')
+
+
+class ReportForm(wtforms.Form):
+    animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired()])
+    session = wtforms.IntegerField('Session', [validators.optional(), validate_session])
+    scan_idx = wtforms.IntegerField('Scan Idx', [validators.optional(), validate_scan])
+    pdf = wtforms.BooleanField('render as pdf', default=False)
+
+    def validate(self):
+        rv = wtforms.Form.validate(self)
+        if not rv:
+            return False
+        animal_id = self.animal_id.data
+        if self.scan_idx.data and self.session.data:
+            key = dict(animal_id=animal_id, session=self.session.data, scan_idx=self.scan_idx.data)
+        else:
+            key = dict(animal_id=animal_id)
+        if not (experiment.Scan() & key):
+            self.errors.append('Key {} not in the database'.format(repr(key)))
+            return False
+        return True
 
 class TrackingForm(wtforms.Form):
     exclude = wtforms.BooleanField('Not trackable', [validators.InputRequired()],

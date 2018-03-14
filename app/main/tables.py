@@ -27,8 +27,13 @@ class CheckBoxCol(flask_table.Col):
 
 class CheckMarkCol(flask_table.Col):
     def td_format(self, content):
-        return '<span class ="glyphicon {}" > </span>'.format('glyphicon-ok' if content
+        return '<span class ="glyphicon {}" ></span>'.format('glyphicon-ok' if content
                                                               else 'glyphicon-remove')
+
+
+class SimpleCheckMarkCol(flask_table.Col):
+    def td_format(self, content):
+        return '{}'.format('yes' if content else '')
 
 class KeyColumn(flask_table.Col):
     def td_format(self, content):
@@ -101,6 +106,24 @@ class InfoTable(flask_table.Table):
     attribute = flask_table.Col('Attribute')
     value = flask_table.Col('Value')
 
+class StatsTable(flask_table.Table):
+    classes = ['Relation']
+
+    field = flask_table.Col('Field')
+    somas = flask_table.Col('Detected Somas')
+    depth = flask_table.Col('Depth from surface [um]')
+    height = flask_table.Col('Height [um]')
+    width = flask_table.Col('Width [um]')
+
+class CellTable(flask_table.Table):
+    classes = ['Relation']
+
+    session = flask_table.Col('Session')
+    scan_idx = flask_table.Col('Scan')
+    somas = flask_table.Col('Detected Somas')
+
+
+
 
 class SummaryTable(flask_table.Table):
     classes = ['Relation']
@@ -120,16 +143,43 @@ class SummaryTable(flask_table.Table):
                                  url_kwargs_extra={'channel': 1, 'segmentation_method': 3,
                                                    'spike_method': 5})
 
+def create_datajoint_table(rels, name='DataJoint Table', selection=None,
+                           check_funcs = None, **fetch_kwargs):
 
-def create_datajoint_table(rel, **fetch_kwargs):
-    table_class = flask_table.create_table('{}Table'.format(rel.__class__.__name__))
-    for col in rel.heading.attributes:
-        table_class.add_column(col, flask_table.Col(col))
+    if not isinstance(rels, list):
+        rels = [rels]
 
-    items = rel.proj(*rel.heading.non_blobs).fetch(as_dict=True, **fetch_kwargs)
-    for item in items:
-        for blob_col in rel.heading.blobs:
-            item[blob_col] = '<BLOB>'
+    table_class = flask_table.create_table(name)
+    if selection is None:
+        selection = set(rels[0].heading.attributes)
+        for rel in rels[1:]:
+            selection &= set(rel.heading.attributes)
+    for col in rels[0].heading.attributes:
+        if col in selection:
+            table_class.add_column(col, flask_table.Col(col))
+
+    if check_funcs is not None:
+        for col in check_funcs:
+            table_class.add_column(col, SimpleCheckMarkCol(col))
+
+    items = []
+    for rel in rels:
+        new_items = rel.proj(*rel.heading.non_blobs).fetch(as_dict=True, **fetch_kwargs)
+
+        for item in new_items:
+            for blob_col in rel.heading.blobs:
+                item[blob_col] = '<BLOB>'
+        if selection is not None:
+            for i in range(len(new_items)):
+                entry = {k:v for k,v in new_items[i].items() if k in selection}
+                if check_funcs is not None:
+                    add = {}
+                    for col, f in check_funcs.items():
+                        add[col] = f(entry)
+                    entry.update(add)
+                new_items[i] = entry
+
+        items.extend(new_items)
 
     table_class.classes = ['Relation']
     table = table_class(items)

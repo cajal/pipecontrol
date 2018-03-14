@@ -1,7 +1,8 @@
 from collections import OrderedDict
 from inspect import isclass
+from itertools import zip_longest
 
-from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
+from flask import render_template, redirect, url_for, flash, request, session, send_from_directory, Response, send_file
 import datajoint as dj
 import uuid
 import numpy as np
@@ -9,9 +10,14 @@ import matplotlib.pyplot as plt
 import mpld3
 import graphviz
 import json
+
+from flask_weasyprint import render_pdf, HTML, CSS
+
+from .tables import StatsTable, CellTable, create_datajoint_table
 from . import main, forms, tables
 from .. import schemata
-from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, stimulus
+from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus
+
 
 
 def ping(f):
@@ -175,9 +181,9 @@ def jobs():
                                                                           'timestamp DESC',
                                                                  as_dict=True)
         for item in items:
-            value = '{}+{}'.format(item['table_name'], item['key_hash']) # + is separator
+            value = '{}+{}'.format(item['table_name'], item['key_hash'])  # + is separator
             item['delete'] = {'name': 'delete_item', 'value': value}
-            item['key_hash'] = item['key_hash'][:8] + '...' # shorten it for display
+            item['key_hash'] = item['key_hash'][:8] + '...'  # shorten it for display
         all_tables.append((name, tables.JobTable(items)))
 
     return render_template('jobs.html', job_tables=all_tables)
@@ -344,12 +350,12 @@ def relation(schema, table, subtable):
     root_name = root_rel().full_table_name
     root_id = add_node(name_lookup(root_name), node_attrs[dj.erd._get_tier(root_name)])
     for node_name, _ in root_dependencies.in_edges(root_name):
-        if dj.erd._get_tier(node_name) is dj.erd._AliasNode: # renamed attribute
+        if dj.erd._get_tier(node_name) is dj.erd._AliasNode:  # renamed attribute
             node_name = root_dependencies.in_edges(node_name)[0][0]
         node_id = add_node(name_lookup(node_name), node_attrs[dj.erd._get_tier(node_name)])
         dot.edge(node_id, root_id)
     for _, node_name in root_dependencies.out_edges(root_name):
-        if dj.erd._get_tier(node_name) is dj.erd._AliasNode: # renamed attribute
+        if dj.erd._get_tier(node_name) is dj.erd._AliasNode:  # renamed attribute
             node_name = root_dependencies.out_edges(node_name)[0][1]
         node_id = add_node(name_lookup(node_name), node_attrs[dj.erd._get_tier(node_name)])
         dot.edge(root_id, node_id)
@@ -392,3 +398,129 @@ def tracking(animal_id, session, scan_idx):
         flash('Could not find eye frames for {}'.format(key))
 
     return render_template('trackingtask.html', form=form, figure=figure)
+
+
+@main.route('/report/', methods=['GET', 'POST'])
+def report():
+    form = forms.ReportForm(request.form)
+    if request.method == 'POST' and form.validate():
+        report_type = 'scan' if form.session.data and form.scan_idx.data else 'mouse'
+        if form.pdf.data:
+            endpoint = 'main.{}report_pdf'.format(report_type)
+        else:
+            endpoint = 'main.{}report'.format(report_type)
+        return redirect(url_for(endpoint, animal_id=form.animal_id.data,
+                                session=form.session.data,
+                                scan_idx=form.scan_idx.data))
+    return render_template('report.html', form=form)
+
+
+@main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>')
+def scanreport(animal_id, session, scan_idx):
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+    pipe = reso if reso.ScanInfo() & key else meso if meso.ScanInfo() & key else None
+
+    if pipe is not None:
+        oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
+        cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
+        pxori = (tune.PixelwiseOri() & key).fetch(dj.key, order_by='field')
+        cellori = bool(tune.Ori() & key)
+        correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
+        average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
+        eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
+        eye_track = (pupil.FittedContour() & key).fetch1(dj.key) if pupil.FittedContour() & key else None
+        quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
+        oracletime = (tune.MovieOracleTimeCourse() & key).fetch(dj.key, order_by='field')
+        sta = bool(tune.STA() & tune.STAQual() & key)
+        xsnr = bool(xcorr.XSNR() & key)
+        staext = bool(tune.STAExtent() & key)
+
+        craniatomy_notes, session_notes = (experiment.Session() & key).fetch1('craniotomy_notes', 'session_notes')
+
+        fields, somas, depth, height, width = (pipe.ScanInfo.Field() * pipe.ScanSet()).aggr(
+            pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & key & dict(type='soma'),
+            'z', 'um_height', 'um_width', somas='count(*)').fetch('field', 'somas', 'z', 'um_height', 'um_width')
+        stats = StatsTable([dict(field=f, somas=s, depth=z, height=h, width=w)
+                            for f, s, z, h, w in zip(fields, somas, depth, height, width)])
+        stats.items.append(
+            dict(field='ALL', somas=sum([d['somas'] for d in stats.items]), depth='-', height='-', width='-')
+        )
+
+        return render_template('scan_report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
+                               data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)),
+                               craniotomy_notes=craniatomy_notes.split(','),
+                               session_notes=session_notes.split(','), eye=eye, eye_track=eye_track,
+                               stats=stats, sta=sta, quality=quality, oracletime=oracletime, xsnr=xsnr, staext=staext,
+                               pxori=pxori, cellori=cellori)
+    else:
+        flash('{} is not in reso or meso'.format(key))
+        return redirect(url_for('main.report'))
+
+
+@main.route('/report/mouse/<int:animal_id>')
+def mousereport(animal_id):
+    key = dict(animal_id=animal_id)
+    auto = experiment.AutoProcessing() & key
+
+    meso_scanh = mice.Mice().aggr(meso.ScanInfo() & dict(animal_id=animal_id),
+                                  time="TIME_FORMAT(SEC_TO_TIME(sum(nframes / fps)),'%%Hh %%im %%Ss')",
+                                  setup="'meso'")
+
+    stim_time = [dj.U('animal_id', 'session', 'scan_idx', 'stimulus_type').aggr(
+        stim * stimulus.Condition() * stimulus.Trial() & key,
+        time="TIME_FORMAT(SEC_TO_TIME(sum({})),'%%Hh %%im %%Ss')".format(duration_field))
+        for duration_field, stim in zip(['cut_after', 'ori_on_secs + ori_off_secs', 'duration', 'duration'],
+                                        [stimulus.Clip(), stimulus.Monet(),
+                                         stimulus.Monet2(), stimulus.Varma()])
+    ]
+
+    def in_auto_proc(k):
+        return bool(experiment.AutoProcessing() & k)
+
+    stim_time = create_datajoint_table(stim_time,
+                                       check_funcs=dict(autoprocessing=in_auto_proc))
+
+    reso_scanh = mice.Mice().aggr(reso.ScanInfo() & dict(animal_id=animal_id),
+                                  time="TIME_FORMAT(SEC_TO_TIME(sum(nframes / fps)),'%%Hh %%im %%Ss')",
+                                  setup="'reso'")
+    scanh = create_datajoint_table([reso_scanh, meso_scanh])
+    scans = create_datajoint_table(
+        (experiment.Scan() & auto), selection=['session', 'scan_idx', 'lens', 'depth', 'site_number', 'scan_ts']
+    )
+    scaninfo = create_datajoint_table(
+        [(pipe.ScanInfo() & auto) for pipe in [reso, meso]],
+        selection=['nfields', 'fps', 'scan_idx', 'session', 'nframes', 'nchannels', 'usecs_per_line']
+    )
+
+    ori_stats = [dj.U('animal_id').aggr(tune.Ori.Cell() & key & dict(ori_type='ori'),
+                                        ori_type="'orientation'", percent_above_05='100*AVG(r2>0.01)'),
+                 dj.U('animal_id').aggr(tune.Ori.Cell() & key & dict(ori_type='dir'),
+                                        ori_type="'direction'", percent_above_05='100*AVG(r2>0.01)')]
+    ori_stats = create_datajoint_table(ori_stats)
+
+    stats = create_datajoint_table([experiment.Scan().aggr(
+        pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & auto & dict(type='soma'),
+        somas='count(*)', scan_type='"{}"'.format(pipe.__name__)) for pipe in [reso, meso]],
+        selection=['scan_type', 'session', 'scan_idx', 'somas'])
+    stats.items.append(dict(scan_type='', session='ALL', scan_idx='ALL', somas=sum([e['somas'] for e in stats.items])))
+    return render_template('mouse_report.html', animal_id=animal_id, scans=scans,
+                           scaninfo=scaninfo, stats=stats, scanh=scanh,
+                           stim_time=stim_time, ori_stats=ori_stats)
+
+
+@main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')
+def scanreport_pdf(animal_id, session, scan_idx):
+    html = scanreport(animal_id=animal_id, session=session, scan_idx=scan_idx)
+    return render_pdf(HTML(string=html),
+                      stylesheets=[CSS(url_for('static', filename='styles.css')),
+                                   CSS(url_for('static', filename='datajoint.css'))]
+                      )
+
+
+@main.route('/report/mouse/<int:animal_id>.pdf')
+def mousereport_pdf(animal_id):
+    html = mousereport(animal_id=animal_id)
+    return render_pdf(HTML(string=html),
+                      stylesheets=[CSS(url_for('static', filename='styles.css')),
+                                   CSS(url_for('static', filename='pdf.css'))]
+                      )

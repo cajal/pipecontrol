@@ -490,6 +490,7 @@ def mousereport(animal_id):
         selection=['nfields', 'fps', 'scan_idx', 'session', 'nframes', 'nchannels', 'usecs_per_line']
     )
 
+
     ori_stats = [dj.U('animal_id').aggr(tune.Ori.Cell() & key & dict(ori_type='ori'),
                                         ori_type="'orientation'", percent_above_05='100*AVG(r2>0.01)'),
                  dj.U('animal_id').aggr(tune.Ori.Cell() & key & dict(ori_type='dir'),
@@ -503,10 +504,14 @@ def mousereport(animal_id):
     stats.items.append(dict(scan_type='', session='ALL', scan_idx='ALL', somas=sum([e['somas'] for e in stats.items])))
     scan_movie_oracle = bool(tune.MovieOracle() & key)
     mouse_per_stack_oracle = bool(stack.StackSet() * tune.MovieOracle() & key)
+    cell_matches = bool(stack.StackSet() & key)
+    cell_counts = create_datajoint_table((stack.StackSet() & key).aggr(stack.StackSet.Unit(), unique_neurons='count(*)'))
+
     return render_template('mouse_report.html', animal_id=animal_id, scans=scans,
                            scaninfo=scaninfo, stats=stats, scanh=scanh,
                            stim_time=stim_time, ori_stats=ori_stats,
-                           scan_movie_oracle=scan_movie_oracle, mouse_per_stack_oracle=mouse_per_stack_oracle)
+                           scan_movie_oracle=scan_movie_oracle, mouse_per_stack_oracle=mouse_per_stack_oracle,
+                           cell_matches=cell_matches, cell_counts=cell_counts)
 
 
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')

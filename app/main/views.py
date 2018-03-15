@@ -523,6 +523,7 @@ def mousereport(animal_id):
     cell_matches = bool(stack.StackSet() & key)
     stack_ori = bool(stack.StackSet() * tune.Ori() & key)
     stack_rf = bool(stack.StackSet() * tune.STAQual() & key)
+    kuiper = bool(tune.Kuiper() & key)
     cell_counts = create_datajoint_table(
         (stack.StackSet() & key).aggr(stack.StackSet.Unit(), unique_neurons='count(*)'))
 
@@ -532,7 +533,7 @@ def mousereport(animal_id):
                            ori_stats=ori_stats, ori_stacks=ori_stacks,
                            scan_movie_oracle=scan_movie_oracle, mouse_per_stack_oracle=mouse_per_stack_oracle,
                            cell_matches=cell_matches, cell_counts=cell_counts,
-                           stack_ori=stack_ori, stack_rf=stack_rf)
+                           stack_ori=stack_ori, stack_rf=stack_rf, kuiper=kuiper)
 
 
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')

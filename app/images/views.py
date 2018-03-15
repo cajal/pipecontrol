@@ -588,7 +588,7 @@ def mouse_per_scan_oracle(animal_id, size):
             g.map(label, "scan")
 
             # Set the subplots to overlap
-            g.fig.subplots_adjust(bottom=.1)
+            g.fig.subplots_adjust(bottom=.1, hspace=-0.25)
 
             g.fig.set_size_inches(sz)
 

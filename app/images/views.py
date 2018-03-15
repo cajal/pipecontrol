@@ -598,6 +598,8 @@ def mouse_per_scan_oracle(animal_id, size):
             g.set(yticks=[])
             g.despine(bottom=True, left=True)
             g.axes.ravel()[-1].set_xlabel('Pearson Correlation')
+            [a.set_xticklabels([]) for a in g.axes.ravel()[:-1]]
+
     return savefig(g.fig)
 
 

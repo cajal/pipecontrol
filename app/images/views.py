@@ -713,6 +713,51 @@ def osi_dsi_per_stack(animal_id, size):
 
     return savefig(g.fig)
 
+@images.route("/rf_snr_stack_stat-<int:animal_id>_<size>.png")
+def rf_snr_stack_stat(animal_id, size):
+    key = dict(animal_id=animal_id, **SETTINGS)
+    df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
+    df2 = pd.DataFrame((tune.STAQual() & key).fetch())
+    df = df1.merge(df2).groupby(
+        ['animal_id', 'stack_session', 'stack_idx',
+         'munit_id', 'stimulus_type']).agg(dict(snr=np.max)).reset_index()
+    df['stack'] = ['{}-{}-{}'.format(ai, s, sa) for ai, s, sa in
+                   zip(df.animal_id, df.stack_session, df.stack_idx)]
+
+    sz = tuple(i * size_factor[size] for i in [1, .7])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style(style="ticks", rc={"axes.facecolor": (0, 0, 0, 0)}):
+
+            # Initialize the FacetGrid object
+            pal = ['steelblue', 'orange', 'slategray']
+            g = sns.FacetGrid(df, row="stack", hue='stimulus_type', palette=pal,
+                              margin_titles=True, legend_out=True)
+            #
+            # # Draw the densities in a few steps
+            g.map(sns.kdeplot, "snr", shade=False, alpha=1, lw=2, cumulative=True)
+            g.add_legend(title="Stimulus Type")
+            # g.map(sns.kdeplot, "snr",  color="w", lw=1,cumulative=True)
+
+
+            def cosmetics(x, **kwargs):
+                low = np.percentile(x, 2)
+                high = np.percentile(x, 98)
+                ax = plt.gca()
+                ax.set_xlim((low, high))
+                ax.spines['bottom'].set_linewidth(1)
+                ax.tick_params(axis='both', length=3, width=1)
+                ax.set_xlabel('receptive field SNR')
+                ax.grid(True)
+
+            g.map(cosmetics, "snr")
+            g.fig.set_size_inches(sz)
+            g.set_ylabels("cumulative distribution")
+            g.fig.suptitle("receptive field SNR")
+            g.fig.subplots_adjust(left=.1, right=.75)
+            g.despine(trim=True)
+
+    return savefig(g.fig)
+
 
 @images.route("/cell_matches-<int:animal_id>_<size>.png")
 def cell_matches(animal_id, size):

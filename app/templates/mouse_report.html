@@ -16,68 +16,84 @@
 
     <h3>Scan Info</h3>
     {{ scans | safe }}
-{#    <p style="page-break-before: always"></p>#}
 
     <h2> Scan Info </h2>
     {{ scaninfo | safe }}
-{#    <p style="page-break-before: always"></p>#}
 
     <h2> Statistics </h2>
     {{ stats | safe }}
 
-    <h2>Stack statistics</h2>
-    {% if cell_matches %}
+    {#    <h2>Stack statistics</h2>#}
+    {#    {% if cell_matches %}#}
+    {#        <div>#}
+    {#            {{ cell_counts | safe }}#}
+    {#        </div>#}
+    {#        <p>#}
+    {#        <div>#}
+    {#            <img src="{{ url_for('images.cell_matches', animal_id=animal_id, size='medium') }}">#}
+    {#        </div>#}
+    {#        <p>#}
+    {#        <div>#}
+    {#            <img src="{{ url_for('images.scan_hours', animal_id=animal_id, size='medium') }}">#}
+    {#        </div>#}
+    {#    {% else %}#}
+    {#        <div>No stack found. Populate <code>pipeline.stack.StackSet()</code></div>#}
+    {#    {% endif %}#}
+    {##}
+    <h2>Per Stack Receptive Field Statistics</h2>
+    {% if stack_rf %}
         <div>
-            {{ cell_counts | safe }}
-        </div>
-        <p>
-        <div>
-            <img src="{{ url_for('images.cell_matches', animal_id=animal_id, size='medium') }}">
-        </div>
-        <p>
-        <div>
-            <img src="{{ url_for('images.scan_hours', animal_id=animal_id, size='medium') }}">
-        </div>
-    {% else %}
-        <div>No stack found. Populate <code>pipeline.stack.StackSet()</code> </div>
-    {% endif %}
-
-    <h2>Orientation/Directional Statistics</h2>
-    {% if stack_ori %}
-        <div>
-            <img src="{{ url_for('images.osi_dsi_per_stack', animal_id=animal_id, size='medium') }}">
-        </div>
-    {% else %}
-        <div>No orienation/direction stats or stack found. Populate <code>stimline.tune.Ori()</code>
-            and <code>pipeline.stack.StackSet()</code> </div>
-    {% endif %}
-
-
-    <h2>Oracle Statistics</h2>
-    <h3>Per scan</h3>
-    {% if scan_movie_oracle %}
-        <div>
-            These histograms show the oracle scores over scans. Different scans might contain the same cell.
-            <img src="{{ url_for('images.mouse_per_scan_oracle', animal_id=animal_id, size='medium') }}">
+            <img src="{{ url_for('images.rf_snr_stack_stat', animal_id=animal_id, size='medium') }}">
         </div>
     {% else %}
-        <div>No movie oracle scores found. Populate <code>stimline.tune.MovieOracle()</code></div>
+        <div>No receptive field stats or stack found. Populate <code>stimline.tune.STAQual()</code>
+            and <code>pipeline.stack.StackSet()</code></div>
     {% endif %}
-
-
-    <h3>Per unique cells</h3>
-    {% if mouse_per_stack_oracle %}
-        <div>
-            Histogram over the best oracle score for each unique cell.
-            <br>
-            <img src="{{ url_for('images.mouse_per_stack_oracle', animal_id=animal_id, size='medium') }}">
-        </div>
-    {% else %}
-        <div>No movie oracle scores or stack found. Populate <code>stimline.tune.MovieOracle()</code>
-                    and <code>pipeline.stack.StackSet()</code> </div>
-    {% endif %}
+    {#    <h2>Orientation/Directional Statistics</h2>#}
+    {#    {% if stack_ori %}#}
+    {#        <div>#}
+    {#            <img src="{{ url_for('images.osi_dsi_per_stack', animal_id=animal_id, size='medium') }}">#}
+    {#        </div>#}
+    {#    {% else %}#}
+    {#        <div>No orienation/direction stats or stack found. Populate <code>stimline.tune.Ori()</code>#}
+    {#            and <code>pipeline.stack.StackSet()</code></div>#}
+    {#    {% endif %}#}
+    {##}
+    {##}
+    {#    <h2>Oracle Statistics</h2>#}
+    {#    <h3>Per scan</h3>#}
+    {#    {% if scan_movie_oracle %}#}
+    {#        <div>#}
+    {#            These histograms show the oracle scores over scans. Different scans might contain the same cell.#}
+    {#            <img src="{{ url_for('images.mouse_per_scan_oracle', animal_id=animal_id, size='medium') }}">#}
+    {#        </div>#}
+    {#    {% else %}#}
+    {#        <div>No movie oracle scores found. Populate <code>stimline.tune.MovieOracle()</code></div>#}
+    {#    {% endif %}#}
+    {##}
+    {##}
+    {#    <h3>Per unique cells</h3>#}
+    {#    {% if mouse_per_stack_oracle %}#}
+    {#        <div>#}
+    {#            Histogram over the best oracle score for each unique cell.#}
+    {#            <br>#}
+    {#            <img src="{{ url_for('images.mouse_per_stack_oracle', animal_id=animal_id, size='medium') }}">#}
+    {#        </div>#}
+    {#    {% else %}#}
+    {#        <div>No movie oracle scores or stack found. Populate <code>stimline.tune.MovieOracle()</code>#}
+    {#            and <code>pipeline.stack.StackSet()</code></div>#}
+    {#    {% endif %}#}
 
     <h2> Orientation Selectivity Statistics </h2>
-    Percent cells above 0.01 R2.
+    <h3>Per Scan</h3>
+    Percent cells above 0.01 R<sup>2</sup>
     {{ ori_stats | safe }}
+    <h3>Per Stack</h3>
+    Percent cells above 0.01 R<sup>2</sup> among different scans for maximal OSI/DSI.
+    {% if ori_stacks %}
+        {{ ori_stacks | safe }}
+    {% else %}
+            <div>No orienation/direction stats or stack found. Populate <code>stimline.tune.Ori()</code>
+                and <code>pipeline.stack.StackSet()</code></div>
+    {% endif %}
 {% endblock %}

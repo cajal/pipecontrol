@@ -647,6 +647,7 @@ def mouse_per_stack_oracle(animal_id, size):
                 g.fig.suptitle("Movie Oracle Correlations")
                 g.set(yticks=[])
                 g.despine(bottom=True, left=True)
+                [a.set_xticklabels([]) for a in g.axes.ravel()[:-1]]
                 g.axes.ravel()[-1].set_xlabel('Pearson Correlation')
                 return savefig(g.fig)
             else:

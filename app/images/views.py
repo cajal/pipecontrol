@@ -588,7 +588,7 @@ def mouse_per_scan_oracle(animal_id, size):
             g.map(label, "scan")
 
             # Set the subplots to overlap
-            g.fig.subplots_adjust(bottom=.1, hspace=-0.25)
+            g.fig.subplots_adjust(bottom=.1, hspace=-0.25, top=.9)
 
             g.fig.set_size_inches(sz)
 
@@ -598,6 +598,41 @@ def mouse_per_scan_oracle(animal_id, size):
             g.set(yticks=[])
             g.despine(bottom=True, left=True)
             g.axes.ravel()[-1].set_xlabel('Pearson Correlation')
+
+    return savefig(g.fig)
+
+
+@images.route("/kuiper-<int:animal_id>_<size>.png")
+def kuiper(animal_id, size):
+    key = dict(animal_id=animal_id, **SETTINGS)
+    sz = tuple(i * size_factor[size] for i in [.7, .7])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style(style="white", rc={"axes.facecolor": (0, 0, 0, 0)}):
+            df = pd.DataFrame((tune.Kuiper() & key).fetch())
+
+            # Draw the densities in a few steps
+            g = sns.FacetGrid(df, hue='stimulus_type', col='ori_type', col_order=['ori', 'dir'], margin_titles=True,
+                              legend_out=False)
+
+            g.map(plt.scatter, "kuiper", "widest_gap", s=5)
+
+            def label(**kwargs):
+                ax = plt.gca()
+                ax.spines['bottom'].set_linewidth(1)
+                ax.tick_params(axis='both', length=3, width=1)
+
+            g.map(label)
+
+            g.fig.set_size_inches(sz)
+
+            # Remove axes details that don't play will with overlap
+            g.set_titles("")
+            g.fig.suptitle("circular uniformity")
+            g.despine(trim=True)
+            g.add_legend()
+            g.fig.subplots_adjust(left=.1)
+            g.set_xlabels('kuiper statistic')
+            g.set_ylabels('widest gap')
 
     return savefig(g.fig)
 
@@ -639,7 +674,7 @@ def mouse_per_stack_oracle(animal_id, size):
                 g.map(label, "stack")
 
                 # Set the subplots to overlap
-                g.fig.subplots_adjust(hspace=-.25)
+                g.fig.subplots_adjust(hspace=-.25, top=.9)
 
                 g.fig.set_size_inches(sz)
 
@@ -671,6 +706,7 @@ def mouse_per_stack_oracle(animal_id, size):
 
                 return savefig(fig)
 
+
 @images.route("/osi_dsi_per_stack-<int:animal_id>_<size>.png")
 def osi_dsi_per_stack(animal_id, size):
     key = dict(animal_id=animal_id, **SETTINGS)
@@ -685,7 +721,6 @@ def osi_dsi_per_stack(animal_id, size):
     sz = tuple(i * size_factor[size] for i in [1, .7])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
         with sns.axes_style(style="ticks", rc={"axes.facecolor": (0, 0, 0, 0)}):
-
             # Initialize the FacetGrid object
             pal = ['steelblue', 'orange']
             g = sns.FacetGrid(df, row="stack", hue='stimulus_type', col='ori_type', palette=pal,
@@ -694,8 +729,7 @@ def osi_dsi_per_stack(animal_id, size):
             # # Draw the densities in a few steps
             g.map(sns.kdeplot, "selectivity", shade=True, alpha=.5, lw=1.5, cumulative=True)
             g.add_legend(title="Stimulus Type")
-            g.map(sns.kdeplot, "selectivity",  color="w", lw=2,cumulative=True)
-
+            g.map(sns.kdeplot, "selectivity", color="w", lw=2, cumulative=True)
 
             def cosmetics(x, **kwargs):
                 high = np.percentile(x, 99)
@@ -708,6 +742,96 @@ def osi_dsi_per_stack(animal_id, size):
             g.fig.set_size_inches(sz)
             g.set_ylabels("cumulative distribution")
             g.fig.suptitle("Neuron Selectivities")
+            g.fig.subplots_adjust(left=.1, right=.75)
+            g.despine(trim=True)
+
+    return savefig(g.fig)
+
+
+@images.route("/preferred_per_stack-<int:animal_id>_<size>.png")
+def preferred_per_stack(animal_id, size):
+    key = dict(animal_id=animal_id, **SETTINGS)
+    df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
+    df2 = pd.DataFrame((tune.Ori.Cell() & key).fetch())
+    df = df1.merge(df2)
+    idx = df.groupby(['animal_id', 'stack_session', 'stack_idx', 'munit_id', 'ori_type', 'stimulus_type'])[
+        'selectivity'].idxmax()
+    df = df.ix[idx]
+    df['stack'] = ['{}-{}-{}'.format(ai, s, sa) for ai, s, sa in
+                   zip(df.animal_id, df.stack_session, df.stack_idx)]
+
+    sz = tuple(i * size_factor[size] for i in [1, .7])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style(style="ticks", rc={"axes.facecolor": (0, 0, 0, 0)}):
+            # Initialize the FacetGrid object
+            pal = ['steelblue', 'orange']
+            g = sns.FacetGrid(df, row="stack", hue='stimulus_type', col='ori_type', palette=pal,
+                              col_order=['ori', 'dir'], margin_titles=True, legend_out=True)
+            #
+            # # Draw the densities in a few steps
+            g.map(sns.kdeplot, "angle", shade=True, alpha=.5, lw=1.5)
+            g.add_legend(title="Stimulus Type")
+            g.map(sns.kdeplot, "angle", color="w", lw=2)
+
+            def cosmetics(x, **kwargs):
+                ax = plt.gca()
+                ax.set_xlim((-np.pi, np.pi))
+                ax.set_xticks(np.linspace(-np.pi, np.pi, 5))
+                ax.set_xticklabels([r'$-\pi$', r'$-\frac{\pi}{2}$', r'$0$', r'$\frac{\pi}{2}$', r'$\pi$'])
+                ax.spines['bottom'].set_linewidth(1)
+                ax.tick_params(axis='both', length=3, width=1)
+
+            g.map(cosmetics, "angle")
+            g.fig.set_size_inches(sz)
+            g.set_ylabels("distribution")
+            g.set_xlabels('preferred')
+            g.fig.suptitle("preferred orienation/direction")
+            g.fig.subplots_adjust(left=.1, right=.75)
+            g.despine(trim=True)
+
+    return savefig(g.fig)
+
+
+@images.route("/rf_snr_stack_stat-<int:animal_id>_<size>.png")
+def rf_snr_stack_stat(animal_id, size):
+    key = dict(animal_id=animal_id, **SETTINGS)
+    df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
+    df2 = pd.DataFrame((tune.STAQual() & key).fetch())
+    df = df1.merge(df2).groupby(
+        ['animal_id', 'stack_session', 'stack_idx',
+         'munit_id', 'stimulus_type']).agg(dict(snr=np.max)).reset_index()
+    df['stack'] = ['{}-{}-{}'.format(ai, s, sa) for ai, s, sa in
+                   zip(df.animal_id, df.stack_session, df.stack_idx)]
+
+    sz = tuple(i * size_factor[size] for i in [1, .7])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style(style="ticks", rc={"axes.facecolor": (0, 0, 0, 0)}):
+            # Initialize the FacetGrid object
+            pal = ['steelblue', 'orange', 'slategray']
+            g = sns.FacetGrid(df, row="stack", hue='stimulus_type', palette=pal,
+                              margin_titles=True, legend_out=True)
+            #
+            # # Draw the densities in a few steps
+            g.map(sns.kdeplot, "snr", shade=False, alpha=1, lw=2, cumulative=True)
+            g.add_legend(title="Stimulus Type")
+
+            # g.map(sns.kdeplot, "snr",  color="w", lw=1,cumulative=True)
+
+
+            def cosmetics(x, **kwargs):
+                low = np.percentile(x, 2)
+                high = np.percentile(x, 98)
+                ax = plt.gca()
+                ax.set_xlim((low, high))
+                ax.spines['bottom'].set_linewidth(1)
+                ax.tick_params(axis='both', length=3, width=1)
+                ax.set_xlabel('receptive field SNR')
+                ax.grid(True)
+
+            g.map(cosmetics, "snr")
+            g.fig.set_size_inches(sz)
+            g.set_ylabels("cumulative distribution")
+            g.fig.suptitle("receptive field SNR")
             g.fig.subplots_adjust(left=.1, right=.75)
             g.despine(trim=True)
 

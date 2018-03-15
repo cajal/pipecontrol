@@ -185,3 +185,43 @@ def create_datajoint_table(rels, name='DataJoint Table', selection=None,
     table = table_class(items)
 
     return table
+
+
+def create_pandas_table(rels, name='Pandas Table', selection=None,
+                           check_funcs = None, **fetch_kwargs):
+
+    if not isinstance(rels, list):
+        rels = [rels]
+    table_class = flask_table.create_table(name)
+    if selection is None:
+        selection = set(rels[0].columns)
+        for rel in rels[1:]:
+            selection &= set(rel.columns)
+    for col in rels[0].columns:
+        if col in selection:
+            table_class.add_column(col, flask_table.Col(col))
+
+    if check_funcs is not None:
+        for col in check_funcs:
+            table_class.add_column(col, SimpleCheckMarkCol(col))
+
+    items = []
+    for new_items in rels:
+
+            for d in map(lambda x: x[1].to_dict(), new_items.iterrows()):
+                if selection is not None:
+                    entry = {k:v for k,v in d.items() if k in selection}
+                else:
+                    entry = d
+
+                if check_funcs is not None:
+                    add = {}
+                    for col, f in check_funcs.items():
+                        add[col] = f(entry)
+                    entry.update(add)
+                items.append(entry)
+
+    table_class.classes = ['Relation']
+    table = table_class(items)
+
+    return table

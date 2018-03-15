@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from inspect import isclass
 from itertools import zip_longest
-
+import pandas as pd
 from flask import render_template, redirect, url_for, flash, request, session, send_from_directory, Response, send_file
 import datajoint as dj
 import uuid
@@ -13,7 +13,7 @@ import json
 
 from flask_weasyprint import render_pdf, HTML, CSS
 
-from .tables import StatsTable, CellTable, create_datajoint_table
+from .tables import StatsTable, CellTable, create_datajoint_table, create_pandas_table
 from . import main, forms, tables
 from .. import schemata
 from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus, stack
@@ -492,12 +492,28 @@ def mousereport(animal_id):
         selection=['nfields', 'fps', 'scan_idx', 'session', 'nframes', 'nchannels', 'usecs_per_line']
     )
 
-
-    ori_stats = [dj.U('animal_id').aggr(tune.Ori.Cell() & key & dict(ori_type='ori'),
-                                        ori_type="'orientation'", percent_above_05='100*AVG(r2>0.01)'),
-                 dj.U('animal_id').aggr(tune.Ori.Cell() & key & dict(ori_type='dir'),
-                                        ori_type="'direction'", percent_above_05='100*AVG(r2>0.01)')]
+    # --- orienation statistics without stack matching
+    ori_stats = [
+        dj.U('animal_id', 'stimulus_type').aggr(tune.Ori.Cell() & key & dict(ori_type='ori'),
+                                                                       ori_type="'orientation'",
+                                                                       percent_above='100*AVG(r2>0.01)'),
+        dj.U('animal_id', 'stimulus_type').aggr(tune.Ori.Cell() & key & dict(ori_type='dir'),
+                                                                       ori_type="'direction'",
+                                                                       percent_above='100*AVG(r2>0.01)')]
     ori_stats = create_datajoint_table(ori_stats)
+
+    # --- orientation statistics per stack
+    df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
+    df2 = pd.DataFrame((tune.Ori.Cell() & key).fetch())
+    df = df1.merge(df2)
+    idx = df.groupby(['animal_id', 'stack_session', 'stack_idx','munit_id', 'ori_type', 'stimulus_type'])['selectivity'].idxmax()
+    df3 = df.ix[idx]
+    gr = df3.groupby(['animal_id', 'stack_session', 'stimulus_type','ori_type'])
+    df3 = gr.agg(dict(r2=lambda x: np.mean(x > 0.01)*100)).reset_index().rename(columns={'r2':'% cells above'})
+    if len(df3) > 0:
+        ori_stacks = create_pandas_table(df3)
+    else:
+        ori_stacks = None
 
     stats = create_datajoint_table([experiment.Scan().aggr(
         pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & auto & dict(type='soma'),
@@ -508,13 +524,18 @@ def mousereport(animal_id):
     mouse_per_stack_oracle = bool(stack.StackSet() * tune.MovieOracle() & key)
     cell_matches = bool(stack.StackSet() & key)
     stack_ori = bool(stack.StackSet() * tune.Ori() & key)
-    cell_counts = create_datajoint_table((stack.StackSet() & key).aggr(stack.StackSet.Unit(), unique_neurons='count(*)'))
+    stack_rf = bool(stack.StackSet() * tune.STAQual() & key)
+    kuiper = bool(tune.Kuiper() & key)
+    cell_counts = create_datajoint_table(
+        (stack.StackSet() & key).aggr(stack.StackSet.Unit(), unique_neurons='count(*)'))
 
     return render_template('mouse_report.html', animal_id=animal_id, scans=scans,
                            scaninfo=scaninfo, stats=stats, scanh=scanh,
-                           stim_time=stim_time, ori_stats=ori_stats,
+                           stim_time=stim_time,
+                           ori_stats=ori_stats, ori_stacks=ori_stacks,
                            scan_movie_oracle=scan_movie_oracle, mouse_per_stack_oracle=mouse_per_stack_oracle,
-                           cell_matches=cell_matches, cell_counts=cell_counts, stack_ori=stack_ori)
+                           cell_matches=cell_matches, cell_counts=cell_counts,
+                           stack_ori=stack_ori, stack_rf=stack_rf, kuiper=kuiper)
 
 
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')

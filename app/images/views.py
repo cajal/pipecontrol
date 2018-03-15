@@ -670,53 +670,47 @@ def mouse_per_stack_oracle(animal_id, size):
 
                 return savefig(fig)
 
-# @images.route("/osi_dsi_per_stack-<int:animal_id>_<size>.png")
-# def osi_dsi_per_stack(animal_id, size):
-#     key = dict(animal_id=animal_id, spike_method=5, segmentation_method=3, **SETTINGS)
-#     sz = tuple(i * size_factor[size] for i in [.7, .7])
-#     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
-#         with sns.axes_style(style="white", rc={"axes.facecolor": (0, 0, 0, 0)}):
-#             rel = (stack.StackSet.Unit()).aggr(stack.StackSet.Match().proj('munit_id', session='scan_session')
-#                                                * tune.Ori.Cell() & key, pearson='MAX(pearson)')
-#             df = pd.DataFrame(rel.fetch(order_by='stack_session ASC, stack_idx ASC'))
-#             df['stack'] = ['{}-{}-{}'.format(ai, s, sa) for ai, s, sa in
-#                            zip(df.animal_id, df.stack_session, df.stack_idx)]
-#
-#             # Initialize the FacetGrid object
-#             N = len(dj.U('stack_session', 'stack_idx') & rel)
-#
-#             pal = sns.cubehelix_palette(N, rot=-.25, light=.7)
-#
-#             g = sns.FacetGrid(df, row="stack", hue='stack', col='', aspect=15, size=.5, palette=pal)
-#
-#             # Draw the densities in a few steps
-#             g.map(sns.kdeplot, "pearson", clip_on=False, shade=True, alpha=1, lw=1.5, bw=.01)
-#             g.map(sns.kdeplot, "pearson", clip_on=False, color="w", lw=2, bw=.01)
-#             g.map(plt.axhline, y=0, lw=2, clip_on=False)
-#
-#             # Define and use a simple function to label the plot in axes coordinates
-#             def label(x, color, label):
-#                 ax = plt.gca()
-#                 low, high = ax.get_xlim()
-#                 low -= .02
-#                 ax.set_xlim((low, high))
-#                 ax.text(0, .2, label, fontweight="bold", color=color,
-#                         ha="left", va="center", transform=ax.transAxes)
-#
-#             g.map(label, "stack")
-#
-#             # Set the subplots to overlap
-#             g.fig.subplots_adjust(hspace=-.25)
-#
-#             g.fig.set_size_inches(sz)
-#
-#             # Remove axes details that don't play will with overlap
-#             g.set_titles("")
-#             g.fig.suptitle("Movie Oracle Correlations")
-#             g.set(yticks=[])
-#             g.despine(bottom=True, left=True)
-#             g.axes.ravel()[-1].set_xlabel('Pearson Correlation')
-#     return savefig(g.fig)
+@images.route("/osi_dsi_per_stack-<int:animal_id>_<size>.png")
+def osi_dsi_per_stack(animal_id, size):
+    key = dict(animal_id=animal_id, **SETTINGS)
+    df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
+    df2 = pd.DataFrame((tune.Ori.Cell() & key).fetch())
+    df = df1.merge(df2).groupby(
+        ['animal_id', 'stack_session', 'stack_idx',
+         'munit_id', 'ori_type', 'stimulus_type']).agg(dict(selectivity=np.max)).reset_index()
+    df['stack'] = ['{}-{}-{}'.format(ai, s, sa) for ai, s, sa in
+                   zip(df.animal_id, df.stack_session, df.stack_idx)]
+
+    sz = tuple(i * size_factor[size] for i in [1, .7])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style(style="ticks", rc={"axes.facecolor": (0, 0, 0, 0)}):
+
+            # Initialize the FacetGrid object
+            pal = ['steelblue', 'orange']
+            g = sns.FacetGrid(df, row="stack", hue='stimulus_type', col='ori_type', palette=pal,
+                              col_order=['ori', 'dir'], margin_titles=True, legend_out=True)
+            #
+            # # Draw the densities in a few steps
+            g.map(sns.kdeplot, "selectivity", shade=True, alpha=.5, lw=1.5, cumulative=True)
+            g.add_legend(title="Stimulus Type")
+            g.map(sns.kdeplot, "selectivity",  color="w", lw=2,cumulative=True)
+
+
+            def cosmetics(x, **kwargs):
+                high = np.percentile(x, 99)
+                ax = plt.gca()
+                ax.set_xlim((0, high))
+                ax.spines['bottom'].set_linewidth(1)
+                ax.tick_params(axis='both', length=3, width=1)
+
+            g.map(cosmetics, "selectivity")
+            g.fig.set_size_inches(sz)
+            g.set_ylabels("cumulative distribution")
+            g.fig.suptitle("Neuron Selectivities")
+            g.fig.subplots_adjust(left=.1, right=.75)
+            g.despine(trim=True)
+
+    return savefig(g.fig)
 
 
 @images.route("/cell_matches-<int:animal_id>_<size>.png")

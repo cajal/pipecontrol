@@ -7,3 +7,4 @@ graphviz
 mpld3
 flask-weasyprint
 statsmodels
+seaborn==0.8.1

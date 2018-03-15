@@ -42,6 +42,16 @@
         <div>No stack found. Populate <code>pipeline.stack.StackSet()</code> </div>
     {% endif %}
 
+    <h2>Orientation/Directional Statistics</h2>
+    {% if stack_ori %}
+        <div>
+            <img src="{{ url_for('images.osi_dsi_per_stack', animal_id=animal_id, size='medium') }}">
+        </div>
+    {% else %}
+        <div>No orienation/direction stats or stack found. Populate <code>stimline.tune.Ori()</code>
+            and <code>pipeline.stack.StackSet()</code> </div>
+    {% endif %}
+
 
     <h2>Oracle Statistics</h2>
     <h3>Per scan</h3>

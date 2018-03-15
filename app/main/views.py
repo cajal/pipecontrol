@@ -507,13 +507,14 @@ def mousereport(animal_id):
     scan_movie_oracle = bool(tune.MovieOracle() & key)
     mouse_per_stack_oracle = bool(stack.StackSet() * tune.MovieOracle() & key)
     cell_matches = bool(stack.StackSet() & key)
+    stack_ori = bool(stack.StackSet() * tune.Ori() & key)
     cell_counts = create_datajoint_table((stack.StackSet() & key).aggr(stack.StackSet.Unit(), unique_neurons='count(*)'))
 
     return render_template('mouse_report.html', animal_id=animal_id, scans=scans,
                            scaninfo=scaninfo, stats=stats, scanh=scanh,
                            stim_time=stim_time, ori_stats=ori_stats,
                            scan_movie_oracle=scan_movie_oracle, mouse_per_stack_oracle=mouse_per_stack_oracle,
-                           cell_matches=cell_matches, cell_counts=cell_counts)
+                           cell_matches=cell_matches, cell_counts=cell_counts, stack_ori=stack_ori)
 
 
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')

@@ -598,6 +598,8 @@ def mouse_per_scan_oracle(animal_id, size):
             g.set(yticks=[])
             g.despine(bottom=True, left=True)
             g.axes.ravel()[-1].set_xlabel('Pearson Correlation')
+            [a.set_xticklabels([]) for a in g.axes.ravel()[:-1]]
+
     return savefig(g.fig)
 
 
@@ -647,8 +649,8 @@ def mouse_per_stack_oracle(animal_id, size):
                 g.fig.suptitle("Movie Oracle Correlations")
                 g.set(yticks=[])
                 g.despine(bottom=True, left=True)
-                [a.set_xticklabels([]) for a in g.axes.ravel()[:-1]]
                 g.axes.ravel()[-1].set_xlabel('Pearson Correlation')
+                [a.set_xticklabels([]) for a in g.axes.ravel()[:-1]]
                 return savefig(g.fig)
             else:
                 with sns.axes_style('ticks', rc={"axes.facecolor": (0, 0, 0, 0)}):

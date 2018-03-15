@@ -569,7 +569,7 @@ def mouse_per_scan_oracle(animal_id, size):
             N = len(dj.U('session', 'scan_idx') & (tune.MovieOracle() & key))
 
             pal = sns.cubehelix_palette(N, rot=-.25, light=.7)
-            g = sns.FacetGrid(df, row="scan", hue="scan", palette=pal, sharex=False)
+            g = sns.FacetGrid(df, row="scan", hue="scan", palette=pal)
 
             # Draw the densities in a few steps
             g.map(sns.kdeplot, "pearson", clip_on=False, shade=True, alpha=1, lw=1.5, bw=.01)
@@ -598,7 +598,6 @@ def mouse_per_scan_oracle(animal_id, size):
             g.set(yticks=[])
             g.despine(bottom=True, left=True)
             g.axes.ravel()[-1].set_xlabel('Pearson Correlation')
-            [a.set_ticklabels([]) for a in g.axes.ravel()[-1]]
 
     return savefig(g.fig)
 

@@ -639,7 +639,7 @@ def mouse_per_stack_oracle(animal_id, size):
                 g.map(label, "stack")
 
                 # Set the subplots to overlap
-                g.fig.subplots_adjust(hspace=-.25)
+                g.fig.subplots_adjust(hspace=-.25, top=.9)
 
                 g.fig.set_size_inches(sz)
 
@@ -708,6 +708,49 @@ def osi_dsi_per_stack(animal_id, size):
             g.fig.set_size_inches(sz)
             g.set_ylabels("cumulative distribution")
             g.fig.suptitle("Neuron Selectivities")
+            g.fig.subplots_adjust(left=.1, right=.75)
+            g.despine(trim=True)
+
+    return savefig(g.fig)
+
+@images.route("/preferred_per_stack-<int:animal_id>_<size>.png")
+def preferred_per_stack(animal_id, size):
+    key = dict(animal_id=animal_id, **SETTINGS)
+    df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
+    df2 = pd.DataFrame((tune.Ori.Cell() & key).fetch())
+    df = df1.merge(df2)
+    idx = df.groupby(['animal_id', 'stack_session', 'stack_idx','munit_id', 'ori_type', 'stimulus_type'])['selectivity'].idxmax()
+    df = df.ix[idx]
+    df['stack'] = ['{}-{}-{}'.format(ai, s, sa) for ai, s, sa in
+                   zip(df.animal_id, df.stack_session, df.stack_idx)]
+
+    sz = tuple(i * size_factor[size] for i in [1, .7])
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style(style="ticks", rc={"axes.facecolor": (0, 0, 0, 0)}):
+
+            # Initialize the FacetGrid object
+            pal = ['steelblue', 'orange']
+            g = sns.FacetGrid(df, row="stack", hue='stimulus_type', col='ori_type', palette=pal,
+                              col_order=['ori', 'dir'], margin_titles=True, legend_out=True)
+            #
+            # # Draw the densities in a few steps
+            g.map(sns.kdeplot, "angle", shade=True, alpha=.5, lw=1.5)
+            g.add_legend(title="Stimulus Type")
+            g.map(sns.kdeplot, "angle",  color="w", lw=2)
+
+            def cosmetics(x, **kwargs):
+                ax = plt.gca()
+                ax.set_xlim((-np.pi, np.pi))
+                ax.set_xticks(np.linspace(-np.pi, np.pi, 5))
+                ax.set_xticklabels([r'$-\pi$', r'$-\frac{\pi}{2}$', r'$0$',  r'$\frac{\pi}{2}$', r'$\pi$'])
+                ax.spines['bottom'].set_linewidth(1)
+                ax.tick_params(axis='both', length=3, width=1)
+
+            g.map(cosmetics, "angle")
+            g.fig.set_size_inches(sz)
+            g.set_ylabels("distribution")
+            g.set_xlabels('preferred')
+            g.fig.suptitle("preferred orienation/direction")
             g.fig.subplots_adjust(left=.1, right=.75)
             g.despine(trim=True)
 

@@ -92,18 +92,21 @@ def average_image(animal_id, session, scan_idx, field, size):
 def contrast_intensity(animal_id, session, scan_idx, field, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field, **SETTINGS)
     base = meso if meso.ScanInfo() & key else reso
-    inten, contr = (base.Quality.MeanIntensity() * base.Quality.Contrast() & key).fetch1('intensities',
-                                                                                         'contrasts')
+    intensities, contrasts, channels = (base.Quality.MeanIntensity() * base.Quality.Contrast() & key).fetch('intensities',
+                                                                                         'contrasts', 'channel')
 
     sz = tuple(i * size_factor[size] for i in [.9, .5])
     with  sns.plotting_context('talk' if size == 'huge' else 'paper'):
         with sns.axes_style('ticks'):
             fig, (ax, ax2) = plt.subplots(2, 1, figsize=sz, sharex=True)
-            ax.plot(inten, label='mean intensity', color='dodgerblue', lw=1)
-            ax.set_ylabel('intensity')
-            ax2.set_ylabel('contrast')
-            ax2.plot(contr, label='contrast', color='deeppink', lw=1)
-            ax2.set_xlabel('frame number')
+            for channel, inten, contr in zip(channels, intensities, contrasts):
+                ax.plot(inten,  color='dodgerblue', lw=1, label='channel {}'.format(channel))
+                ax.set_ylabel('intensity')
+                ax.set_title('mean intensity')
+                ax2.set_ylabel('contrast')
+                ax2.plot(contr, color='deeppink', lw=1, label='channel {}'.format(channel))
+                ax2.set_xlabel('frame number')
+                ax2.set_title('contrast')
             fig.tight_layout()
             fig.subplots_adjust(left=.2)
             sns.despine(fig, trim=True)
@@ -272,6 +275,7 @@ def rf_snr(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
 
     snr = (tune.STAQual() & key).fetch('snr')
+    perc_low, perc_high = np.percentile(snr, [1, 99])
     sz = tuple(i * size_factor[size] for i in [.9, .5])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=2):
         with sns.axes_style('ticks'):
@@ -279,6 +283,7 @@ def rf_snr(animal_id, session, scan_idx, size):
             g = sns.distplot(snr,
                              hist_kws=dict(cumulative=True),
                              kde_kws=dict(cumulative=True), ax=ax)
+            ax.set_xlim((perc_low, perc_high))
         sns.despine(ax=ax, trim=True)
         ax.set_xlabel('RF SNR')
         ax.set_ylabel('Cumulative Distribution')

@@ -112,8 +112,8 @@ class StatsTable(flask_table.Table):
     field = flask_table.Col('Field')
     somas = flask_table.Col('Detected Somas')
     depth = flask_table.Col('Depth from surface [um]')
-    height = flask_table.Col('Height [um]')
-    width = flask_table.Col('Width [um]')
+    # height = flask_table.Col('Height [um]')
+    # width = flask_table.Col('Width [um]')
 
 class CellTable(flask_table.Table):
     classes = ['Relation']

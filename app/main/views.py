@@ -437,14 +437,15 @@ def scanreport(animal_id, session, scan_idx):
 
         craniatomy_notes, session_notes = (experiment.Session() & key).fetch1('craniotomy_notes', 'session_notes')
 
-        fields, somas, depth, height, width = (pipe.ScanInfo.Field() * pipe.ScanSet()).aggr(
+        fields, somas, depth = (pipe.ScanInfo.Field() * pipe.ScanSet()).aggr(
             pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & key & dict(type='soma'),
-            'z', 'um_height', 'um_width', somas='count(*)').fetch('field', 'somas', 'z', 'um_height', 'um_width')
-        stats = StatsTable([dict(field=f, somas=s, depth=z, height=h, width=w)
-                            for f, s, z, h, w in zip(fields, somas, depth, height, width)])
+            'z', somas='count(*)').fetch('field', 'somas', 'z')
+        stats = StatsTable([dict(field=f, somas=s, depth=z)
+                            for f, s, z in zip(fields, somas, depth)])
         stats.items.append(
-            dict(field='ALL', somas=sum([d['somas'] for d in stats.items]), depth='-', height='-', width='-')
+            dict(field='ALL', somas=sum([d['somas'] for d in stats.items]), depth='-')
         )
+
 
         return render_template('scan_report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
                                data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)),

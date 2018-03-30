@@ -10,13 +10,12 @@ import matplotlib.pyplot as plt
 import mpld3
 import graphviz
 import json
-
 from flask_weasyprint import render_pdf, HTML, CSS
 
 from .tables import StatsTable, CellTable, create_datajoint_table, create_pandas_table
 from . import main, forms, tables
 from .. import schemata
-from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus, stack
+from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus
 
 
 
@@ -233,9 +232,9 @@ def quality():
                     items.append({'relation': cls.__name__, 'populated': bool(cls() & key)})
             progress_table = tables.CheckmarkTable(items)
 
-            return render_template('quality.html', form=form, oracle=oracle, correlation=correlation,
-                                   average=average, quality=quality, eye=eye, info=info_table,
-                                   progress=progress_table, cos2map=cos2map)
+            return render_template('quality.html', form=form, oracle=oracle, cos2map=cos2map,
+                                   correlation=correlation, average=average, quality=quality,
+                                   eye=eye, info=info_table, progress=progress_table)
         else:
             flash('{} is not in reso or meso'.format(key))
 
@@ -247,10 +246,10 @@ def quality():
 def figure(animal_id, session, scan_idx, field, pipe_version, which):
     key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
            'field': field, 'pipe_version': pipe_version}
-    source = reso if reso.SummaryImages() & key else meso if meso.SummaryImages() & key else None
+    pipe = reso if reso.SummaryImages() & key else meso if meso.SummaryImages() & key else None
 
-    if source is not None:
-        summary_rel = source.SummaryImages.Average() * source.SummaryImages.Correlation() & key
+    if pipe is not None:
+        summary_rel = pipe.SummaryImages.Average() * pipe.SummaryImages.Correlation() & key
         images, channels = summary_rel.fetch('{}_image'.format(which), 'channel')
 
         composite = np.zeros([*images[0].shape, 3])
@@ -278,14 +277,14 @@ def traces(animal_id, session, scan_idx, field, pipe_version, segmentation_metho
     key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
            'field': field, 'pipe_version': pipe_version, 'channel': request.args['channel'],
            'segmentation_method': segmentation_method, 'spike_method': spike_method}
-    source = reso if reso.Activity() & key else meso if meso.Activity() & key else None
+    pipe = reso if reso.Activity() & key else meso if meso.Activity() & key else None
 
-    if source is not None:
-        traces = np.stack((source.Activity.Trace() & key).fetch('trace', limit=25))
+    if pipe is not None:
+        traces = np.stack((pipe.Activity.Trace() & key).fetch('trace', limit=25))
         f = traces.var(ddof=1, axis=0, keepdims=True) / traces.mean(axis=0, keepdims=True)
         traces /= f
 
-        fps = (source.ScanInfo() & key).fetch1('fps')
+        fps = (pipe.ScanInfo() & key).fetch1('fps')
         middle_point = traces.shape[-1] / 2
         traces = traces[:, max(0, int(middle_point - 30 * fps)): int(middle_point + 30 * fps)]
         x_axis = np.arange(traces.shape[-1]) / fps

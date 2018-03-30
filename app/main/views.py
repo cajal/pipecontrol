@@ -19,6 +19,7 @@ from .. import schemata
 from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus, stack
 
 
+
 def ping(f):
     """ Decorator to keep database connection alive."""
 
@@ -159,7 +160,8 @@ def progress():
 @main.route('/jobs', methods=['GET', 'POST'])
 def jobs():
     modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack),
-                           ('tune', tune), ('treadmill', treadmill), ('pupil', pupil)])
+                           ('tune', tune), ('treadmill', treadmill), ('pupil', pupil),
+                           ('stimulus', stimulus)])
 
     if request.method == 'POST':
         to_delete = []

@@ -1,5 +1,4 @@
 import datajoint as dj
-import os
 
 reso = dj.create_virtual_module('reso','pipeline_reso')
 meso = dj.create_virtual_module('meso','pipeline_meso')
@@ -11,7 +10,6 @@ pupil = dj.create_virtual_module('pupil','pipeline_eye')
 treadmill = dj.create_virtual_module('behavior','pipeline_treadmill')
 stimulus = dj.create_virtual_module('stimulus','pipeline_stimulus')
 xcorr = dj.create_virtual_module('xcorr','pipeline_xcorr')
-virus = dj.create_virtual_module('virus','common_virus')
 mice = dj.create_virtual_module('mice ','common_mice')
 stack = dj.create_virtual_module('stack ','pipeline_stack')
 

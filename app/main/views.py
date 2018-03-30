@@ -215,15 +215,11 @@ def quality():
         pipe = reso if reso.ScanInfo() & key else meso if meso.ScanInfo() & key else None
 
         if pipe is not None:
-            oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
-            cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
-            correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
-            average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
-            quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
-            eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
-
-            items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
-            info_table = tables.InfoTable(items)
+            oracle_keys = (tune.OracleMap() & key).fetch('KEY', order_by='field')
+            cos2map_keys = (tune.Cos2Map() & key).fetch('KEY', order_by='field')
+            summary_keys = (pipe.SummaryImages.Correlation() & key).fetch('KEY', order_by='field')
+            quality_keys = (pipe.Quality.Contrast() & key).fetch('KEY', order_by='field')
+            eye_key = (pupil.Eye() & key).fetch1('KEY') if pupil.Eye() & key else None
 
             items = []
             for schema_ in [pipe, pupil, tune]:
@@ -232,9 +228,13 @@ def quality():
                     items.append({'relation': cls.__name__, 'populated': bool(cls() & key)})
             progress_table = tables.CheckmarkTable(items)
 
-            return render_template('quality.html', form=form, oracle=oracle, cos2map=cos2map,
-                                   correlation=correlation, average=average, quality=quality,
-                                   eye=eye, info=info_table, progress=progress_table)
+            items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
+            info_table = tables.InfoTable(items)
+
+            return render_template('quality.html', form=form, progress_table=progress_table,
+                                   info_table=info_table, oracle_keys=oracle_keys,
+                                   cos2map_keys=cos2map_keys, summary_keys=summary_keys,
+                                   quality_keys=quality_keys, eye_key=eye_key)
         else:
             flash('{} is not in reso or meso'.format(key))
 

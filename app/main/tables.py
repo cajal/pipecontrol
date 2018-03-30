@@ -97,7 +97,7 @@ class JobTable(flask_table.Table):
 
 class CheckmarkTable(flask_table.Table):
     classes = ['table']
-    relation = flask_table.Col('Animal Id')
+    relation = flask_table.Col('Relation')
     populated = CheckMarkCol('Populated')
 
 

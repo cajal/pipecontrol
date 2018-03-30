@@ -2,7 +2,6 @@ from collections import OrderedDict
 from inspect import isclass
 from itertools import zip_longest
 import pandas as pd
-from flask import render_template, redirect, url_for, flash, request, session, send_from_directory, Response, send_file
 import datajoint as dj
 import uuid
 import numpy as np
@@ -10,9 +9,9 @@ import matplotlib.pyplot as plt
 import mpld3
 import graphviz
 import json
+from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
 from flask_weasyprint import render_pdf, HTML, CSS
 
-from .tables import StatsTable, CellTable, create_datajoint_table, create_pandas_table
 from . import main, forms, tables
 from .. import schemata
 from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus
@@ -404,13 +403,9 @@ def report():
     form = forms.ReportForm(request.form)
     if request.method == 'POST' and form.validate():
         report_type = 'scan' if form.session.data and form.scan_idx.data else 'mouse'
-        if form.pdf.data:
-            endpoint = 'main.{}report_pdf'.format(report_type)
-        else:
-            endpoint = 'main.{}report'.format(report_type)
+        endpoint = 'main.{}report{}'.format(report_type, '_pdf' if form.as_pdf.data else '')
         return redirect(url_for(endpoint, animal_id=form.animal_id.data,
-                                session=form.session.data,
-                                scan_idx=form.scan_idx.data))
+                                session=form.session.data, scan_idx=form.scan_idx.data))
     return render_template('report.html', form=form)
 
 
@@ -439,7 +434,7 @@ def scanreport(animal_id, session, scan_idx):
         fields, somas, depth = (pipe.ScanInfo.Field() * pipe.ScanSet()).aggr(
             pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & key & dict(type='soma'),
             'z', somas='count(*)').fetch('field', 'somas', 'z')
-        stats = StatsTable([dict(field=f, somas=s, depth=z)
+        stats = tables.StatsTable([dict(field=f, somas=s, depth=z)
                             for f, s, z in zip(fields, somas, depth)])
         stats.items.append(
             dict(field='ALL', somas=sum([d['somas'] for d in stats.items]), depth='-')
@@ -477,17 +472,17 @@ def mousereport(animal_id):
     def in_auto_proc(k):
         return bool(experiment.AutoProcessing() & k)
 
-    stim_time = create_datajoint_table(stim_time,
-                                       check_funcs=dict(autoprocessing=in_auto_proc))
+    stim_time = tables.create_datajoint_table(stim_time,
+                                              check_funcs=dict(autoprocessing=in_auto_proc))
 
     reso_scanh = mice.Mice().aggr(reso.ScanInfo() & dict(animal_id=animal_id),
                                   time="TIME_FORMAT(SEC_TO_TIME(sum(nframes / fps)),'%%Hh %%im %%Ss')",
                                   setup="'reso'")
-    scanh = create_datajoint_table([reso_scanh, meso_scanh])
-    scans = create_datajoint_table(
+    scanh = tables.create_datajoint_table([reso_scanh, meso_scanh])
+    scans = tables.create_datajoint_table(
         (experiment.Scan() & auto), selection=['session', 'scan_idx', 'lens', 'depth', 'site_number', 'scan_ts']
     )
-    scaninfo = create_datajoint_table(
+    scaninfo = tables.create_datajoint_table(
         [(pipe.ScanInfo() & auto) for pipe in [reso, meso]],
         selection=['nfields', 'fps', 'scan_idx', 'session', 'nframes', 'nchannels', 'usecs_per_line']
     )
@@ -500,7 +495,7 @@ def mousereport(animal_id):
         dj.U('animal_id', 'stimulus_type').aggr(tune.Ori.Cell() & key & dict(ori_type='dir'),
                                                                        ori_type="'direction'",
                                                                        percent_above='100*AVG(r2>0.01)')]
-    ori_stats = create_datajoint_table(ori_stats)
+    ori_stats = tables.create_datajoint_table(ori_stats)
 
     # --- orientation statistics per stack
     df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
@@ -511,11 +506,11 @@ def mousereport(animal_id):
     gr = df3.groupby(['animal_id', 'stack_session', 'stimulus_type','ori_type'])
     df3 = gr.agg(dict(r2=lambda x: np.mean(x > 0.01)*100)).reset_index().rename(columns={'r2':'% cells above'})
     if len(df3) > 0:
-        ori_stacks = create_pandas_table(df3)
+        ori_stacks = tables.create_pandas_table(df3)
     else:
         ori_stacks = None
 
-    stats = create_datajoint_table([experiment.Scan().aggr(
+    stats = tables.create_datajoint_table([experiment.Scan().aggr(
         pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & auto & dict(type='soma'),
         somas='count(*)', scan_type='"{}"'.format(pipe.__name__)) for pipe in [reso, meso]],
         selection=['scan_type', 'session', 'scan_idx', 'somas'])
@@ -526,7 +521,7 @@ def mousereport(animal_id):
     stack_ori = bool(stack.StackSet() * tune.Ori() & key)
     stack_rf = bool(stack.StackSet() * tune.STAQual() & key)
     kuiper = bool(tune.Kuiper() & key)
-    cell_counts = create_datajoint_table(
+    cell_counts = tables.create_datajoint_table(
         (stack.StackSet() & key).aggr(stack.StackSet.Unit(), unique_neurons='count(*)'))
 
     return render_template('mouse_report.html', animal_id=animal_id, scans=scans,
@@ -541,16 +536,14 @@ def mousereport(animal_id):
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')
 def scanreport_pdf(animal_id, session, scan_idx):
     html = scanreport(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    return render_pdf(HTML(string=html),
-                      stylesheets=[CSS(url_for('static', filename='styles.css')),
-                                   CSS(url_for('static', filename='datajoint.css'))]
-                      )
+    stylesheets = [CSS(url_for('static', filename='styles.css')),
+                   CSS(url_for('static', filename='datajoint.css'))]
+    return render_pdf(HTML(string=html), stylesheets=stylesheets)
 
 
 @main.route('/report/mouse/<int:animal_id>.pdf')
 def mousereport_pdf(animal_id):
     html = mousereport(animal_id=animal_id)
-    return render_pdf(HTML(string=html),
-                      stylesheets=[CSS(url_for('static', filename='styles.css')),
-                                   CSS(url_for('static', filename='pdf.css'))]
-                      )
+    stylesheets = [CSS(url_for('static', filename='styles.css')),
+                   CSS(url_for('static', filename='datajoint.css'))]
+    return render_pdf(HTML(string=html), stylesheets=stylesheets)

@@ -2,264 +2,198 @@
 
 
 {% block content %}
-    <h1>Quality Report for animal {{ animal_id }}, session {{ session }}, and scan {{ scan_idx }}</h1>
+    <h1>Quality report for animal {{ animal_id }}, session {{ session }}, and scan {{ scan_idx }}</h1>
 
-    <h2>Craniotomy notes</h2>
     {% if craniotomy_notes %}
+        <h2>Craniotomy notes</h2>
         <ul>
-            {% for note in craniotomy_notes %}
+            {% for note in craniotomy_notes.split(',') %}
                 <li>{{ note }}</li>
             {% endfor %}
         </ul>
-    {% else %}
-        <div>Not craniotomy notes found</div>
     {% endif %}
 
 
-    <h2>Session notes</h2>
     {% if session_notes %}
+        <h2>Session notes</h2>
         <ul>
-            {% for note in session_notes %}
+            {% for note in session_notes.split(',') %}
                 <li>{{ note }}</li>
             {% endfor %}
         </ul>
-    {% else %}
-        <div>Not session notes found</div>
     {% endif %}
 
 
     <h2>Statistics</h2>
-    {% if stats %}
-        {{ stats | safe }}
-    {% else %}
-        <div>No cell statistics found.</div>
-    {% endif %}
+    {{ stats_table }}
 
 
     <h2>Receptive Field SNR</h2>
-    {% if sta %}
-        <div>
-            <img src="{{ url_for('images.rf_snr', animal_id=animal_id,
-                                                     session=session,
-                                                     scan_idx=scan_idx, size='smedium') }}">
-        </div>
+    {% if has_staqual %}
+        <img src="{{ url_for('images.rf_snr', animal_id=animal_id, session=session,
+                             scan_idx=scan_idx, size='smedium') }}">
     {% else %}
-        <div>No receptive fields are populated. Populate <code>stimline.tune.STA()</code></div>
-
+        Populate receptive field quality in <code>stimline.tune.STAQual()</code>.
     {% endif %}
 
-    <h2>Orientation Selectivity Distribution</h2>
-    {% if cellori %}
-        <div>
-            <img src="{{ url_for('images.cellori', animal_id=animal_id,
-                                                     session=session,
-                                                     scan_idx=scan_idx, size='marge') }}">
-        </div>
+
+    <h2> Cell Orientation <h2/>
+    {% if has_ori %}
+        <h3>Distribution of orientation selectivity</h3>
+        <img src="{{ url_for('images.cellori', animal_id=animal_id, session=session,
+                             scan_idx=scan_idx, size='marge') }}">
+
+        <h3>R<sup>2</sup> vs. OSI</h3>
+        <img src="{{ url_for('images.osi_vs_r2', animal_id=animal_id, session=session,
+                             scan_idx=scan_idx, size='smedium') }}">
+
+        <h3>R<sup>2</sup> vs. DSI</h3>
+        <img src="{{ url_for('images.dsi_vs_r2', animal_id=animal_id, session=session,
+                             scan_idx=scan_idx, size='smedium') }}">
     {% else %}
-        <div>No cell orientation found. Populate <code>stimline.tune.Ori()</code></div>
+        Populate cell orientation in <code>stimline.tune.Ori()</code>
     {% endif %}
 
-    <h2>OSI vs. R2</h2>
-    {% if cellori %}
-        <div>
-            <img src="{{ url_for('images.osi_vs_r2', animal_id=animal_id,
-                                                     session=session,
-                                                     scan_idx=scan_idx, size='medium') }}">
-        </div>
+
+    <h2>Cross-correlation SNR</h2>
+    {% if has_xsnr %}
+         <img src="{{ url_for('images.signal_xcorr', animal_id=animal_id,
+                              session=session, scan_idx=scan_idx, size='smedium') }}">
     {% else %}
-        <div>No cell orientation found. Populate <code>stimline.tune.Ori()</code></div>
+        Populate cross-correlation SNR in <code>stimline.xcorr.XSNR()</code></div>
     {% endif %}
 
-    <h2>DSI vs. R2</h2>
-    {% if cellori %}
-        <div>
-            <img src="{{ url_for('images.dsi_vs_r2', animal_id=animal_id,
-                                                     session=session,
-                                                     scan_idx=scan_idx, size='medium') }}">
-        </div>
-    {% else %}
-        <div>No cell orientation found. Populate <code>stimline.tune.Ori()</code></div>
-    {% endif %}
-
-    <h2>XSNR</h2>
-    {% if xsnr %}
-        <div>
-            <img src="{{ url_for('images.signal_xcorr', animal_id=animal_id,
-                                                     session=session,
-                                                     scan_idx=scan_idx, size='smedium') }}">
-        </div>
-    {% else %}
-        <div>No xSNR found. Populate <code>stimline.xcorr.XSNR()</code></div>
-    {% endif %}
 
     <h2>RF Locations</h2>
-    {% if staext %}
-        <div>
-            <img src="{{ url_for('images.sta_loc', animal_id=animal_id,
-                                                     session=session,
-                                                     scan_idx=scan_idx, size='smedium') }}">
-        </div>
+    {% if has_staext %}
+        <img src="{{ url_for('images.sta_loc', animal_id=animal_id, session=session,
+                             scan_idx=scan_idx, size='smedium') }}">
     {% else %}
-        <div>No receptive field locations. Populate <code>stimline.tune.STAExtent()</code> or check whether any SNR of
-            the RFs exceed 5 (cutoff)
-        </div>
-
+       Populate receptive field locations in <code>stimline.tune.STAExtent()</code> and
+       check whether any SNR exceeds 5 (cutoff)
     {% endif %}
 
 
-    <h2>Images</h2>
     <p style="page-break-before: always"></p>
-    {% for correlation, average, oracle, cos2map in data %}
-        <h3>Field {{ correlation.field }}</h3>
-        <table>
-            <tr>
-                <th>Correlation</th>
-                <th>Average</th>
-            </tr>
-            <tr>
-                <td>
-                    {% if correlation %}
-                        <img src="{{ url_for('images.correlation_image', animal_id=correlation.animal_id,
-                                                     session=correlation.session,
-                                                     scan_idx=correlation.scan_idx,
-                                                     field=correlation.field, size='report') }}">
-                    {% endif %}
-                </td>
-                <td>
-                    {% if average %}
-                        <img src="{{ url_for('images.average_image', animal_id=average.animal_id,
-                                                     session=average.session,
-                                                     scan_idx=average.scan_idx,
-                                                     field=average.field, size='report') }}">
-                    {% endif %}
-                </td>
-
-            </tr>
-
-            <tr>
-                <th>Oracle</th>
-                <th>Pixel Orientation</th>
-            </tr>
-            <tr>
-                <td>
-                    {% if oracle %}
-                        <img src="{{ url_for('images.oracle_map', animal_id=oracle.animal_id,
-                                                     session=oracle.session,
-                                                     scan_idx=oracle.scan_idx,
-                                                     field=oracle.field, size='report') }}">
-                    {% endif %}
-                </td>
-                <td>
-                    {% if cos2map %}
-                        <img src="{{ url_for('images.cos2map', animal_id=cos2map.animal_id,
-                                                     session=cos2map.session,
-                                                     scan_idx=cos2map.scan_idx,
-                                                     field=cos2map.field, size='report') }}">
-                    {% endif %}
-                </td>
-            </tr>
-        </table>
-        <p style="page-break-before: always"></p>
-    {% endfor %}
-
-    <h2>Parametric Tuning Summary</h2>
-    {% if pxori %}
-        {% for orikey in pxori %}
-            <h3>Field {{ orikey.field }}</h3>
-            <div>
-                <img src="{{ url_for('images.pixelwiseori', animal_id=orikey.animal_id,
-                                                     session=orikey.session,
-                                                     scan_idx=orikey.scan_idx,
-                                                     field=orikey.field, size='marge') }}">
-            </div>
+    <h2>Images</h2>
+    {% if image_keys %}
+        {% for key in image_keys %}
+            <h3>Field {{ key['field'] }} ch. {{key['channel']}}</h3>
+            <table>
+                {% if key['has_summary'] %}
+                    <tr> <th>Correlation</th> <th>Average</th> </tr>
+                    <tr>
+                        <td>
+                            <img src="{{ url_for('images.correlation_image', animal_id=key['animal_id'],
+                                                 session=key['session'], scan_idx=key['scan_idx'],
+                                                 field=key['field'], channel=key['channel'], size='report') }}">
+                        </td>
+                        <td>
+                            <img src="{{ url_for('images.average_image', animal_id=key['animal_id'],
+                                                 session=key['session'], scan_idx=key['scan_idx'],
+                                                 field=key['field'], channel=key['channel'], size='report') }}">
+                        </td>
+                    </tr>
+                {% endif %}
+                <tr> <th>Oracle</th> <th>Pixel Orientation</th> </tr>
+                <tr>
+                    <td>
+                        {% if key['has_oracle'] %}
+                            <img src="{{ url_for('images.oracle_map', animal_id=key['animal_id'],
+                                                 session=key['session'], scan_idx=key['scan_idx'],
+                                                 field=key['field'], size='report') }}">
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if key['has_cos2map'] %}
+                            <img src="{{ url_for('images.cos2map', animal_id=key['animal_id'],
+                                                 session=key['session'], scan_idx=key['scan_idx'],
+                                                 field=key['field'], size='report') }}">
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
             <p style="page-break-before: always"></p>
         {% endfor %}
     {% else %}
-        <div>No parametric pixel tuning found. Populate <code>stimline.tune.StellarMap()</code></div>
+        Populate summary images, oracle maps or orientation maps in
+        <code>pipeline.reso/meso.SummaryImages()</code>, <code>stimline.tune.Cos2Map()</code>
+        or <code>stimline.tune.Cos2Map()</code>
     {% endif %}
 
+
+    <h2>Parametric Tuning</h2>
+    {% if pxori_keys %}
+        {% for key in pxori_keys %}
+            <h3>Field {{ key.field }}</h3>
+            <img src="{{ url_for('images.pixelwiseori', animal_id=key['animal_id'],
+                                 session=key['session'], scan_idx=key['scan_idx'],
+                                 field=key['field'], size='marge') }}">
+            <p style="page-break-before: always"></p>
+        {% endfor %}
+    {% else %}
+        Populate pixelwise tuning in <code>stimline.tune.PixelwiseOri()</code></div>
+    {% endif %}
 
     <p style="page-break-before: always"></p>
-
-    <h3>Spike Triggered Averages</h3>
-    {% if sta %}
+    <h3>Spike triggered averages</h3>
+    {% if has_sta %}
         <h4>From upper percentile of SNR</h4>
-        <div>
-            <img src="{{ url_for('images.sta', animal_id=animal_id,
-                                         session=session,
-                                         scan_idx=scan_idx, size='smedium', t=1, quantile='upper') }}">
-        </div>
+        <img src="{{ url_for('images.sta', animal_id=animal_id, session=session,
+                             scan_idx=scan_idx, size='smedium', t=1, quantile='upper') }}">
+
         <h4>From middle percentile of SNR</h4>
-        <div>
-            <img src="{{ url_for('images.sta', animal_id=animal_id,
-                                         session=session,
-                                         scan_idx=scan_idx, size='smedium', t=1, quantile='middle') }}">
-        </div>
+            <img src="{{ url_for('images.sta', animal_id=animal_id, session=session,
+                                 scan_idx=scan_idx, size='smedium', t=1, quantile='middle') }}">
+
         <h4>From lower percentile of SNR</h4>
-        <div>
-            <img src="{{ url_for('images.sta', animal_id=animal_id,
-                                         session=session,
-                                         scan_idx=scan_idx, size='smedium', t=1, quantile='lower') }}">
-        </div>
+            <img src="{{ url_for('images.sta', animal_id=animal_id, session=session,
+                                 scan_idx=scan_idx, size='smedium', t=1, quantile='lower') }}">
     {% else %}
-        <div>No spike triggered averages found. Populate <code>stimline.tune.STA()</code>.</div>
+        Populate spike triggered averages in <code>stimline.tune.STA()</code>.
     {% endif %}
 
-    <h3>Eye camera</h3>
-    {% if eye %}
-        <div>
-            <img src="{{ url_for('images.eye', animal_id=eye.animal_id,
-                                         session=eye.session,
-                                         scan_idx=eye.scan_idx, size='smedium') }}">
-        </div>
+
+    <h2>Eye Camera</h2>
+    {% if has_eye %}
+        <img src="{{ url_for('images.eye', animal_id=animal_id, session=session,
+                             scan_idx=scan_idx, size='smedium') }}">
     {% else %}
-        <div>No preview frames found. Populate <code>pipeline.pupil.Eye()</code>.</div>
+        Populate preview frames in <code>pipeline.pupil.Eye()</code>.
     {% endif %}
+
 
     <h2>Traces</h2>
     <h3>Pupil radius and position</h3>
-    {% if eye_track %}
-        <div>
-            <img src="{{ url_for('images.eye_tracking', animal_id=eye_track.animal_id,
-                                         session=eye_track.session,
-                                         scan_idx=eye_track.scan_idx, size='medium') }}">
-        </div>
+    {% if has_eyetrack %}
+        <img src="{{ url_for('images.eye_tracking', animal_id=animal_id, session=session,
+                             scan_idx=scan_idx, size='medium') }}">
     {% else %}
-        <div>No oracle time traces found. Populate <code>pipeline.pupil.ManuallyTrackedContours()</code>
-            and <code>pipeline.pupil.FittedContour()</code> (requires linux with graphics; check with Fabian or Paul)
-        </div>
+        Populate eye tracking in <code>pipeline.pupil.FittedContour()</code> (requires
+        linux with graphics)
     {% endif %}
 
-    <h3>Intensity and Contrast Traces</h3>
-    {% if quality %}
-        {% for key in quality %}
-            <h4>Field {{ key.field }}</h4>
-            <div>
-                <img src="{{ url_for('images.contrast_intensity', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='smedium') }}">
-            </div>
-
+    <h3>Intensity and contrast traces</h3>
+    {% if quality_keys %}
+        {% for key in quality_keys %}
+            <h4>Field {{ key['field'] }} ch. {{ key['channel'] }} </h4>
+            <img src="{{ url_for('images.contrast_intensity', animal_id=key['animal_id'],
+                                 session=key['session'], scan_idx=key['scan_idx'],
+                                 field=key['field'], channel=key['channel'], size='smedium') }}">
         {% endfor %}
     {% else %}
-        <div>No contrast intensities found.</div>
+        Populate contrast intensities in <code>pipeline.reso/meso.Quality()</code>
     {% endif %}
 
-
-    <h3>Oracle time trace</h3>
-    {% if oracletime %}
-        {% for key in oracletime %}
-            <h4>Field {{ key.field }}</h4>
-            <div>
-                <img src="{{ url_for('images.oraclecourse', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='smedium') }}">
-            </div>
-
+    <h3>Oracle time traces</h3>
+    {% if oracletime_keys %}
+        {% for key in oracletime_keys %}
+            <h4>Field {{ key['field'] }} ch. {{ key['channel'] }}</h4>
+            <img src="{{ url_for('images.oraclecourse', animal_id=key['animal_id'],
+                                 session=key['session'], scan_idx=key['scan_idx'],
+                                 field=key['field'], size='smedium') }}">
         {% endfor %}
     {% else %}
-        <div>No oracle time traces found. Populate <code>stimline.tune.MovieOracleTimeCourse()</code></div>
+        Populate oracle time traces in <code>stimline.tune.MovieOracleTimeCourse()</code>
     {% endif %}
 {% endblock %}

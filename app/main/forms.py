@@ -48,7 +48,7 @@ class ReportForm(wtforms.Form):
     animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired(), validate_animal])
     session = wtforms.IntegerField('Session', [validators.optional(), validate_session])
     scan_idx = wtforms.IntegerField('Scan Idx', [validators.optional(), validate_scan])
-    pdf = wtforms.BooleanField('render as pdf', default=False)
+    as_pdf = wtforms.BooleanField('render as pdf', default=False)
 
 
 class TrackingForm(wtforms.Form):

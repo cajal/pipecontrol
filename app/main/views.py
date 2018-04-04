@@ -1,6 +1,5 @@
 from collections import OrderedDict
 from inspect import isclass
-from itertools import zip_longest
 import pandas as pd
 import datajoint as dj
 import uuid

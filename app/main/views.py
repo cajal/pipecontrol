@@ -17,22 +17,12 @@ from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, 
 
 
 
-def ping(f):
-    """ Decorator to keep database connection alive."""
-
-    def wrapper(*args, **kwargs):
-        dj.conn().ping()
-        return f(*args, **kwargs)
-
-    return wrapper
-
-
 def escape_json(json_string):
     """ Clean JSON strings so they can be used as html attributes."""
     return json_string.replace('"', '&quot;')
 
 
-@ping
+
 @main.route('/')
 def index():
     if not 'user' in session:
@@ -41,7 +31,6 @@ def index():
     return render_template('index.html')
 
 
-@ping
 @main.route('/user', methods=['GET', 'POST'])
 def user():
     form = forms.UserForm(request.form)
@@ -54,7 +43,6 @@ def user():
     return render_template('user.html', form=form)
 
 
-@ping
 @main.route('/autoprocessing', methods=['GET', 'POST'])
 def autoprocessing():
     form = forms.AutoProcessing(request.form)
@@ -68,7 +56,6 @@ def autoprocessing():
     return render_template('autoprocessing.html', form=form)
 
 
-@ping
 @main.route('/correction', methods=['GET', 'POST'])
 def correction():
     modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack)])
@@ -100,7 +87,6 @@ def correction():
     return render_template('correction.html', correction_tables=all_tables)
 
 
-@ping
 @main.route('/segmentation', methods=['GET', 'POST'])
 def segmentation():
     modules = OrderedDict([('reso', reso), ('meso', meso)])
@@ -134,7 +120,6 @@ def segmentation():
     return render_template('segmentationtask.html', segmentation_tables=all_tables)
 
 
-@ping
 @main.route('/progress', methods=['GET', 'POST'])
 def progress():
     all_tables = []
@@ -153,7 +138,6 @@ def progress():
     return render_template('progress.html', progress_tables=all_tables)
 
 
-@ping
 @main.route('/jobs', methods=['GET', 'POST'])
 def jobs():
     modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack),
@@ -186,7 +170,6 @@ def jobs():
     return render_template('jobs.html', job_tables=all_tables)
 
 
-@ping
 @main.route('/summary', methods=['GET', 'POST'])
 def summary():
     form = forms.RestrictionForm(request.form)
@@ -202,7 +185,6 @@ def summary():
     return render_template('summary.html', form=form, table=table)
 
 
-@ping
 @main.route('/quality/', methods=['GET', 'POST'])
 def quality():
     form = forms.QualityForm(request.form)
@@ -239,7 +221,6 @@ def quality():
     return render_template('quality.html', form=form)
 
 
-@ping
 @main.route('/figure/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/<which>')
 def figure(animal_id, session, scan_idx, field, pipe_version, which):
     key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
@@ -267,7 +248,6 @@ def figure(animal_id, session, scan_idx, field, pipe_version, which):
     return render_template('figure.html', figure=figure)
 
 
-@ping
 @main.route('/traces/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/'
             '<segmentation_method>/<spike_method>')
 def traces(animal_id, session, scan_idx, field, pipe_version, segmentation_method,
@@ -308,7 +288,6 @@ def tmpfile(filename):
     return send_from_directory('/tmp/', filename)
 
 
-@ping
 @main.route('/schema/', defaults={'schema': 'experiment', 'table': 'Scan', 'subtable': None},
             methods=['GET', 'POST'])
 @main.route('/schema/<schema>/<table>', defaults={'subtable': None}, methods=['GET', 'POST'])
@@ -371,7 +350,6 @@ def relation(schema, table, subtable):
                            form=form)
 
 
-@ping
 @main.route('/tracking/<animal_id>/<session>/<scan_idx>', methods=['GET', 'POST'])
 def tracking(animal_id, session, scan_idx):
     form = forms.TrackingForm(request.form)
@@ -551,4 +529,3 @@ def mousereport_pdf(animal_id):
     stylesheets = [CSS(url_for('static', filename='styles.css')),
                    CSS(url_for('static', filename='datajoint.css'))]
     return render_pdf(HTML(string=html), stylesheets=stylesheets)
-

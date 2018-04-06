@@ -1,8 +1,6 @@
 from collections import OrderedDict
 from inspect import isclass
-from itertools import zip_longest
 import pandas as pd
-from flask import render_template, redirect, url_for, flash, request, session, send_from_directory, Response, send_file
 import datajoint as dj
 import uuid
 import numpy as np
@@ -10,24 +8,13 @@ import matplotlib.pyplot as plt
 import mpld3
 import graphviz
 import json
-
+from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
 from flask_weasyprint import render_pdf, HTML, CSS
 
-from .tables import StatsTable, CellTable, create_datajoint_table, create_pandas_table
 from . import main, forms, tables
 from .. import schemata
-from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus, stack
+from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus
 
-
-
-def ping(f):
-    """ Decorator to keep database connection alive."""
-
-    def wrapper(*args, **kwargs):
-        dj.conn().ping()
-        return f(*args, **kwargs)
-
-    return wrapper
 
 
 def escape_json(json_string):
@@ -35,7 +22,7 @@ def escape_json(json_string):
     return json_string.replace('"', '&quot;')
 
 
-@ping
+
 @main.route('/')
 def index():
     if not 'user' in session:
@@ -44,7 +31,6 @@ def index():
     return render_template('index.html')
 
 
-@ping
 @main.route('/user', methods=['GET', 'POST'])
 def user():
     form = forms.UserForm(request.form)
@@ -57,7 +43,6 @@ def user():
     return render_template('user.html', form=form)
 
 
-@ping
 @main.route('/autoprocessing', methods=['GET', 'POST'])
 def autoprocessing():
     form = forms.AutoProcessing(request.form)
@@ -71,7 +56,6 @@ def autoprocessing():
     return render_template('autoprocessing.html', form=form)
 
 
-@ping
 @main.route('/correction', methods=['GET', 'POST'])
 def correction():
     modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack)])
@@ -103,7 +87,6 @@ def correction():
     return render_template('correction.html', correction_tables=all_tables)
 
 
-@ping
 @main.route('/segmentation', methods=['GET', 'POST'])
 def segmentation():
     modules = OrderedDict([('reso', reso), ('meso', meso)])
@@ -137,7 +120,6 @@ def segmentation():
     return render_template('segmentationtask.html', segmentation_tables=all_tables)
 
 
-@ping
 @main.route('/progress', methods=['GET', 'POST'])
 def progress():
     all_tables = []
@@ -156,7 +138,6 @@ def progress():
     return render_template('progress.html', progress_tables=all_tables)
 
 
-@ping
 @main.route('/jobs', methods=['GET', 'POST'])
 def jobs():
     modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack),
@@ -189,7 +170,6 @@ def jobs():
     return render_template('jobs.html', job_tables=all_tables)
 
 
-@ping
 @main.route('/summary', methods=['GET', 'POST'])
 def summary():
     form = forms.RestrictionForm(request.form)
@@ -205,7 +185,6 @@ def summary():
     return render_template('summary.html', form=form, table=table)
 
 
-@ping
 @main.route('/quality/', methods=['GET', 'POST'])
 def quality():
     form = forms.QualityForm(request.form)
@@ -216,15 +195,11 @@ def quality():
         pipe = reso if reso.ScanInfo() & key else meso if meso.ScanInfo() & key else None
 
         if pipe is not None:
-            oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
-            cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
-            correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
-            average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
-            quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
-            eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
-
-            items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
-            info_table = tables.InfoTable(items)
+            oracle_keys = (tune.OracleMap() & key).fetch('KEY', order_by='field')
+            cos2map_keys = (tune.Cos2Map() & key).fetch('KEY', order_by='field')
+            summary_keys = (pipe.SummaryImages.Correlation() & key).fetch('KEY', order_by='field')
+            quality_keys = (pipe.Quality.Contrast() & key).fetch('KEY', order_by='field')
+            eye_key = (pupil.Eye() & key).fetch1('KEY') if pupil.Eye() & key else None
 
             items = []
             for schema_ in [pipe, pupil, tune]:
@@ -233,24 +208,27 @@ def quality():
                     items.append({'relation': cls.__name__, 'populated': bool(cls() & key)})
             progress_table = tables.CheckmarkTable(items)
 
-            return render_template('quality.html', form=form, oracle=oracle, correlation=correlation,
-                                   average=average, quality=quality, eye=eye, info=info_table,
-                                   progress=progress_table, cos2map=cos2map)
+            items = [{'attribute': a, 'value': v} for a, v in (pipe.ScanInfo() & key).fetch1().items()]
+            info_table = tables.InfoTable(items)
+
+            return render_template('quality.html', form=form, progress_table=progress_table,
+                                   info_table=info_table, oracle_keys=oracle_keys,
+                                   cos2map_keys=cos2map_keys, summary_keys=summary_keys,
+                                   quality_keys=quality_keys, eye_key=eye_key)
         else:
             flash('{} is not in reso or meso'.format(key))
 
     return render_template('quality.html', form=form)
 
 
-@ping
 @main.route('/figure/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/<which>')
 def figure(animal_id, session, scan_idx, field, pipe_version, which):
     key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
            'field': field, 'pipe_version': pipe_version}
-    source = reso if reso.SummaryImages() & key else meso if meso.SummaryImages() & key else None
+    pipe = reso if reso.SummaryImages() & key else meso if meso.SummaryImages() & key else None
 
-    if source is not None:
-        summary_rel = source.SummaryImages.Average() * source.SummaryImages.Correlation() & key
+    if pipe is not None:
+        summary_rel = pipe.SummaryImages.Average() * pipe.SummaryImages.Correlation() & key
         images, channels = summary_rel.fetch('{}_image'.format(which), 'channel')
 
         composite = np.zeros([*images[0].shape, 3])
@@ -270,7 +248,6 @@ def figure(animal_id, session, scan_idx, field, pipe_version, which):
     return render_template('figure.html', figure=figure)
 
 
-@ping
 @main.route('/traces/<animal_id>/<session>/<scan_idx>/<field>/<pipe_version>/'
             '<segmentation_method>/<spike_method>')
 def traces(animal_id, session, scan_idx, field, pipe_version, segmentation_method,
@@ -278,14 +255,14 @@ def traces(animal_id, session, scan_idx, field, pipe_version, segmentation_metho
     key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
            'field': field, 'pipe_version': pipe_version, 'channel': request.args['channel'],
            'segmentation_method': segmentation_method, 'spike_method': spike_method}
-    source = reso if reso.Activity() & key else meso if meso.Activity() & key else None
+    pipe = reso if reso.Activity() & key else meso if meso.Activity() & key else None
 
-    if source is not None:
-        traces = np.stack((source.Activity.Trace() & key).fetch('trace', limit=25))
+    if pipe is not None:
+        traces = np.stack((pipe.Activity.Trace() & key).fetch('trace', limit=25))
         f = traces.var(ddof=1, axis=0, keepdims=True) / traces.mean(axis=0, keepdims=True)
         traces /= f
 
-        fps = (source.ScanInfo() & key).fetch1('fps')
+        fps = (pipe.ScanInfo() & key).fetch1('fps')
         middle_point = traces.shape[-1] / 2
         traces = traces[:, max(0, int(middle_point - 30 * fps)): int(middle_point + 30 * fps)]
         x_axis = np.arange(traces.shape[-1]) / fps
@@ -311,7 +288,6 @@ def tmpfile(filename):
     return send_from_directory('/tmp/', filename)
 
 
-@ping
 @main.route('/schema/', defaults={'schema': 'experiment', 'table': 'Scan', 'subtable': None},
             methods=['GET', 'POST'])
 @main.route('/schema/<schema>/<table>', defaults={'subtable': None}, methods=['GET', 'POST'])
@@ -374,7 +350,6 @@ def relation(schema, table, subtable):
                            form=form)
 
 
-@ping
 @main.route('/tracking/<animal_id>/<session>/<scan_idx>', methods=['GET', 'POST'])
 def tracking(animal_id, session, scan_idx):
     form = forms.TrackingForm(request.form)
@@ -405,54 +380,55 @@ def report():
     form = forms.ReportForm(request.form)
     if request.method == 'POST' and form.validate():
         report_type = 'scan' if form.session.data and form.scan_idx.data else 'mouse'
-        if form.pdf.data:
-            endpoint = 'main.{}report_pdf'.format(report_type)
-        else:
-            endpoint = 'main.{}report'.format(report_type)
+        endpoint = 'main.{}report{}'.format(report_type, '_pdf' if form.as_pdf.data else '')
         return redirect(url_for(endpoint, animal_id=form.animal_id.data,
-                                session=form.session.data,
-                                scan_idx=form.scan_idx.data))
+                                session=form.session.data, scan_idx=form.scan_idx.data))
     return render_template('report.html', form=form)
 
 
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>')
 def scanreport(animal_id, session, scan_idx):
-    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+    key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx}
     pipe = reso if reso.ScanInfo() & key else meso if meso.ScanInfo() & key else None
 
     if pipe is not None:
-        oracle = (tune.OracleMap() & key).fetch(dj.key, order_by='field')
-        cos2map = (tune.Cos2Map() & key).fetch(dj.key, order_by='field')
-        pxori = (tune.PixelwiseOri() & key).fetch(dj.key, order_by='field')
-        cellori = bool(tune.Ori() & key)
-        correlation = (pipe.SummaryImages.Correlation() & key).fetch(dj.key, order_by='field')
-        average = (pipe.SummaryImages.Average() & key).fetch(dj.key, order_by='field')
-        eye = (pupil.Eye() & key).fetch1(dj.key) if pupil.Eye() & key else None
-        eye_track = (pupil.FittedContour() & key).fetch1(dj.key) if pupil.FittedContour() & key else None
-        quality = (pipe.Quality.Contrast() & key).fetch(dj.key, order_by='field')
-        oracletime = (tune.MovieOracleTimeCourse() & key).fetch(dj.key, order_by='field')
-        sta = bool(tune.STA() & tune.STAQual() & key)
-        xsnr = bool(xcorr.XSNR() & key)
-        staext = bool(tune.STAExtent() & key)
+        pxori_keys = (tune.PixelwiseOri() & key).fetch('KEY', order_by='field')
+        quality_keys = (pipe.Quality.Contrast() & key).fetch('KEY', order_by='field')
+        oracletime_keys = (tune.MovieOracleTimeCourse() & key).fetch('KEY', order_by='field')
+        has_ori = bool(tune.Ori() & key)
+        has_xsnr = bool(xcorr.XSNR() & key)
+        has_sta = bool(tune.STA() & key)
+        has_staqual = bool(tune.STAQual() & key)
+        has_staext = bool(tune.STAExtent() & key)
+        has_eye = bool(pupil.Eye() & key)
+        has_eyetrack = bool(pupil.FittedContour() & key)
 
-        craniatomy_notes, session_notes = (experiment.Session() & key).fetch1('craniotomy_notes', 'session_notes')
+        image_keys = []
+        channels = shared.Channel() & 'channel <= {}'.format((pipe.ScanInfo() & key).fetch1('nchannels'))
+        for field_key in (pipe.ScanInfo.Field() * channels & key).fetch('KEY'):
+            field_key['has_summary'] = bool(pipe.SummaryImages() & field_key)
+            field_key['has_oracle'] = bool(tune.OracleMap() & field_key)
+            field_key['has_cos2map'] = bool(tune.Cos2Map() * tune.CaMovie() & field_key)
+            image_keys.append(field_key)
+        image_keys = list(filter(lambda k: k['has_summary'] or k['has_oracle'] or k['has_cos2map'], image_keys))
 
-        fields, somas, depth = (pipe.ScanInfo.Field() * pipe.ScanSet()).aggr(
-            pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & key & dict(type='soma'),
-            'z', somas='count(*)').fetch('field', 'somas', 'z')
-        stats = StatsTable([dict(field=f, somas=s, depth=z)
-                            for f, s, z in zip(fields, somas, depth)])
-        stats.items.append(
-            dict(field='ALL', somas=sum([d['somas'] for d in stats.items]), depth='-')
-        )
+        craniotomy_notes, session_notes = (experiment.Session() & key).fetch1('craniotomy_notes', 'session_notes')
+        craniotomy_notes, session_notes = craniotomy_notes.strip(), session_notes.strip()
 
+        somas = pipe.MaskClassification.Type() & {'type': 'soma'}
+        scan_somas = pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() & {**key, 'segmentation_method': 3} & somas
+        somas_per_field = pipe.ScanSet().aggr(scan_somas, avg_z='ROUND(AVG(um_z))', num_somas='count(*)')
+        fields, num_somas, depths = somas_per_field.fetch('field', 'num_somas', 'avg_z')
+        items = [{'field': f, 'somas': s, 'depth': z} for f, s, z in zip(fields, num_somas, depths)]
+        items.append({'field': 'ALL', 'somas': sum(num_somas), 'depth': '-'})
+        stats_table = tables.StatsTable(items)
 
         return render_template('scan_report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
-                               data=list(zip_longest(correlation, average, oracle, cos2map, fillvalue=None)),
-                               craniotomy_notes=craniatomy_notes.split(','),
-                               session_notes=session_notes.split(','), eye=eye, eye_track=eye_track,
-                               stats=stats, sta=sta, quality=quality, oracletime=oracletime, xsnr=xsnr, staext=staext,
-                               pxori=pxori, cellori=cellori)
+                               craniotomy_notes=craniotomy_notes, session_notes=session_notes,
+                               stats_table=stats_table, has_ori=has_ori, has_xsnr=has_xsnr, has_sta=has_sta,
+                               has_staqual=has_staqual, has_staext=has_staext, image_keys=image_keys,
+                               has_eye=has_eye, has_eyetrack=has_eyetrack, pxori_keys=pxori_keys,
+                               quality_keys=quality_keys, oracletime_keys=oracletime_keys)
     else:
         flash('{} is not in reso or meso'.format(key))
         return redirect(url_for('main.report'))
@@ -478,17 +454,17 @@ def mousereport(animal_id):
     def in_auto_proc(k):
         return bool(experiment.AutoProcessing() & k)
 
-    stim_time = create_datajoint_table(stim_time,
-                                       check_funcs=dict(autoprocessing=in_auto_proc))
+    stim_time = tables.create_datajoint_table(stim_time,
+                                              check_funcs=dict(autoprocessing=in_auto_proc))
 
     reso_scanh = mice.Mice().aggr(reso.ScanInfo() & dict(animal_id=animal_id),
                                   time="TIME_FORMAT(SEC_TO_TIME(sum(nframes / fps)),'%%Hh %%im %%Ss')",
                                   setup="'reso'")
-    scanh = create_datajoint_table([reso_scanh, meso_scanh])
-    scans = create_datajoint_table(
+    scanh = tables.create_datajoint_table([reso_scanh, meso_scanh])
+    scans = tables.create_datajoint_table(
         (experiment.Scan() & auto), selection=['session', 'scan_idx', 'lens', 'depth', 'site_number', 'scan_ts']
     )
-    scaninfo = create_datajoint_table(
+    scaninfo = tables.create_datajoint_table(
         [(pipe.ScanInfo() & auto) for pipe in [reso, meso]],
         selection=['nfields', 'fps', 'scan_idx', 'session', 'nframes', 'nchannels', 'usecs_per_line']
     )
@@ -501,7 +477,7 @@ def mousereport(animal_id):
         dj.U('animal_id', 'stimulus_type').aggr(tune.Ori.Cell() & key & dict(ori_type='dir'),
                                                                        ori_type="'direction'",
                                                                        percent_above='100*AVG(r2>0.01)')]
-    ori_stats = create_datajoint_table(ori_stats)
+    ori_stats = tables.create_datajoint_table(ori_stats)
 
     # --- orientation statistics per stack
     df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
@@ -512,11 +488,11 @@ def mousereport(animal_id):
     gr = df3.groupby(['animal_id', 'stack_session', 'stimulus_type','ori_type'])
     df3 = gr.agg(dict(r2=lambda x: np.mean(x > 0.01)*100)).reset_index().rename(columns={'r2':'% cells above'})
     if len(df3) > 0:
-        ori_stacks = create_pandas_table(df3)
+        ori_stacks = tables.create_pandas_table(df3)
     else:
         ori_stacks = None
 
-    stats = create_datajoint_table([experiment.Scan().aggr(
+    stats = tables.create_datajoint_table([experiment.Scan().aggr(
         pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & auto & dict(type='soma'),
         somas='count(*)', scan_type='"{}"'.format(pipe.__name__)) for pipe in [reso, meso]],
         selection=['scan_type', 'session', 'scan_idx', 'somas'])
@@ -527,7 +503,7 @@ def mousereport(animal_id):
     stack_ori = bool(stack.StackSet() * tune.Ori() & key)
     stack_rf = bool(stack.StackSet() * tune.STAQual() & key)
     kuiper = bool(tune.Kuiper() & key)
-    cell_counts = create_datajoint_table(
+    cell_counts = tables.create_datajoint_table(
         (stack.StackSet() & key).aggr(stack.StackSet.Unit(), unique_neurons='count(*)'))
 
     return render_template('mouse_report.html', animal_id=animal_id, scans=scans,
@@ -542,16 +518,14 @@ def mousereport(animal_id):
 @main.route('/report/scan/<int:animal_id>-<int:session>-<int:scan_idx>.pdf')
 def scanreport_pdf(animal_id, session, scan_idx):
     html = scanreport(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    return render_pdf(HTML(string=html),
-                      stylesheets=[CSS(url_for('static', filename='styles.css')),
-                                   CSS(url_for('static', filename='datajoint.css'))]
-                      )
+    stylesheets = [CSS(url_for('static', filename='styles.css')),
+                   CSS(url_for('static', filename='datajoint.css'))]
+    return render_pdf(HTML(string=html), stylesheets=stylesheets)
 
 
 @main.route('/report/mouse/<int:animal_id>.pdf')
 def mousereport_pdf(animal_id):
     html = mousereport(animal_id=animal_id)
-    return render_pdf(HTML(string=html),
-                      stylesheets=[CSS(url_for('static', filename='styles.css')),
-                                   CSS(url_for('static', filename='pdf.css'))]
-                      )
+    stylesheets = [CSS(url_for('static', filename='styles.css')),
+                   CSS(url_for('static', filename='datajoint.css'))]
+    return render_pdf(HTML(string=html), stylesheets=stylesheets)

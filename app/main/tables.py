@@ -97,7 +97,7 @@ class JobTable(flask_table.Table):
 
 class CheckmarkTable(flask_table.Table):
     classes = ['table']
-    relation = flask_table.Col('Animal Id')
+    relation = flask_table.Col('Relation')
     populated = CheckMarkCol('Populated')
 
 
@@ -108,12 +108,9 @@ class InfoTable(flask_table.Table):
 
 class StatsTable(flask_table.Table):
     classes = ['Relation']
-
     field = flask_table.Col('Field')
-    somas = flask_table.Col('Detected Somas')
+    somas = flask_table.Col('Number of cells')
     depth = flask_table.Col('Depth from surface [um]')
-    # height = flask_table.Col('Height [um]')
-    # width = flask_table.Col('Width [um]')
 
 class CellTable(flask_table.Table):
     classes = ['Relation']

@@ -19,205 +19,159 @@
         <form method="post">
             <div class="row">
                 <div class="col-sm-2">
-                    <dl>
-                        {{ render_field(form.animal_id, style="width: 100px;") }}
-                    </dl>
-
+                    <dl> {{ render_field(form.animal_id, style="width: 100px;") }} </dl>
                 </div>
                 <div class="col-sm-2">
-                    <dl>
-                        {{ render_field(form.session, style="width: 100px;") }}
-                    </dl>
-
+                    <dl> {{ render_field(form.session, style="width: 100px;") }} </dl>
                 </div>
                 <div class="col-sm-2">
-                    <dl>
-                        {{ render_field(form.scan_idx, style="width: 100px;") }}
-                    </dl>
-
+                    <dl> {{ render_field(form.scan_idx, style="width: 100px;") }} </dl>
                 </div>
             </div>
-            <input type="submit" value="Select">
+            <input type="submit" value="Show">
         </form>
         <br>
 
-        <!-- info -->
-
-
-        <!-- Progress-->
         <h3>Database Status and Scan Info</h3>
         <div class="row">
-
             <div class="col-sm-4">
-                {{ progress | safe }}
+                {{ progress_table }}
             </div>
-            {% if info %}
-
-                <div class="col-sm-4">
-
-                    {{ info | safe }}
-                </div>
-            {% endif %}
+            <div class="col-sm-4">
+                {{ info_table }}
+            </div>
         </div>
 
-        <!-- Oracle images-->
         <h3>Oracle Images</h3>
         <div class="container">
-            {% for keys in oracle|batch(4) %}
+            {% for row_keys in oracle_keys | batch(4) %}
                 <div class="row imagetiles">
-                    {% for key in keys %}
+                    {% for key in row_keys %}
                         <div class="col-sm-2">
                             <dl>
-                                <dt>Field {{ key.field }}</dt>
+                                <dt> Field {{ key['field'] }} </dt>
                                 <dd>
-                                    <a href="{{ url_for('images.oracle_map', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='huge') }}">
-                                        <img src="{{ url_for('images.oracle_map', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='thumb') }}">
+                                    <a href="{{ url_for('images.oracle_map', animal_id=key['animal_id'],
+                                                        session=key['session'], scan_idx=key['scan_idx'],
+                                                        field=key['field'], size='huge') }}">
+                                        <img src="{{ url_for('images.oracle_map', animal_id=key['animal_id'],
+                                                             session=key['session'], scan_idx=key['scan_idx'],
+                                                             field=key['field'], size='thumb') }}">
                                     </a>
                                 </dd>
                             </dl>
                         </div>
-
-
                     {% endfor %}
                 </div>
             {% endfor %}
         </div>
 
-        <!-- Pixelwise tuning-->
         <h3>Pixelwise Tuning</h3>
         <div class="container">
-            {% for keys in cos2map|batch(4) %}
+            {% for row_keys in cos2map_keys | batch(4) %}
                 <div class="row imagetiles">
-                    {% for key in keys %}
+                    {% for key in row_keys %}
                         <div class="col-sm-2">
                             <dl>
-                                <dt>Field {{ key.field }}</dt>
+                                <dt>Field {{ key['field'] }}</dt>
                                 <dd>
-                                    <a href="{{ url_for('images.cos2map', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='huge') }}">
-                                        <img src="{{ url_for('images.cos2map', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='thumb') }}">
+                                    <a href="{{ url_for('images.cos2map', animal_id=key['animal_id'],
+                                                        session=key['session'], scan_idx=key['scan_idx'],
+                                                        field=key['field'], size='huge') }}">
+                                        <img src="{{ url_for('images.cos2map', animal_id=key['animal_id'],
+                                                             session=key['session'], scan_idx=key['scan_idx'],
+                                                             field=key['field'], size='thumb') }}">
                                     </a>
                                 </dd>
                             </dl>
                         </div>
-
-
                     {% endfor %}
                 </div>
             {% endfor %}
         </div>
 
-
-        <!-- Correlation images-->
         <h3>Correlation Images</h3>
         <div class="container">
-            {% for keys in correlation|batch(4) %}
+            {% for row_keys in summary_keys | batch(4) %}
                 <div class="row imagetiles">
-                    {% for key in keys %}
+                    {% for key in row_keys %}
                         <div class="col-sm-2">
                             <dl>
-                                <dt>Field {{ key.field }}</dt>
+                                <dt>Field {{ key['field'] }} ch. {{ key['channel']}} </dt>
                                 <dd>
-                                    <a href="{{ url_for('images.correlation_image', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='huge') }}">
-                                        <img src="{{ url_for('images.correlation_image', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='thumb') }}">
+                                    <a href="{{ url_for('images.correlation_image', animal_id=key['animal_id'],
+                                                        session=key['session'], scan_idx=key['scan_idx'],
+                                                        field=key['field'], channel=key['channel'], size='huge') }}">
+                                        <img src="{{ url_for('images.correlation_image', animal_id=key['animal_id'],
+                                                             session=key['session'], scan_idx=key['scan_idx'],
+                                                             field=key['field'], channel=key['channel'], size='thumb') }}">
                                     </a>
                                 </dd>
                             </dl>
                         </div>
-
-
                     {% endfor %}
                 </div>
             {% endfor %}
         </div>
 
-        <!-- Correlation images-->
         <h3>Average Images</h3>
         <div class="container">
-            {% for keys in correlation|batch(4) %}
+            {% for row_keys in summary_keys | batch(4) %}
                 <div class="row imagetiles">
-                    {% for key in keys %}
+                    {% for key in row_keys %}
                         <div class="col-sm-2">
                             <dl>
-                                <dt>Field {{ key.field }}</dt>
+                                <dt>Field {{ key['field'] }} ch. {{ key['channel'] }}</dt>
                                 <dd>
-                                    <a href="{{ url_for('images.average_image', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='huge') }}">
-                                        <img src="{{ url_for('images.average_image', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='thumb') }}">
+                                    <a href="{{ url_for('images.average_image', animal_id=key['animal_id'],
+                                                        session=key['session'], scan_idx=key['scan_idx'],
+                                                        field=key['field'], channel=key['channel'], size='huge') }}">
+                                        <img src="{{ url_for('images.average_image', animal_id=key['animal_id'],
+                                                             session=key['session'], scan_idx=key['scan_idx'],
+                                                             field=key['field'], channel=key['channel'], size='thumb') }}">
                                     </a>
                                 </dd>
                             </dl>
                         </div>
-
-
                     {% endfor %}
                 </div>
             {% endfor %}
         </div>
 
-        <!-- mean intensity and contrast images-->
         <h3>Intensity and Contrast Traces</h3>
         <div class="container">
-            {% for keys in correlation|batch(2) %}
+            {% for row_keys in quality_keys | batch(2) %}
                 <div class="row imagetiles">
-                    {% for key in keys %}
+                    {% for key in row_keys %}
                         <div class="col-sm-4">
                             <dl>
-                                <dt>Field {{ key.field }}</dt>
+                                <dt>Field {{ key['field'] }} ch. {{ key['channel'] }}</dt>
                                 <dd>
-                                    <a href="{{ url_for('images.contrast_intensity', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='huge') }}">
-                                        <img src="{{ url_for('images.contrast_intensity', animal_id=key.animal_id,
-                                                     session=key.session,
-                                                     scan_idx=key.scan_idx,
-                                                     field=key.field, size='small') }}">
+                                    <a href="{{ url_for('images.contrast_intensity', animal_id=key['animal_id'],
+                                                        session=key['session'], scan_idx=key['scan_idx'],
+                                                        field=key['field'], channel=key['channel'], size='huge') }}">
+                                        <img src="{{ url_for('images.contrast_intensity', animal_id=key['animal_id'],
+                                                             session=key['session'], scan_idx=key['scan_idx'],
+                                                             field=key['field'], channel=key['channel'], size='small') }}">
                                     </a>
                                 </dd>
                             </dl>
                         </div>
-
-
                     {% endfor %}
                 </div>
             {% endfor %}
         </div>
 
-        <!-- eye tracking preview-->
-        {% if eye %}
+        {% if eye_key %}
+            <h3>Eye Tracking Preview</h3>
             <div class="container">
                 <div class="row ">
-
-                    <h3>Eye tracking preview</h3>
-                    <a href="{{ url_for('images.eye', animal_id=eye.animal_id,
-                                         session=eye.session,
-                                         scan_idx=eye.scan_idx, size='huge') }}">
-                        <img src="{{ url_for('images.eye', animal_id=eye.animal_id,
-                                         session=eye.session,
-                                         scan_idx=eye.scan_idx, size='medium') }}">
+                    <a href="{{ url_for('images.eye', animal_id=eye_key['animal_id'],
+                                        session=eye_key['session'], scan_idx=eye_key['scan_idx'],
+                                        size='huge') }}">
+                        <img src="{{ url_for('images.eye', animal_id=eye_key['animal_id'],
+                                             session=eye_key['session'], scan_idx=eye_key['scan_idx'],
+                                             size='medium') }}">
                     </a>
                 </div>
             </div>

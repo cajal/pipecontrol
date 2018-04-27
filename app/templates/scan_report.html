@@ -136,19 +136,17 @@
     {% endif %}
 
     <p style="page-break-before: always"></p>
-    <h3>Spike triggered averages</h3>
-    {% if has_sta %}
-        <h4>From upper percentile of SNR</h4>
-        <img src="{{ url_for('images.sta', animal_id=animal_id, session=session,
-                             scan_idx=scan_idx, size='smedium', t=1, quantile='upper') }}">
 
-        <h4>From middle percentile of SNR</h4>
-            <img src="{{ url_for('images.sta', animal_id=animal_id, session=session,
-                                 scan_idx=scan_idx, size='smedium', t=1, quantile='middle') }}">
-
-        <h4>From lower percentile of SNR</h4>
-            <img src="{{ url_for('images.sta', animal_id=animal_id, session=session,
-                                 scan_idx=scan_idx, size='smedium', t=1, quantile='lower') }}">
+    <h3>Reverse Correlation</h3>
+    {% if sta %}
+        {% for q in [100, 90, 80, 70, 60] %}
+        <h4>Best images below {{ q }}% percentile of SNR</h4>
+        <div>
+            <img src="{{ url_for('images.sta', animal_id=animal_id,
+                                         session=session,
+                                         scan_idx=scan_idx, size='smedium', t=1, quantile=q) }}">
+        </div>
+        {%  endfor %}
     {% else %}
         Populate spike triggered averages in <code>stimline.tune.STA()</code>.
     {% endif %}

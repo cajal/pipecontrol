@@ -90,18 +90,17 @@ def average_image(animal_id, session, scan_idx, field, channel, size):
 
 
 @images.route('/contrast_intensity-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>-<int:channel>_<size>.png')
-def contrast_intensity(animal_id, session, scan_idx, field, channel, size):
-    key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
-           'field': field, 'channel': channel}
+def contrast_intensity(animal_id, session, scan_idx, field, channel,size):
+    key = {'animal_id':animal_id, 'session':session, 'scan_idx':scan_idx, 'field':field, 'channel': channel}
     pipe = reso if reso.ScanInfo() & key else meso
-    intensities = (pipe.Quality.MeanIntensity() & key).fetch1('intensities')
-    contrasts = (pipe.Quality.Contrast() & key).fetch1('contrasts')
+    intensities= (pipe.Quality.MeanIntensity()  & key).fetch1('intensities')
+                                                                                         contrasts= (pipe.Quality.Contrast() & key).fetch1('contrasts')
 
     sz = tuple(i * size_factor[size] for i in [.9, .5])
     with  sns.plotting_context('talk' if size == 'huge' else 'paper'):
         with sns.axes_style('ticks'):
             fig, (ax, ax2) = plt.subplots(2, 1, figsize=sz, sharex=True)
-            ax.plot(intensities,  color='dodgerblue', lw=1)
+            ax.plot(intensities, color='dodgerblue', lw=1)
             ax.set_ylabel('intensity')
             ax.set_title('mean intensity')
             ax2.set_ylabel('contrast')
@@ -215,14 +214,11 @@ def eye_tracking(animal_id, session, scan_idx, size):
 def sta(animal_id, session, scan_idx, t, quantile, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, stimulus_type='stimulus.Monet2', **SETTINGS)
 
-    if quantile == 'upper':
-        rfs, keys = (tune.STA.Map() * tune.STAQual() & key).fetch('map', dj.key, order_by='snr DESC', limit=49)
-    elif quantile == 'middle':
-        med = np.median((tune.STAQual() & key).fetch('snr'))
-        rfs, keys = (tune.STA.Map() * tune.STAQual() & key).fetch('map', dj.key,
-                                                                  order_by='ABS(snr - {}) ASC'.format(med), limit=49)
-    elif quantile == 'lower':
-        rfs, keys = (tune.STA.Map() * tune.STAQual() & key).fetch('map', dj.key, order_by='snr ASC', limit=49)
+    snr = (tune.STA.Map() * tune.STAQual() & key).fetch('snr')
+
+    quantile = np.percentile(snr, quantile)
+
+    rfs, keys = (tune.STA.Map() * tune.STAQual() & key & 'snr<{}'.format(quantile)).fetch('map', dj.key, order_by='snr DESC', limit=49)
 
     cmap = plt.cm.get_cmap('bwr')
     cmap._init()
@@ -230,8 +226,8 @@ def sta(animal_id, session, scan_idx, t, quantile, size):
     cmap._lut[:, -1] = alphas
 
     sz = tuple(i * size_factor[size] for i in [.9, .5])
-    tt = np.linspace(0, 2 * np.pi, 100)
-    cx, cy = np.cos(tt), np.sin(tt)
+    # tt = np.linspace(0, 2 * np.pi, 100)
+    # cx, cy = np.cos(tt), np.sin(tt)
     with  sns.plotting_context('talk' if size == 'huge' else 'paper'):
         with sns.axes_style('ticks'):
             fig, ax = plt.subplots(7, 7, figsize=sz)
@@ -351,7 +347,7 @@ def pixelwiseori(animal_id, session, scan_idx, field, size):
 @images.route("/cellwiseori-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
 def cellori(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
-    r2, angle = (tune.Ori.Cell() & key).fetch('r2', 'angle')
+    osi, r2, angle = (tune.Ori.Cell() & key).fetch('selectivity', 'r2', 'angle')
     sz = tuple(i * size_factor[size] for i in [.5, .5])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
         with sns.axes_style('ticks'):
@@ -360,9 +356,10 @@ def cellori(animal_id, session, scan_idx, size):
             ax = fig.add_subplot(111)
             bins = np.linspace(-np.pi / 2, np.pi / 2, 15)
             bin_centers = (bins[:-1] + bins[1:]) / 2
-            for p in np.arange(20, 120, 20):
-                h, _ = np.histogram(angle[r2 < np.percentile(r2, p)], normed=True, bins=bins)
-                ax.plot(bin_centers, h, label='<{}% percentile R$^2$'.format(p))
+            for p in np.arange(0, 100, 20):
+                # h, _ = np.histogram(angle[r2 < np.percentile(r2, p)], normed=True, bins=bins)
+                h, _ = np.histogram(angle[osi > np.percentile(osi, p)], normed=True, bins=bins)
+                ax.plot(bin_centers, h, label='>{}% OSI'.format(p), lw=3)
             ax.legend(ncol=2)
             ax.set_xticks([-np.pi / 2, -np.pi / 4, 0, np.pi / 4, np.pi / 2])
             ax.set_xticklabels([r'$-\frac{\pi}{2}$', r'$\frac{\pi}{4}$', '0', r'$\frac{\pi}{4}$', r'$\frac{\pi}{2}$'])

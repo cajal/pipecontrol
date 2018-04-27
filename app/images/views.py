@@ -227,7 +227,7 @@ def sta(animal_id, session, scan_idx, t, quantile, size):
     cmap._lut[:, -1] = alphas
 
     sz = tuple(i * size_factor[size] for i in [.9, .5])
-    tt = np.linspace(0, 2 * np.pi, 100)
+    # tt = np.linspace(0, 2 * np.pi, 100)
     # cx, cy = np.cos(tt), np.sin(tt)
     with  sns.plotting_context('talk' if size == 'huge' else 'paper'):
         with sns.axes_style('ticks'):

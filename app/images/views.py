@@ -94,7 +94,7 @@ def contrast_intensity(animal_id, session, scan_idx, field, channel,size):
     key = {'animal_id':animal_id, 'session':session, 'scan_idx':scan_idx, 'field':field, 'channel': channel}
     pipe = reso if reso.ScanInfo() & key else meso
     intensities= (pipe.Quality.MeanIntensity()  & key).fetch1('intensities')
-                                                                                         contrasts= (pipe.Quality.Contrast() & key).fetch1('contrasts')
+    contrasts= (pipe.Quality.Contrast() & key).fetch1('contrasts')
 
     sz = tuple(i * size_factor[size] for i in [.9, .5])
     with  sns.plotting_context('talk' if size == 'huge' else 'paper'):

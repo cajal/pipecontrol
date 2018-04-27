@@ -4,58 +4,30 @@
 {% block head %}
     {{ super() }}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='datajoint.css') }}">
-    <style>
-        div.imagetiles div.col-sm-2 div.col-sm-4 {
-            padding: 1px;
-        }
-    </style>
 {% endblock %}
 
 
 {% block page_content %}
     <div class="post-tabs">
-        <p>
-            For mouse report fill out animal ID only. For detailed report, fill out <b>both</b> other fields as well.
-        </p>
+        <h4> Fill (only) Animal Id for mouse level report. Fill <b>all</b> fields for scan level report.</h4>
+        <br>
 
         {% from "_macros.html" import render_field %}
         <form method="post">
             <div class="row">
                 <div class="col-sm-2">
-                    <dl>
-                        {{ render_field(form.animal_id, style="width: 100px;") }}
-                    </dl>
-
-                </div>
-                {% if 'session' in form %}
-                <div class="col-sm-2">
-                    <dl>
-                        {{ render_field(form.session, style="width: 100px;") }}
-                    </dl>
-
+                    <dl> {{ render_field(form.animal_id, style="width: 100px;") }} </dl>
                 </div>
                 <div class="col-sm-2">
-                    <dl>
-                        {{ render_field(form.scan_idx, style="width: 100px;") }}
-                    </dl>
-
+                    <dl> {{ render_field(form.session, style="width: 100px;") }} </dl>
                 </div>
-                {% endif %}
-
-            </div>
-            <div class="row">
                 <div class="col-sm-2">
-                    <dl>
-                        {{ render_field(form.pdf) }}
-                    </dl>
-
+                    <dl> {{ render_field(form.scan_idx, style="width: 100px;") }} </dl>
+                </div>
+                <div class="col-sm-2">
+                    <dl> {{ render_field(form.as_pdf) }} </dl>
                 </div>
             </div>
-            <input type="submit" value="Select">
-
+            <input type="submit" value="Show">
         </form>
-
-        <!-- info -->
-
-
 {% endblock %}

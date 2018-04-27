@@ -57,12 +57,12 @@ def oracle_map(animal_id, session, scan_idx, field, size):
     return savefig(fig)
 
 
-@images.route("/correlation-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
-def correlation_image(animal_id, session, scan_idx, field, size):
-    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field, **SETTINGS)
-    base = meso if meso.ScanInfo() & key else reso
-
-    img = (base.SummaryImages.Correlation() & key).fetch1('correlation_image')
+@images.route('/correlation-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>-<int:channel>_<size>.png')
+def correlation_image(animal_id, session, scan_idx, field, channel, size):
+    key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
+           'field': field, 'channel': channel}
+    pipe = reso if reso.ScanInfo() & key else meso
+    img = (pipe.SummaryImages.Correlation() & key).fetch1('correlation_image')
 
     sz = tuple(i / max(*img.shape) * size_factor[size] for i in reversed(img.shape))
     fig, ax = plt.subplots(figsize=sz)
@@ -73,11 +73,12 @@ def correlation_image(animal_id, session, scan_idx, field, size):
     return savefig(fig)
 
 
-@images.route("/average-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
-def average_image(animal_id, session, scan_idx, field, size):
-    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field, **SETTINGS)
-    base = meso if meso.ScanInfo() & key else reso
-    img = (base.SummaryImages.Average() & key).fetch1('average_image')
+@images.route('/average-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>-<int:channel>_<size>.png')
+def average_image(animal_id, session, scan_idx, field, channel, size):
+    key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
+           'field': field, 'channel': channel}
+    pipe = reso if reso.ScanInfo() & key else meso
+    img = (pipe.SummaryImages.Average() & key).fetch1('average_image')
 
     sz = tuple(i / max(*img.shape) * size_factor[size] for i in reversed(img.shape))
     fig, ax = plt.subplots(figsize=sz)
@@ -88,26 +89,24 @@ def average_image(animal_id, session, scan_idx, field, size):
     return savefig(fig)
 
 
-@images.route("/contrast_intensity-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
-def contrast_intensity(animal_id, session, scan_idx, field, size):
-    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field, **SETTINGS)
-    base = meso if meso.ScanInfo() & key else reso
-    intensities, contrasts, channels = (base.Quality.MeanIntensity() * base.Quality.Contrast() & key).fetch(
-        'intensities',
-        'contrasts', 'channel')
+@images.route('/contrast_intensity-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>-<int:channel>_<size>.png')
+def contrast_intensity(animal_id, session, scan_idx, field, channel,size):
+    key = {'animal_id':animal_id, 'session':session, 'scan_idx':scan_idx, 'field':field, 'channel': channel}
+    pipe = reso if reso.ScanInfo() & key else meso
+    intensities= (pipe.Quality.MeanIntensity()  & key).fetch1('intensities')
+                                                                                         contrasts= (pipe.Quality.Contrast() & key).fetch1('contrasts')
 
     sz = tuple(i * size_factor[size] for i in [.9, .5])
     with  sns.plotting_context('talk' if size == 'huge' else 'paper'):
         with sns.axes_style('ticks'):
             fig, (ax, ax2) = plt.subplots(2, 1, figsize=sz, sharex=True)
-            for channel, inten, contr in zip(channels, intensities, contrasts):
-                ax.plot(inten, color='dodgerblue', lw=1, label='channel {}'.format(channel))
-                ax.set_ylabel('intensity')
-                ax.set_title('mean intensity')
-                ax2.set_ylabel('contrast')
-                ax2.plot(contr, color='deeppink', lw=1, label='channel {}'.format(channel))
-                ax2.set_xlabel('frame number')
-                ax2.set_title('contrast')
+            ax.plot(intensities, color='dodgerblue', lw=1)
+            ax.set_ylabel('intensity')
+            ax.set_title('mean intensity')
+            ax2.set_ylabel('contrast')
+            ax2.plot(contrasts, color='deeppink', lw=1)
+            ax2.set_xlabel('frame number')
+            ax2.set_title('contrast')
             fig.tight_layout()
             fig.subplots_adjust(left=.2)
             sns.despine(fig, trim=True)

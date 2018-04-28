@@ -12,8 +12,13 @@ class ProductionConfig(Config):
     DEBUG = False # this won't work with flask script, use Flask.run() instead
     SERVER_NAME='shikigami.ad.bcm.edu'
 
+class Paul(Config):
+    DEBUG = True # this won't work with flask script, use Flask.run() instead
+    SERVER_NAME='highdingo.ad.bcm.edu'
+
 options = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
+    'paul': Paul,
     'default': DevelopmentConfig
 }

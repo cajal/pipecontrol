@@ -1,7 +1,7 @@
 import sys
 
 from ._utils import fill_nans
-from ..schemata import tune, xcorr, stack
+from ..schemata import tune, xcorr, stack, fastmeso
 from io import BytesIO
 from . import images
 import numpy as np
@@ -30,6 +30,13 @@ dj.config['external-analysis'] = dict(
     location='/mnt/scratch05/datajoint-store/analysis')
 
 
+def ping(f):
+
+    def new_f(*args, **kwargs):
+        dj.conn()
+        return f(*args, **kwargs)
+    return new_f
+
 def savefig(fig, **kwargs):
     canvas = FigureCanvas(fig)
     png_output = BytesIO()
@@ -41,6 +48,7 @@ def savefig(fig, **kwargs):
 
 
 @images.route("/oracle-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
+@ping
 def oracle_map(animal_id, session, scan_idx, field, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field, **SETTINGS)
     print('Oracle', key)
@@ -58,6 +66,7 @@ def oracle_map(animal_id, session, scan_idx, field, size):
 
 
 @images.route('/correlation-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>-<int:channel>_<size>.png')
+@ping
 def correlation_image(animal_id, session, scan_idx, field, channel, size):
     key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
            'field': field, 'channel': channel}
@@ -74,6 +83,7 @@ def correlation_image(animal_id, session, scan_idx, field, channel, size):
 
 
 @images.route('/average-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>-<int:channel>_<size>.png')
+@ping
 def average_image(animal_id, session, scan_idx, field, channel, size):
     key = {'animal_id': animal_id, 'session': session, 'scan_idx': scan_idx,
            'field': field, 'channel': channel}
@@ -90,6 +100,7 @@ def average_image(animal_id, session, scan_idx, field, channel, size):
 
 
 @images.route('/contrast_intensity-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>-<int:channel>_<size>.png')
+@ping
 def contrast_intensity(animal_id, session, scan_idx, field, channel,size):
     key = {'animal_id':animal_id, 'session':session, 'scan_idx':scan_idx, 'field':field, 'channel': channel}
     pipe = reso if reso.ScanInfo() & key else meso
@@ -118,6 +129,7 @@ def contrast_intensity(animal_id, session, scan_idx, field, channel,size):
 
 
 @images.route("/cos2map-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
+@ping
 def cos2map(animal_id, session, scan_idx, field, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field, **SETTINGS)
 
@@ -135,6 +147,7 @@ def cos2map(animal_id, session, scan_idx, field, size):
 
 
 @images.route("/oraclecourse-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
+@ping
 def oraclecourse(animal_id, session, scan_idx, field, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field, **SETTINGS)
     t, movie, pearson = (tune.MovieOracleTimeCourse.OracleClipSet() \
@@ -156,6 +169,7 @@ def oraclecourse(animal_id, session, scan_idx, field, size):
 
 
 @images.route("/eye-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def eye(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
 
@@ -174,6 +188,7 @@ def eye(animal_id, session, scan_idx, size):
 
 
 @images.route("/eye_tracking-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def eye_tracking(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
 
@@ -211,6 +226,7 @@ def eye_tracking(animal_id, session, scan_idx, size):
 
 
 @images.route("/sta-<int:animal_id>-<int:session>-<int:scan_idx>_<int:t>_<quantile>_<size>.png")
+@ping
 def sta(animal_id, session, scan_idx, t, quantile, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, stimulus_type='stimulus.Monet2', **SETTINGS)
 
@@ -247,6 +263,7 @@ def sta(animal_id, session, scan_idx, t, quantile, size):
 
 
 @images.route("/sta_loc-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def sta_loc(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
 
@@ -268,6 +285,7 @@ def sta_loc(animal_id, session, scan_idx, size):
 
 
 @images.route("/rf_snr-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def rf_snr(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
 
@@ -292,6 +310,7 @@ def rf_snr(animal_id, session, scan_idx, size):
 
 
 @images.route("/signal_xcorr-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def signal_xcorr(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
     v = (xcorr.XSNR() & key).fetch1('xsnr')
@@ -314,6 +333,7 @@ def signal_xcorr(animal_id, session, scan_idx, size):
 
 
 @images.route("/pixelwiseori-<int:animal_id>-<int:session>-<int:scan_idx>-<int:field>_<size>.png")
+@ping
 def pixelwiseori(animal_id, session, scan_idx, field, size):
     from matplotlib import colors
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field, **SETTINGS)
@@ -345,6 +365,7 @@ def pixelwiseori(animal_id, session, scan_idx, field, size):
 
 
 @images.route("/cellwiseori-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def cellori(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
     osi, r2, angle = (tune.Ori.Cell() & key).fetch('selectivity', 'r2', 'angle')
@@ -374,6 +395,7 @@ def cellori(animal_id, session, scan_idx, size):
 
 
 @images.route("/ori_r2-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def ori_r2(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
 
@@ -396,6 +418,7 @@ def ori_r2(animal_id, session, scan_idx, size):
 
 
 @images.route("/ori_r2-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def dir_r2(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
 
@@ -418,6 +441,7 @@ def dir_r2(animal_id, session, scan_idx, size):
 
 
 @images.route("/osi-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def osi(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
 
@@ -442,6 +466,7 @@ def osi(animal_id, session, scan_idx, size):
 
 
 @images.route("/dsi-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def dsi(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
     dsi = (tune.Ori.Cell() & key & dict(ori_type='dir')).fetch('selectivity')
@@ -465,6 +490,7 @@ def dsi(animal_id, session, scan_idx, size):
 
 
 @images.route("/osi_vs_r2-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def osi_vs_r2(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
 
@@ -513,6 +539,7 @@ def osi_vs_r2(animal_id, session, scan_idx, size):
 
 
 @images.route("/dsi_vs_r2-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+@ping
 def dsi_vs_r2(animal_id, session, scan_idx, size):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
 
@@ -560,6 +587,7 @@ def dsi_vs_r2(animal_id, session, scan_idx, size):
 
 
 @images.route("/mouse_per_scan_oracle-<int:animal_id>_<size>.png")
+@ping
 def mouse_per_scan_oracle(animal_id, size):
     key = dict(animal_id=animal_id, **SETTINGS)
     sz = tuple(i * size_factor[size] for i in [.7, .7])
@@ -606,6 +634,7 @@ def mouse_per_scan_oracle(animal_id, size):
 
 
 @images.route("/kuiper-<int:animal_id>_<size>.png")
+@ping
 def kuiper(animal_id, size):
     key = dict(animal_id=animal_id, **SETTINGS)
     sz = tuple(i * size_factor[size] for i in [.7, .7])
@@ -614,14 +643,21 @@ def kuiper(animal_id, size):
             df = pd.DataFrame((tune.Kuiper() & key).fetch())
 
             # Draw the densities in a few steps
-            g = sns.FacetGrid(df, hue='stimulus_type', col='ori_type', col_order=['ori', 'dir'], margin_titles=True,
+            g = sns.FacetGrid(df, hue='stimulus_type', col='ori_type', col_order=['ori', 'dir'],
+                              margin_titles=True,
                               legend_out=False)
 
-            g.map(plt.scatter, "kuiper", "widest_gap", s=5)
+            def scatter(x, y, **kwargs):
+                plt.scatter(x, y, **kwargs)
+                plt.xlim((0, .4))
+                plt.ylim((0, .4))
+
+            g.map(scatter, "kuiper", "widest_gap", s=5)
 
             def label(**kwargs):
                 ax = plt.gca()
                 ax.spines['bottom'].set_linewidth(1)
+                ax.spines['left'].set_linewidth(1)
                 ax.tick_params(axis='both', length=3, width=1)
 
             g.map(label)
@@ -641,6 +677,7 @@ def kuiper(animal_id, size):
 
 
 @images.route("/mouse_per_stack_oracle-<int:animal_id>_<size>.png")
+@ping
 def mouse_per_stack_oracle(animal_id, size):
     key = dict(animal_id=animal_id, **SETTINGS)
     sz = tuple(i * size_factor[size] for i in [.7, .7])
@@ -711,6 +748,7 @@ def mouse_per_stack_oracle(animal_id, size):
 
 
 @images.route("/osi_dsi_per_stack-<int:animal_id>_<size>.png")
+@ping
 def osi_dsi_per_stack(animal_id, size):
     key = dict(animal_id=animal_id, **SETTINGS)
     df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
@@ -752,6 +790,7 @@ def osi_dsi_per_stack(animal_id, size):
 
 
 @images.route("/preferred_per_stack-<int:animal_id>_<size>.png")
+@ping
 def preferred_per_stack(animal_id, size):
     key = dict(animal_id=animal_id, **SETTINGS)
     df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
@@ -796,6 +835,7 @@ def preferred_per_stack(animal_id, size):
 
 
 @images.route("/rf_snr_stack_stat-<int:animal_id>_<size>.png")
+@ping
 def rf_snr_stack_stat(animal_id, size):
     key = dict(animal_id=animal_id, **SETTINGS)
     df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
@@ -842,6 +882,7 @@ def rf_snr_stack_stat(animal_id, size):
 
 
 @images.route("/cell_matches-<int:animal_id>_<size>.png")
+@ping
 def cell_matches(animal_id, size):
     key = dict(animal_id=animal_id, **SETTINGS)
     sz = tuple(i * size_factor[size] for i in [.7, .7])
@@ -866,6 +907,7 @@ def cell_matches(animal_id, size):
 
 
 @images.route("/scan_hours-<int:animal_id>_<size>.png")
+@ping
 def scan_hours(animal_id, size):
     bins = np.arange(0, 22, 2)
     names = np.array(['{}-{}h'.format(*a) for a in zip(bins[:-1], bins[1:])] + ['>{}h'.format(bins[-1])])
@@ -897,3 +939,42 @@ def scan_hours(animal_id, size):
     g.fig.set_size_inches(sz)
 
     return savefig(g.fig)
+
+@images.route("/registration_over_time-<int:animal_id>-<int:session>_<size>.png")
+@ping
+def registration_over_time(animal_id, session, size):
+    import matplotlib.ticker as ticker
+    key = dict(animal_id=animal_id, scan_session=session, **SETTINGS)
+    print(fastmeso.RegistrationOverTime() & key)
+    sz = tuple(i * size_factor[size] for i in [.7, .7])
+
+
+    # Get all field keys and timestamps
+    field_key, field_ts, field_nframes, field_fps = ((experiment.Scan() * meso.ScanInfo() *
+                                                      meso.ScanInfo.Field().proj()).proj('nframes', 'fps', 'scan_ts',
+                                                                                         scan_session='session')
+                                                     & key & 'field < 10').fetch('KEY', 'scan_ts', 'nframes', 'fps',
+                                                                                 order_by='scan_ts')
+    assert len(field_key) > 0, 'Warning: No fields selected for'
+
+    initial_time = str(field_ts[0])
+    field_ts = [(ts - field_ts[0]).seconds for ts in field_ts]  # in hours
+    field_duration = field_nframes / field_fps
+
+    with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
+        with sns.axes_style(style="ticks", rc={"axes.facecolor": (0, 0, 0, 0)}):
+            fig, ax = plt.subplots(figsize=sz)
+            for fk, ft, fd in zip(field_key, field_ts, field_duration):
+                zs = (fastmeso.RegistrationOverTime() & key & fk).fetch('reg_z', order_by='frame_id')
+                ts = ft + np.linspace(0, 1, len(zs) + 2)[1:-1] * fd
+                ax.plot(ts / 3600, zs)
+            ax.set_title('Registered zs for {animal_id}-{scan_session} starting {t}'.format(t=initial_time, **key))
+            ax.set_ylabel('Registered zs')
+            ax.set_xlabel('Hours')
+
+            # Plot formatting
+            ax.invert_yaxis()
+            ax.yaxis.set_major_locator(ticker.MultipleLocator(10))
+            ax.grid(linestyle='--', alpha=0.8)
+
+    return savefig(fig)

@@ -6,14 +6,20 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SERVER_NAME='localhost'
+    SERVER_NAME=  os.environ.get('HOST') or 'localhost'
 
 class ProductionConfig(Config):
     DEBUG = False # this won't work with flask script, use Flask.run() instead
     SERVER_NAME='shikigami.ad.bcm.edu'
 
+class Dragon(Config):
+    DEBUG = True # this won't work with flask script, use Flask.run() instead
+    SERVER_NAME='dragon.ad.bcm.edu'
+
+
 options = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
-    'default': DevelopmentConfig
+    'default': DevelopmentConfig,
+    'dragon': Dragon
 }

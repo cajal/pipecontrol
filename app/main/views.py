@@ -13,8 +13,7 @@ from flask_weasyprint import render_pdf, HTML, CSS
 
 from . import main, forms, tables
 from .. import schemata
-from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus
-
+from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus, fastmeso
 
 
 def escape_json(json_string):
@@ -423,12 +422,15 @@ def scanreport(animal_id, session, scan_idx):
         items.append({'field': 'ALL', 'somas': sum(num_somas), 'depth': '-'})
         stats_table = tables.StatsTable(items)
 
+        has_registration_over_time = bool(fastmeso.RegistrationOverTime()
+                                          & dict(scan_session=session, animal_id=animal_id))
         return render_template('scan_report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
                                craniotomy_notes=craniotomy_notes, session_notes=session_notes,
                                stats_table=stats_table, has_ori=has_ori, has_xsnr=has_xsnr, has_sta=has_sta,
                                has_staqual=has_staqual, has_staext=has_staext, image_keys=image_keys,
                                has_eye=has_eye, has_eyetrack=has_eyetrack, pxori_keys=pxori_keys,
-                               quality_keys=quality_keys, oracletime_keys=oracletime_keys)
+                               quality_keys=quality_keys, oracletime_keys=oracletime_keys,
+                               has_registration_over_time=has_registration_over_time)
     else:
         flash('{} is not in reso or meso'.format(key))
         return redirect(url_for('main.report'))

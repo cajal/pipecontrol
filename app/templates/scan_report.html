@@ -37,7 +37,7 @@
     {% endif %}
 
 
-    <h2> Cell Orientation <h2/>
+    <h2> Cell Orientation </h2>
     {% if has_ori %}
         <h3>Distribution of orientation selectivity</h3>
         <img src="{{ url_for('images.cellori', animal_id=animal_id, session=session,
@@ -71,6 +71,15 @@
     {% else %}
        Populate receptive field locations in <code>stimline.tune.STAExtent()</code> and
        check whether any SNR exceeds 5 (cutoff)
+    {% endif %}
+
+    <h2>Registration over time</h2>
+    {{ has_registration_over_time }}
+    {% if has_registration_over_time %}
+        <img src="{{ url_for('images.registration_over_time', animal_id=animal_id,
+                                session=session, size='medium') }}">
+    {% else %}
+       Populate registrations in <code>fastmeso.RegistrationOverTime()</code>.
     {% endif %}
 
 

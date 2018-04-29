@@ -23,3 +23,15 @@ services:
     environment:
       - PIPELINE_CONFIG=development
     env_file: .env
+
+  dragon:
+    build: .
+    ports:
+      - "80:5000"
+    volumes:
+      - .:/server/pipecontrol
+      - ./tmp/:/tmp
+      - /mnt:/mnt
+    environment:
+      - PIPELINE_CONFIG=dragon
+    env_file: .env

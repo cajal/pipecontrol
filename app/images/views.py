@@ -791,7 +791,7 @@ def preferred_per_stack(animal_id, size):
     key = dict(animal_id=animal_id, **SETTINGS)
     df1 = pd.DataFrame((stack.StackSet.Match() & key).fetch())
     df1['session'] = df1['scan_session']
-    df2 = pd.DataFrame((tune.Ori.Cell() & key & 'selectivity>=0.4 and r2>=0.007').fetch())
+    df2 = pd.DataFrame((tune.Ori.Cell() & key & 'selectivity>=0.4 and r2>=0.004').fetch())
     df = df1.merge(df2)
     idx = df.groupby(['animal_id', 'stack_session', 'stack_idx', 'munit_id', 'ori_type', 'stimulus_type'])[
         'selectivity'].idxmax()

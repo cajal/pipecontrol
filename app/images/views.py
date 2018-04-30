@@ -527,7 +527,7 @@ def osi_vs_r2(animal_id, session, scan_idx, size):
         ax.spines['bottom'].set_linewidth(1)
         ax.spines['left'].set_linewidth(1)
         ax.tick_params(axis='both', length=3, width=1)
-        g.fig.subplots_adjust(left=.15)
+        g.fig.subplots_adjust(left=.2, bottom=.15)
     return savefig(g.fig)
 
 
@@ -575,7 +575,7 @@ def dsi_vs_r2(animal_id, session, scan_idx, size):
         ax.spines['bottom'].set_linewidth(1)
         ax.spines['left'].set_linewidth(1)
         ax.tick_params(axis='both', length=3, width=1)
-        g.fig.subplots_adjust(left=.15)
+        g.fig.subplots_adjust(left=.2, bottom=.15)
     return savefig(g.fig)
 
 
@@ -662,7 +662,7 @@ def kuiper(animal_id, size):
             g.fig.suptitle("circular uniformity")
             g.despine(trim=True)
             g.add_legend()
-            g.fig.subplots_adjust(left=.1)
+            g.fig.subplots_adjust(left=.15)
             g.set_xlabels('kuiper statistic')
             g.set_ylabels('widest gap')
 
@@ -744,13 +744,16 @@ def mouse_per_stack_oracle(animal_id, size):
 def osi_dsi_per_stack(animal_id, size):
 
     key = dict(animal_id=animal_id, **SETTINGS)
-    df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
+    df1 = pd.DataFrame((stack.StackSet.Match() & key).fetch())
+    df1['session'] = df1['scan_session']
     df2 = pd.DataFrame((tune.Ori.Cell() & key).fetch())
     df = df1.merge(df2).groupby(
         ['animal_id', 'stack_session', 'stack_idx',
          'munit_id', 'ori_type', 'stimulus_type']).agg(dict(selectivity=np.max)).reset_index()
     df['stack'] = ['{}-{}-{}'.format(ai, s, sa) for ai, s, sa in
                    zip(df.animal_id, df.stack_session, df.stack_idx)]
+
+    df['stimulus_type'] = [s.split('.')[1] for s in df['stimulus_type']]
 
     sz = tuple(i * size_factor[size] for i in [1, .7])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
@@ -761,9 +764,9 @@ def osi_dsi_per_stack(animal_id, size):
                               col_order=['ori', 'dir'], margin_titles=True, legend_out=True)
             #
             # # Draw the densities in a few steps
-            g.map(sns.kdeplot, "selectivity", shade=True, alpha=.5, lw=1.5, cumulative=True)
-            g.add_legend(title="Stimulus Type")
-            g.map(sns.kdeplot, "selectivity", color="w", lw=2, cumulative=True)
+            g.map(sns.kdeplot, "selectivity", shade=False, alpha=.5, lw=3, cumulative=True)
+            g.add_legend(title="Stimulus Type", prop={'size': 8})
+            # g.map(sns.kdeplot, "selectivity", color="w", lw=2, cumulative=True)
 
             def cosmetics(x, **kwargs):
                 high = np.percentile(x, 99)
@@ -776,7 +779,7 @@ def osi_dsi_per_stack(animal_id, size):
             g.fig.set_size_inches(sz)
             g.set_ylabels("cumulative distribution")
             g.fig.suptitle("Neuron Selectivities")
-            g.fig.subplots_adjust(left=.1, right=.75)
+            g.fig.subplots_adjust(left=.1, right=.8, top=.85)
             g.despine(trim=True)
 
     return savefig(g.fig)
@@ -786,14 +789,16 @@ def osi_dsi_per_stack(animal_id, size):
 def preferred_per_stack(animal_id, size):
 
     key = dict(animal_id=animal_id, **SETTINGS)
-    df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
-    df2 = pd.DataFrame((tune.Ori.Cell() & key).fetch())
+    df1 = pd.DataFrame((stack.StackSet.Match() & key).fetch())
+    df1['session'] = df1['scan_session']
+    df2 = pd.DataFrame((tune.Ori.Cell() & key & 'selectivity>=0.4 and r2>=0.007').fetch())
     df = df1.merge(df2)
     idx = df.groupby(['animal_id', 'stack_session', 'stack_idx', 'munit_id', 'ori_type', 'stimulus_type'])[
         'selectivity'].idxmax()
-    df = df.ix[idx]
+    df = df.iloc[idx]
     df['stack'] = ['{}-{}-{}'.format(ai, s, sa) for ai, s, sa in
                    zip(df.animal_id, df.stack_session, df.stack_idx)]
+    df['stimulus_type'] = [s.split('.')[1] for s in df['stimulus_type']]
 
     sz = tuple(i * size_factor[size] for i in [1, .7])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=1.3):
@@ -804,9 +809,8 @@ def preferred_per_stack(animal_id, size):
                               col_order=['ori', 'dir'], margin_titles=True, legend_out=True)
             #
             # # Draw the densities in a few steps
-            g.map(sns.kdeplot, "angle", shade=True, alpha=.5, lw=1.5)
-            g.add_legend(title="Stimulus Type")
-            g.map(sns.kdeplot, "angle", color="w", lw=2)
+            g.map(sns.kdeplot, "angle", shade=False, alpha=.5, lw=3)
+            g.add_legend(title="Stimulus Type", prop={'size': 8})
 
             def cosmetics(x, **kwargs):
                 ax = plt.gca()
@@ -820,8 +824,8 @@ def preferred_per_stack(animal_id, size):
             g.fig.set_size_inches(sz)
             g.set_ylabels("distribution")
             g.set_xlabels('preferred')
-            g.fig.suptitle("preferred orienation/direction")
-            g.fig.subplots_adjust(left=.1, right=.75)
+            g.fig.suptitle("preferred orientation/direction")
+            g.fig.subplots_adjust(left=.1, right=.8, top=.85)
             g.despine(trim=True)
 
     return savefig(g.fig)
@@ -831,7 +835,9 @@ def preferred_per_stack(animal_id, size):
 def rf_snr_stack_stat(animal_id, size):
 
     key = dict(animal_id=animal_id, **SETTINGS)
-    df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
+    df1 = pd.DataFrame((stack.StackSet.Match() & key).fetch())
+    df1['session'] = df1['scan_session']
+
     df2 = pd.DataFrame((tune.STAQual() & key).fetch())
     df = df1.merge(df2).groupby(
         ['animal_id', 'stack_session', 'stack_idx',
@@ -845,7 +851,7 @@ def rf_snr_stack_stat(animal_id, size):
             # Initialize the FacetGrid object
             pal = ['steelblue', 'orange', 'slategray']
             g = sns.FacetGrid(df, row="stack", hue='stimulus_type', palette=pal,
-                              margin_titles=True, legend_out=True)
+                              margin_titles=True, legend_out=False)
             #
             # # Draw the densities in a few steps
             g.map(sns.kdeplot, "snr", shade=False, alpha=1, lw=2, cumulative=True)
@@ -933,11 +939,11 @@ def scan_hours(animal_id, size):
 
     return savefig(g.fig)
 
-@images.route("/registration_over_time-<int:animal_id>-<int:session>_<size>.png")
-def registration_over_time(animal_id, session, size):
+@images.route("/registration_over_time-<int:animal_id>-<int:session>-<int:scan_idx>_<size>.png")
+def registration_over_time(animal_id, session, scan_idx, size):
 
     import matplotlib.ticker as ticker
-    session_key = dict(animal_id=animal_id, scan_session=session, **SETTINGS)
+    session_key = dict(animal_id=animal_id, scan_session=session, scan_idx=scan_idx, **SETTINGS)
     sz = tuple(i * size_factor[size] for i in [.7, .7])
 
     stack_sessions = (dj.U('stack_session') & (stack.StackSet() & session_key)).fetch("KEY")
@@ -960,16 +966,16 @@ def registration_over_time(animal_id, session, size):
         assert len(field_key) > 0, 'Warning: No fields selected for'
 
         initial_time = str(field_ts[0])
-        field_ts = [(ts - field_ts[0]).seconds for ts in field_ts]  # in hours
+        field_ts = [(ts - field_ts[0]).seconds for ts in field_ts]
         field_duration = field_nframes / field_fps
 
         for fk, ft, fd in zip(field_key, field_ts, field_duration):
             zs = (fastmeso.RegistrationOverTime() & key & fk).fetch('reg_z', order_by='frame_id')
             ts = ft + np.linspace(0, 1, len(zs) + 2)[1:-1] * fd
-            ax.plot(ts / 3600, zs)
+            ax.plot(ts / 60, zs, 'o-', ms=4)
         ax.set_title('Registered zs for {animal_id}-{scan_session} starting {t}'.format(t=initial_time, **key))
         ax.set_ylabel('Registered zs')
-        ax.set_xlabel('Time [h]')
+        ax.set_xlabel('Time [min]')
 
         # Plot formatting
         ax.invert_yaxis()

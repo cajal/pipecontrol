@@ -471,16 +471,6 @@ def mousereport(animal_id):
         selection=['nfields', 'fps', 'scan_idx', 'session', 'nframes', 'nchannels', 'usecs_per_line']
     )
 
-    # --- orienation statistics without stack matching
-    ori_stats = [
-        dj.U('animal_id', 'stimulus_type').aggr(tune.Ori.Cell() & key & dict(ori_type='ori'),
-                                                                       ori_type="'orientation'",
-                                                                       percent_above='100*AVG(r2>0.01)'),
-        dj.U('animal_id', 'stimulus_type').aggr(tune.Ori.Cell() & key & dict(ori_type='dir'),
-                                                                       ori_type="'direction'",
-                                                                       percent_above='100*AVG(r2>0.01)')]
-    ori_stats = tables.create_datajoint_table(ori_stats)
-
     # --- orientation statistics per stack
     df1 = pd.DataFrame((stack.StackSet.Match() & key).proj('munit_id', session='scan_session').fetch())
     df2 = pd.DataFrame((tune.Ori.Cell() & key).fetch())
@@ -489,10 +479,6 @@ def mousereport(animal_id):
     df3 = df.ix[idx]
     gr = df3.groupby(['animal_id', 'stack_session', 'stimulus_type','ori_type'])
     df3 = gr.agg(dict(r2=lambda x: np.mean(x > 0.01)*100)).reset_index().rename(columns={'r2':'% cells above'})
-    if len(df3) > 0:
-        ori_stacks = tables.create_pandas_table(df3)
-    else:
-        ori_stacks = None
 
     stats = tables.create_datajoint_table([experiment.Scan().aggr(
         pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() * pipe.MaskClassification.Type() & auto & dict(type='soma'),
@@ -511,7 +497,6 @@ def mousereport(animal_id):
     return render_template('mouse_report.html', animal_id=animal_id, scans=scans,
                            scaninfo=scaninfo, stats=stats, scanh=scanh,
                            stim_time=stim_time,
-                           ori_stats=ori_stats, ori_stacks=ori_stacks,
                            scan_movie_oracle=scan_movie_oracle, mouse_per_stack_oracle=mouse_per_stack_oracle,
                            cell_matches=cell_matches, cell_counts=cell_counts,
                            stack_ori=stack_ori, stack_rf=stack_rf, kuiper=kuiper)

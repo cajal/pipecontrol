@@ -100,16 +100,4 @@
             and <code>pipeline.stack.StackSet()</code></div>
     {% endif %}
 
-    <h2> Orientation Selectivity Statistics </h2>
-    <h3>Per Scan</h3>
-    Percent cells above 0.01 R<sup>2</sup>
-    {{ ori_stats | safe }}
-    <h3>Per Stack</h3>
-    Percent cells above 0.01 R<sup>2</sup> among different scans for maximal OSI/DSI.
-    {% if ori_stacks %}
-        {{ ori_stacks | safe }}
-    {% else %}
-        <div>No orienation/direction stats or stack found. Populate <code>stimline.tune.Ori()</code>
-            and <code>pipeline.stack.StackSet()</code></div>
-    {% endif %}
 {% endblock %}

@@ -395,7 +395,7 @@ def scanreport(animal_id, session, scan_idx):
         quality_keys = (pipe.Quality.Contrast() & key).fetch('KEY', order_by='field')
         oracletime_keys = (tune.MovieOracleTimeCourse() & key).fetch('KEY', order_by='field')
         has_ori = bool(tune.Ori() & key)
-        has_xsnr = bool(xcorr.XSNR() & key)
+        has_xsnr = bool(xcorr.XNR() & key)
         has_sta = bool(tune.STA() & key)
         has_staqual = bool(tune.STAQual() & key)
         has_staext = bool(tune.STAExtent() & key)

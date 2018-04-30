@@ -74,7 +74,6 @@
     {% endif %}
 
     <h2>Registration over time</h2>
-    {{ has_registration_over_time }}
     {% if has_registration_over_time %}
         <img src="{{ url_for('images.registration_over_time', animal_id=animal_id,
                                 session=session, scan_idx=scan_idx, size='medium') }}">

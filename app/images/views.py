@@ -306,22 +306,27 @@ def rf_snr(animal_id, session, scan_idx, size):
 def signal_xcorr(animal_id, session, scan_idx, size):
 
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, **SETTINGS)
-    v = (xcorr.XSNR() & key).fetch1('xsnr')
+    subsets, rr = (xcorr.XNR() & key).fetch('subset', 'xnr')
 
     sz = tuple(i * size_factor[size] for i in [.9, .5])
     with sns.plotting_context('talk' if size == 'huge' else 'paper', font_scale=2):
         with sns.axes_style('ticks'):
             fig, ax = plt.subplots(figsize=sz)
-            g = sns.distplot(v,
-                             hist_kws=dict(cumulative=True),
-                             kde_kws=dict(cumulative=True), ax=ax)
-        sns.despine(ax=ax, trim=True)
-        ax.set_xlabel(r'$\frac{\sigma^2_{inter trial}}{\sigma^2_{inner trial} - \sigma^2_{inter trial}}$')
-        ax.set_ylabel('Cumulative Distribution')
+            for r, lab in zip(rr, subsets):
+                ax.hist(r[~np.isnan(r)], np.r_[0:0.5:1000j], cumulative=-1,
+                        normed=True, histtype='step', label=lab, lw=3)
+        ax.set_ylabel('# cells')
+        ax.set_xlim([0, .5])
+        ax.legend()
+        ax.set_title('{animal_id}-{session}-{scan_idx}'.format(**key))
+        ax.set_xlabel('Total signal correlation')
+        ax.grid(True)
+        sns.despine(trim=True)
+
         ax.spines['bottom'].set_linewidth(1)
         ax.spines['left'].set_linewidth(1)
         ax.tick_params(axis='both', length=3, width=1)
-        fig.tight_layout()
+        fig.subplots_adjust(bottom=.2)
     return savefig(fig)
 
 

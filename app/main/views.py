@@ -47,7 +47,8 @@ def autoprocessing():
     form = forms.AutoProcessing(request.form)
     if request.method == 'POST' and form.validate():
         tuple_ = {'animal_id': form['animal_id'].data, 'session': form['session'].data,
-                  'scan_idx': form['scan_idx'].data, 'priority': form['priority'].data}
+                  'scan_idx': form['scan_idx'].data, 'priority': form['priority'].data,
+                  'autosegment': form['autosegment'].data}
         if not experiment.AutoProcessing().proj() & tuple_:
             experiment.AutoProcessing().insert1(tuple_)
         flash('{} inserted in AutoProcessing'.format(tuple_))

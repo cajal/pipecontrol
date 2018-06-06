@@ -1,4 +1,4 @@
-from wtforms.validators import StopValidation, ValidationError
+from wtforms.validators import ValidationError
 
 from ..schemata import experiment
 import wtforms
@@ -20,6 +20,7 @@ class AutoProcessing(wtforms.Form):
     scan_idx = wtforms.IntegerField('Scan Idx', [validators.InputRequired()])
     priority = wtforms.IntegerField('Priority [0-100]', [validators.NumberRange(-128, 127)],
                                     default=50)
+    autosegment = wtforms.BooleanField('Segment somas in channel one?')
 
 
 class QualityForm(wtforms.Form):

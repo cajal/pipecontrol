@@ -44,7 +44,6 @@ def savefig(fig, **kwargs):
 def oracle_map(animal_id, session, scan_idx, field, size):
 
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, field=field, **SETTINGS)
-    print('Oracle', key)
 
     img = (tune.OracleMap() & key).fetch1('oracle_map')
 

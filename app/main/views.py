@@ -327,12 +327,12 @@ def relation(schema, table, subtable):
     root_id = add_node(name_lookup(root_name), node_attrs[dj.erd._get_tier(root_name)])
     for node_name, _ in root_dependencies.in_edges(root_name):
         if dj.erd._get_tier(node_name) is dj.erd._AliasNode:  # renamed attribute
-            node_name = root_dependencies.in_edges(node_name)[0][0]
+            node_name = list(root_dependencies.in_edges(node_name))[0][0]
         node_id = add_node(name_lookup(node_name), node_attrs[dj.erd._get_tier(node_name)])
         dot.edge(node_id, root_id)
     for _, node_name in root_dependencies.out_edges(root_name):
         if dj.erd._get_tier(node_name) is dj.erd._AliasNode:  # renamed attribute
-            node_name = root_dependencies.out_edges(node_name)[0][1]
+            node_name = list(root_dependencies.out_edges(node_name))[0][1]
         node_id = add_node(name_lookup(node_name), node_attrs[dj.erd._get_tier(node_name)])
         dot.edge(root_id, node_id)
 

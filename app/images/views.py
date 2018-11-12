@@ -18,7 +18,7 @@ import datajoint as dj
 from ..schemata import stimulus
 import pandas as pd
 
-SETTINGS = dict(spike_method=5, segmentation_method=3)
+SETTINGS = dict(spike_method=5, segmentation_method=6)
 
 size_factor = dict(
     thumb=2, small=4, report=4, smedium=6.5, medium=8, marge=10, large=16, huge=32

@@ -95,7 +95,7 @@ def segmentation():
         module = modules[request.form['module_name']]
 
         keys = [json.loads(k) for k in request.form.getlist('compartment') if k]
-        keys = [{**key, 'segmentation_method': 3} for key in keys]
+        keys = [{**key, 'segmentation_method': 6} for key in keys]
         module.SegmentationTask().insert(keys, ignore_extra_fields=True)
         flash('{} key(s) inserted in SegmentationTask'.format(len(keys)))
 
@@ -416,7 +416,7 @@ def scanreport(animal_id, session, scan_idx):
         craniotomy_notes, session_notes = craniotomy_notes.strip(), session_notes.strip()
 
         somas = pipe.MaskClassification.Type() & {'type': 'soma'}
-        scan_somas = pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() & {**key, 'segmentation_method': 3} & somas
+        scan_somas = pipe.ScanSet.Unit() * pipe.ScanSet.UnitInfo() & {**key, 'segmentation_method': 6} & somas
         somas_per_field = pipe.ScanSet().aggr(scan_somas, avg_z='ROUND(AVG(um_z))', num_somas='count(*)')
         fields, num_somas, depths = somas_per_field.fetch('field', 'num_somas', 'avg_z')
         items = [{'field': f, 'somas': s, 'depth': z} for f, s, z in zip(fields, num_somas, depths)]

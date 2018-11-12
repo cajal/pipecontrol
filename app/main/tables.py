@@ -137,7 +137,7 @@ class SummaryTable(flask_table.Table):
     average = flask_table.LinkCol('Average Image', 'main.figure', url_kwargs=kwargs,
                                   url_kwargs_extra={'which': 'average'})
     traces = flask_table.LinkCol('Spike Traces', 'main.traces', url_kwargs=kwargs,
-                                 url_kwargs_extra={'channel': 1, 'segmentation_method': 3,
+                                 url_kwargs_extra={'channel': 1, 'segmentation_method': 6,
                                                    'spike_method': 5})
 
 def create_datajoint_table(rels, name='DataJoint Table', selection=None,

@@ -1,7 +1,7 @@
 import sys
 
 from ._utils import fill_nans
-from ..schemata import tune, xcorr, stack, fastmeso
+from ..schemata import tune, xcorr, stack
 from io import BytesIO
 from . import images
 import numpy as np
@@ -974,7 +974,7 @@ def registration_over_time(animal_id, session, scan_idx, size):
         field_duration = field_nframes / field_fps
 
         for fk, ft, fd in zip(field_key, field_ts, field_duration):
-            zs = (fastmeso.RegistrationOverTime() & key & fk).fetch('reg_z', order_by='frame_id')
+            zs = (stack.RegistrationOverTime.Affine() & key & fk).fetch('reg_z', order_by='frame_num')
             ts = ft + np.linspace(0, 1, len(zs) + 2)[1:-1] * fd
             ax.plot(ts / 60, zs, 'o-', ms=4)
         ax.set_title('Registered zs for {animal_id}-{scan_session} starting {t}'.format(t=initial_time, **key))

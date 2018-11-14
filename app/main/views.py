@@ -13,7 +13,7 @@ from flask_weasyprint import render_pdf, HTML, CSS
 
 from . import main, forms, tables
 from .. import schemata
-from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus, fastmeso
+from ..schemata import experiment, shared, reso, meso, stack, pupil, treadmill, tune, xcorr, mice, stimulus
 
 
 def escape_json(json_string):
@@ -423,8 +423,8 @@ def scanreport(animal_id, session, scan_idx):
         items.append({'field': 'ALL', 'somas': sum(num_somas), 'depth': '-'})
         stats_table = tables.StatsTable(items)
 
-        has_registration_over_time = bool(fastmeso.RegistrationOverTime()
-                                          & dict(scan_session=session, animal_id=animal_id))
+        has_registration_over_time = bool(stack.RegistrationOverTime() & {'animal_id': animal_id,
+                                                                          'scan_session': session})
         return render_template('scan_report.html', animal_id=animal_id, session=session, scan_idx=scan_idx,
                                craniotomy_notes=craniotomy_notes, session_notes=session_notes,
                                stats_table=stats_table, has_ori=has_ori, has_xsnr=has_xsnr, has_sta=has_sta,

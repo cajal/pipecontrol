@@ -57,7 +57,6 @@ class StackCorrectionTable(flask_table.Table):
     animal_id = flask_table.Col('Animal Id')
     session = flask_table.Col('Session')
     stack_idx = flask_table.Col('Stack Idx')
-    pipe_version = flask_table.Col('Pipe Version')
 
     channel = SelectCol('Channel')
 

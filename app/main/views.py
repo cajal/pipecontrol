@@ -312,7 +312,7 @@ def relation(schema, table, subtable):
 
     def name_lookup(full_name):
         """ Look for a table's class name given its full name. """
-        pretty_name = dj.base_relation.lookup_class_name(full_name, schemata.__dict__)
+        pretty_name = dj.table.lookup_class_name(full_name, schemata.__dict__)
         return pretty_name or full_name
 
     root_rel = getattr(getattr(schemata, schema), table)

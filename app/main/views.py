@@ -1,5 +1,7 @@
 from collections import OrderedDict
 from inspect import isclass
+from slacker import Slacker
+import datetime
 import pandas as pd
 import datajoint as dj
 import uuid
@@ -517,3 +519,112 @@ def mousereport_pdf(animal_id):
     stylesheets = [CSS(url_for('static', filename='styles.css')),
                    CSS(url_for('static', filename='datajoint.css'))]
     return render_pdf(HTML(string=html), stylesheets=stylesheets)
+
+
+@main.route('/surgery', methods=['GET', 'POST'])
+def surgery():
+    djtable = dj.create_virtual_module("csmith_testing", "csmith_testing")
+    form = forms.SurgeryForm(request.form)
+    if request.method == 'POST' and form.validate():
+        tuple_ = {'animal_id': form['animal_id'].data, 'date': str(form['date'].data),
+                  'username': form['user'].data, 'surgery_outcome': form['outcome'].data,
+                  'surgery_quality': form['surgery_quality'].data, 'surgery_type': form['surgery_type'].data,
+                  'weight': form['weight'].data, 'ketoprofen': form['ketoprofen'].data,
+                  'notes': form['notes'].data}
+        status_tuple_ = {'animal_id': tuple_['animal_id'], 'date': tuple_['date']}
+        if tuple_['ketoprofen'] == 0:
+            tuple_.pop('ketoprofen')
+        if tuple_['weight'] == 0:
+            tuple_.pop('weight')
+        if not djtable.Surgery().proj() & tuple_:
+            try:
+                djtable.Surgery().insert1(tuple_)
+                djtable.SurgeryStatus.insert1(status_tuple_)
+                flash('Inserted record for animal {}'.format(tuple_['animal_id']))
+            except Exception as ex:
+                ex_message = "An exception of type {} occurred. More information:\n\n{}".format(type(ex).__name__,
+                                                                                                ex.args)
+                flash(ex_message)
+        else:
+            flash('Record already exists.')
+    return render_template('surgery.html', form=form)
+
+
+@main.route('/surgery/status', methods=['GET', 'POST'])
+def surgery_status():
+    djtable = dj.create_virtual_module("csmith_testing", "csmith_testing")
+    form = forms.SurgeryStatusForm(request.form)
+    surgery_data = (djtable.Surgery & {'surgery_outcome': 'Survival'}).fetch(as_dict=True)
+    newest_status = []
+    for entry in surgery_data:
+        status_key = dict((k,entry[k]) for k in ('animal_id','date') if k in entry)
+        if len(djtable.SurgeryStatus & status_key) > 0:
+            if (datetime.date.today() - entry['date']).days < 4:
+                newest_status.append((djtable.SurgeryStatus & status_key).fetch(order_by="timestamp DESC")[0])
+    table = tables.SurgeryStatusTable(newest_status)
+    return render_template('surgery_status.html', form=form, table=table)
+
+
+# Unfortunately bool("False") returns True, so a comparison must be made to pass a bool value
+# in the return render_template()
+@main.route('/surgery/update/<animal_id>/<date>', methods=['GET', 'POST'])
+def surgery_update(animal_id, date):
+    key = {'animal_id': animal_id, 'date': date}
+    djtable = dj.create_virtual_module('csmith_testing', 'csmith_testing')
+    form = forms.SurgeryEditStatusForm(request.form)
+    if request.method == 'POST':
+        tuple_ = {'animal_id': form['animal'].data, 'date': str(form['date_field'].data),
+                  'day_one': int(form['dayone_check'].data), 'day_two': int(form['daytwo_check'].data),
+                  'day_three': int(form['daythree_check'].data),
+                  'euthanized': int(form['euthanized_check'].data)}
+        try:
+            djtable.SurgeryStatus.insert1(tuple_)
+            flash("Surgery status for animal {} on date {} updated.".format(animal_id, date, tuple_['day_one']))
+        except Exception as ex:
+            ex_message = "An exception of type {} occurred. More information:\n\n{}".format(type(ex).__name__,
+                                                                                            ex.args)
+            flash(ex_message)
+            flash(tuple_)
+        return redirect(url_for('main.surgery_status'))
+    if len(djtable.SurgeryStatus & key) > 0:
+
+        data = (djtable.SurgeryStatus & key).fetch(order_by='timestamp DESC')[0]
+        return render_template('surgery_edit_status.html', form=form, animal_id=data['animal_id'],
+                               date=data['date'], day_one=bool(data['day_one']), day_two=bool(data['day_two']),
+                               day_three=bool(data['day_three']), euthanized=bool(data['euthanized']))
+    else:
+        return render_template('404.html')
+
+
+@main.route('/api/v1/surgery/notification', methods=['GET'])
+def surgery_notification():
+    slack_notification_channel = "#slack_api_testing"
+    slacktable = dj.create_virtual_module('pipeline_notification', 'pipeline_notification')
+    num_to_word = {1: 'one', 2: 'two', 3: 'three'}
+    domain, api_key = slacktable.SlackConnection.fetch1('domain', 'api_key')
+    slack = Slacker(api_key, timeout=60)
+    djtable = dj.create_virtual_module('csmith_testing', 'csmith_testing')
+    if len(djtable.Surgery - djtable.SurgeryStatus) > 0:
+        missing_data = (djtable.Surgery - djtable.SurgeryStatus).proj().fetch()
+        for entry in missing_data:
+            djtable.SurgeryStatus.insert1(entry)
+    surgery_data = (djtable.Surgery & {'surgery_outcome': 'Survival'}).fetch()
+    for entry in surgery_data:
+        if 0 < (datetime.date.today() - entry['date']).days < 4:
+            status = (djtable.SurgeryStatus & entry).fetch(order_by="timestamp DESC")[0]
+            day_key = "day_" + num_to_word[(datetime.date.today() - entry['date']).days]
+            edit_url = "<http://localhost/surgery/update/{}/{}|Update Status Here>".format(entry['animal_id'],
+                                                                                           entry['date'])
+            if (status['euthanized'] == 0 and status[day_key] == 0):
+                ch_message = "Reminder: {} needs to check animal {} for {} surgery on {}. {}".format(entry['username'],
+                                                                                                     entry['animal_id'],
+                                                                                                     entry['surgery_type'],
+                                                                                                     entry['date'],
+                                                                                                     edit_url)
+                slack.chat.post_message(slack_notification_channel, ch_message)
+                if len(slacktable.SlackUser & entry) > 0:
+                    slackname = (slacktable.SlackUser & entry).fetch('slack_user')
+                    pm_message = "Don't forget to check on animal {} today! {}".format(entry['animal_id'],
+                                                                                       edit_url)
+                    slack.chat.post_message("@" + slackname, pm_message, as_user=True)
+    return '', 204

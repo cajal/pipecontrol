@@ -94,6 +94,21 @@ class JobTable(flask_table.Table):
     delete = CheckBoxCol('Delete')
 
 
+class SurgeryStatusTable(flask_table.Table):
+    classes = ['Relation']
+    animal_id = flask_table.Col('Animal ID')
+    date = flask_table.DateCol('Surgery Date')
+    timestamp = flask_table.DatetimeCol('Timestamp')
+    day_one = flask_table.Col('Day 1 Check')
+    day_two = flask_table.Col('Day 2 Check')
+    day_three = flask_table.Col('Day 3 Check')
+    euthanized = flask_table.Col('Euthanized')
+
+    kwargs = {'animal_id': 'animal_id', 'date': 'date'}
+    link = flask_table.LinkCol('Edit', 'main.surgery_update', url_kwargs=kwargs)
+
+
+
 class CheckmarkTable(flask_table.Table):
     classes = ['table']
     relation = flask_table.Col('Relation')

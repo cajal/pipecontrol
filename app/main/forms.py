@@ -1,4 +1,8 @@
 from wtforms.validators import ValidationError
+from wtforms.fields.html5 import DateField
+from wtforms.widgets import TextArea
+from datetime import datetime
+import datajoint as dj
 
 from ..schemata import experiment
 import wtforms
@@ -73,3 +77,41 @@ class TrackingForm(wtforms.Form):
                                         [validators.InputRequired()], default=0.1)
     gaussian_blur = wtforms.DecimalField('Gaussian blurring filter size',
                                          [validators.InputRequired()], default=5)
+
+
+class SurgeryForm(wtforms.Form):
+    fexperiment = dj.create_virtual_module('csmith_testing', 'csmith_testing')
+    usernames = [(p, p) for p in experiment.Person().fetch('username')]
+    usernames.insert(0, (None, ""))
+    surgery_choices = [(p,p) for p in fexperiment.SurgeryTypes.fetch('surgery_type')]
+    surgery_choices.insert(0, (None, ""))
+    outcome_choices = [(p,p) for p in fexperiment.SurgeryOutcomes.fetch('surgery_outcome')]
+    outcome_choices.insert(0, (None, ""))
+    quality_choices = [(p,p) for p in fexperiment.SurgeryQualities.fetch('surgery_quality')]
+    quality_choices.insert(0, (None, ""))
+    animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired()])
+    date = DateField('Date', validators=[validators.InputRequired()], default=datetime.today())
+    user = wtforms.SelectField('User', [validators.InputRequired()], choices=usernames)
+    outcome = wtforms.SelectField('Outcome', [validators.InputRequired()], choices=outcome_choices)
+    surgery_quality = wtforms.SelectField('Surgery Quality', [validators.InputRequired()], choices=quality_choices)
+    surgery_type = wtforms.SelectField('Surgery Type', [validators.InputRequired()], choices=surgery_choices)
+    weight = wtforms.DecimalField('Weight (g)', [validators.NumberRange(0, 200), validators.InputRequired()])
+    ketoprofen = wtforms.DecimalField('Ketoprofen (mL)', [validators.NumberRange(0,10), validators.InputRequired()])
+    notes = wtforms.StringField('Notes', widget=TextArea())
+
+
+class SurgeryStatusForm(wtforms.Form):
+    fexperiment = dj.create_virtual_module('csmith_testing', 'csmith_testing')
+    choices = [("{} {}".format(p['animal_id'],p['date']),
+                "{} {}".format(p['animal_id'],p['date'])) for p in fexperiment.SurgeryStatus.fetch()]
+    checkme = wtforms.BooleanField("Hi")
+    animal_id = wtforms.SelectField('Animal Id', [validators.InputRequired()], choices=choices)
+
+
+class SurgeryEditStatusForm(wtforms.Form):
+    animal = wtforms.StringField('Animal Id', [validators.InputRequired()])
+    date_field = DateField('Date',  format='%Y-%m-%d')
+    dayone_check = wtforms.BooleanField("Day 1 Checkup")
+    daytwo_check = wtforms.BooleanField("Day 2 Checkup")
+    daythree_check = wtforms.BooleanField("Day 3 Checkup")
+    euthanized_check = wtforms.BooleanField("Euthanized?")

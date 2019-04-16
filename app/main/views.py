@@ -560,7 +560,7 @@ def surgery_status():
     for entry in surgery_data:
         status_key = dict((k,entry[k]) for k in ('animal_id','date') if k in entry)
         if len(fexperiment.SurgeryStatus & status_key) > 0:
-            if (datetime.date.today() - entry['date']).days < 4:
+            if (datetime.date.today() - entry['date']).days < 5:
                 newest_status.append((fexperiment.SurgeryStatus & status_key).fetch(order_by="timestamp DESC")[0])
     table = tables.SurgeryStatusTable(newest_status)
     return render_template('surgery_status.html', form=form, table=table)

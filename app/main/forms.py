@@ -3,7 +3,6 @@ from wtforms.fields.html5 import DateField
 from wtforms.widgets import TextArea
 from wtforms_components import TimeField
 from datetime import datetime
-import time
 import datajoint as dj
 
 from ..schemata import experiment
@@ -108,7 +107,6 @@ class SurgeryStatusForm(wtforms.Form):
     fexperiment = dj.create_virtual_module('csmith_testing', 'csmith_testing')
     choices = [("{} {}".format(p['animal_id'],p['date']),
                 "{} {}".format(p['animal_id'],p['date'])) for p in fexperiment.SurgeryStatus.fetch()]
-    checkme = wtforms.BooleanField("Hi")
     animal_id = wtforms.SelectField('Animal Id', [validators.InputRequired()], choices=choices)
 
 

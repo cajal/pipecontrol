@@ -45,7 +45,7 @@
 <script>
 function fillNotes() {
   if ("{{ notes }}" !== "None") {
-    document.getElementById('notes').innerHTML = {{ notes }}
+    document.getElementById('notes').innerHTML = "{{ notes }}"
   }
 }
 window.onload=fillNotes;

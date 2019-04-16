@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import mpld3
 import graphviz
 import json
+import http
 from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
 from flask_weasyprint import render_pdf, HTML, CSS
 
@@ -527,11 +528,11 @@ def surgery():
     form = forms.SurgeryForm(request.form)
     if request.method == 'POST' and form.validate():
         tuple_ = {'animal_id': form['animal_id'].data, 'date': str(form['date'].data),
-                  'username': form['user'].data, 'surgery_outcome': form['outcome'].data,
-                  'surgery_quality': form['surgery_quality'].data, 'surgery_type': form['surgery_type'].data,
-                  'weight': form['weight'].data, 'ketoprofen': form['ketoprofen'].data,
-                  'notes': form['notes'].data}
-        status_tuple_ = {'animal_id': tuple_['animal_id'], 'date': tuple_['date']}
+                  'time': str(form['time_input'].data), 'username': form['user'].data,
+                  'surgery_outcome': form['outcome'].data, 'surgery_quality': form['surgery_quality'].data,
+                  'surgery_type': form['surgery_type'].data, 'weight': form['weight'].data,
+                  'ketoprofen': form['ketoprofen'].data, 'notes': form['notes'].data}
+        status_tuple_ = {'animal_id': tuple_['animal_id'], 'date': tuple_['date'], 'checkup_notes': ''}
         if tuple_['ketoprofen'] == 0:
             tuple_.pop('ketoprofen')
         if tuple_['weight'] == 0:
@@ -565,8 +566,6 @@ def surgery_status():
     return render_template('surgery_status.html', form=form, table=table)
 
 
-# Unfortunately bool("False") returns True, so a comparison must be made to pass a bool value
-# in the return render_template()
 @main.route('/surgery/update/<animal_id>/<date>', methods=['GET', 'POST'])
 def surgery_update(animal_id, date):
     key = {'animal_id': animal_id, 'date': date}
@@ -576,7 +575,7 @@ def surgery_update(animal_id, date):
         tuple_ = {'animal_id': form['animal'].data, 'date': str(form['date_field'].data),
                   'day_one': int(form['dayone_check'].data), 'day_two': int(form['daytwo_check'].data),
                   'day_three': int(form['daythree_check'].data),
-                  'euthanized': int(form['euthanized_check'].data)}
+                  'euthanized': int(form['euthanized_check'].data), 'checkup_notes': form['notes'].data}
         try:
             djtable.SurgeryStatus.insert1(tuple_)
             flash("Surgery status for animal {} on date {} updated.".format(animal_id, date, tuple_['day_one']))
@@ -587,44 +586,50 @@ def surgery_update(animal_id, date):
             flash(tuple_)
         return redirect(url_for('main.surgery_status'))
     if len(djtable.SurgeryStatus & key) > 0:
-
         data = (djtable.SurgeryStatus & key).fetch(order_by='timestamp DESC')[0]
         return render_template('surgery_edit_status.html', form=form, animal_id=data['animal_id'],
                                date=data['date'], day_one=bool(data['day_one']), day_two=bool(data['day_two']),
-                               day_three=bool(data['day_three']), euthanized=bool(data['euthanized']))
+                               day_three=bool(data['day_three']), euthanized=bool(data['euthanized']),
+                               notes=data['checkup_notes'])
     else:
         return render_template('404.html')
 
 
 @main.route('/api/v1/surgery/notification', methods=['GET'])
 def surgery_notification():
+    djtable = dj.create_virtual_module('csmith_testing', 'csmith_testing')
+    num_to_word = {1: 'one', 2: 'two', 3: 'three'}
     slack_notification_channel = "#slack_api_testing"
     slacktable = dj.create_virtual_module('pipeline_notification', 'pipeline_notification')
-    num_to_word = {1: 'one', 2: 'two', 3: 'three'}
     domain, api_key = slacktable.SlackConnection.fetch1('domain', 'api_key')
     slack = Slacker(api_key, timeout=60)
-    djtable = dj.create_virtual_module('csmith_testing', 'csmith_testing')
     if len(djtable.Surgery - djtable.SurgeryStatus) > 0:
         missing_data = (djtable.Surgery - djtable.SurgeryStatus).proj().fetch()
         for entry in missing_data:
             djtable.SurgeryStatus.insert1(entry)
     surgery_data = (djtable.Surgery & {'surgery_outcome': 'Survival'}).fetch()
     for entry in surgery_data:
-        if 0 < (datetime.date.today() - entry['date']).days < 4:
+        if (datetime.date.today() - entry['date']).days < 4:
             status = (djtable.SurgeryStatus & entry).fetch(order_by="timestamp DESC")[0]
             day_key = "day_" + num_to_word[(datetime.date.today() - entry['date']).days]
-            edit_url = "<http://localhost/surgery/update/{}/{}|Update Status Here>".format(entry['animal_id'],
-                                                                                           entry['date'])
+
+            edit_url = "<{}|Update Status Here>".format(url_for('main.surgery_update',
+                                                                _external=True,
+                                                                animal_id=entry['animal_id'],
+                                                                date=entry['date'],
+                                                                as_user=True))
             if (status['euthanized'] == 0 and status[day_key] == 0):
-                ch_message = "Reminder: {} needs to check animal {} for {} surgery on {}. {}".format(entry['username'],
-                                                                                                     entry['animal_id'],
-                                                                                                     entry['surgery_type'],
-                                                                                                     entry['date'],
-                                                                                                     edit_url)
-                slack.chat.post_message(slack_notification_channel, ch_message)
+                ch_message = "@channel Reminder: {} needs to check animal {} for {} surgery on {}. {}".format(
+                                                                                                    entry['username'],
+                                                                                                    entry['animal_id'],
+                                                                                                    entry['surgery_type'],
+                                                                                                    entry['date'],
+                                                                                                    edit_url)
                 if len(slacktable.SlackUser & entry) > 0:
                     slackname = (slacktable.SlackUser & entry).fetch('slack_user')
+                    ch_message = "@" + slackname + " " + ch_message
                     pm_message = "Don't forget to check on animal {} today! {}".format(entry['animal_id'],
                                                                                        edit_url)
                     slack.chat.post_message("@" + slackname, pm_message, as_user=True)
-    return '', 204
+                slack.chat.post_message(slack_notification_channel, ch_message)
+    return '', http.HTTPStatus.NO_CONTENT # https://www.erol.si/2018/03/flask-return-204-no-content-response/

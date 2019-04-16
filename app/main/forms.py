@@ -1,7 +1,9 @@
 from wtforms.validators import ValidationError
 from wtforms.fields.html5 import DateField
 from wtforms.widgets import TextArea
+from wtforms_components import TimeField
 from datetime import datetime
+import time
 import datajoint as dj
 
 from ..schemata import experiment
@@ -83,14 +85,16 @@ class SurgeryForm(wtforms.Form):
     fexperiment = dj.create_virtual_module('csmith_testing', 'csmith_testing')
     usernames = [(p, p) for p in experiment.Person().fetch('username')]
     usernames.insert(0, (None, ""))
-    surgery_choices = [(p,p) for p in fexperiment.SurgeryTypes.fetch('surgery_type')]
+    surgery_choices = [(p,p) for p in fexperiment.SurgeryType.fetch('surgery_type')]
     surgery_choices.insert(0, (None, ""))
-    outcome_choices = [(p,p) for p in fexperiment.SurgeryOutcomes.fetch('surgery_outcome')]
+    outcome_choices = [(p,p) for p in fexperiment.SurgeryOutcome.fetch('surgery_outcome')]
     outcome_choices.insert(0, (None, ""))
-    quality_choices = [(p,p) for p in fexperiment.SurgeryQualities.fetch('surgery_quality')]
+    quality_choices = [(p[0],p) for p in ("0 - Failure", "1 - Poorly", "2 - Okay",
+                                               "3 - Fair", "4 - Good", "5 - Perfect")]
     quality_choices.insert(0, (None, ""))
     animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired()])
     date = DateField('Date', validators=[validators.InputRequired()], default=datetime.today())
+    time_input = TimeField('Time', validators=[validators.InputRequired()], default=datetime.strptime("12:00", "%H:%M"))
     user = wtforms.SelectField('User', [validators.InputRequired()], choices=usernames)
     outcome = wtforms.SelectField('Outcome', [validators.InputRequired()], choices=outcome_choices)
     surgery_quality = wtforms.SelectField('Surgery Quality', [validators.InputRequired()], choices=quality_choices)
@@ -115,3 +119,4 @@ class SurgeryEditStatusForm(wtforms.Form):
     daytwo_check = wtforms.BooleanField("Day 2 Checkup")
     daythree_check = wtforms.BooleanField("Day 3 Checkup")
     euthanized_check = wtforms.BooleanField("Euthanized?")
+    notes = wtforms.StringField('Notes', widget=TextArea())

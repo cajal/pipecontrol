@@ -31,10 +31,23 @@
                     <dl> {{ render_field(form.euthanized_check, style="width: 80px;", checked=euthanized) }} </dl>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.notes, style="width: 400px; height: 150px") }} </dl>
+                </div>
+            </div>
             <br>
 	    <div class="d-md-flex">
             	<input type="submit" value="Insert">
 	    </div>        
 	</form>
     </div>
+<script>
+function fillNotes() {
+  if ("{{ notes }}" !== "None") {
+    document.getElementById('notes').innerHTML = {{ notes }}
+  }
+}
+window.onload=fillNotes;
+</script>
 {% endblock %}

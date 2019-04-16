@@ -99,10 +99,11 @@ class SurgeryStatusTable(flask_table.Table):
     animal_id = flask_table.Col('Animal ID')
     date = flask_table.DateCol('Surgery Date')
     timestamp = flask_table.DatetimeCol('Timestamp')
-    day_one = flask_table.Col('Day 1 Check')
-    day_two = flask_table.Col('Day 2 Check')
-    day_three = flask_table.Col('Day 3 Check')
-    euthanized = flask_table.Col('Euthanized')
+    day_one = flask_table.BoolCol('Day 1 Check')
+    day_two = flask_table.BoolCol('Day 2 Check')
+    day_three = flask_table.BoolCol('Day 3 Check')
+    euthanized = flask_table.BoolCol('Euthanized')
+    checkup_notes = flask_table.Col('Notes')
 
     kwargs = {'animal_id': 'animal_id', 'date': 'date'}
     link = flask_table.LinkCol('Edit', 'main.surgery_update', url_kwargs=kwargs)

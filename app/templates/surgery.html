@@ -16,14 +16,11 @@
                 <div class="col-sm-2 " style="width: 14%">
                     <dl> {{ render_field(form.date, style="width: 120px;") }} </dl>
                 </div>
+                <div class="col-sm-2 " style="width: 14%">
+                    <dl> {{ render_field(form.time_input, style="width: 120px;") }} </dl>
+                </div>
                 <div class="col-sm-2" style="width: 14%">
                     <dl> {{ render_field(form.user, style="width: 120px;") }} </dl>
-                </div>
-                <div class="col-sm-2" style="width: 14%">
-                    <dl> {{ render_field(form.outcome, style="width: 120px;") }} </dl>
-                </div>
-                <div class="col-sm-2" style="width: 14%">
-                    <dl> {{ render_field(form.surgery_quality, style="width: 120px;") }} </dl>
                 </div>
                 <div class="col-sm-2" style="width: 14%">
                     <dl> {{ render_field(form.surgery_type, style="width: 250px;") }} </dl>
@@ -37,6 +34,14 @@
                     <dl> {{ render_field(form.ketoprofen, style="width: 120px;") }} </dl>
                 </div>
                 <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.surgery_quality, style="width: 120px;") }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.outcome, style="width: 120px;") }} </dl>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2" style="width: 14%">
                     <dl> {{ render_field(form.notes, style="width: 300px;") }} </dl>
                 </div>
             </div>
@@ -48,11 +53,11 @@
     </div>
 
 <script>
-document.getElementById("weight").onfocusout = function() {myFunction()};
-function myFunction() {
+document.getElementById("weight").onfocusout = function() {calcKetoprofen()};
+function calcKetoprofen() {
   var weight = document.getElementById("weight").value;
   if (!isNaN(weight) && weight !== "") { 
-    document.getElementById("ketoprofen").value = (weight / 1000 * 2 / 5).toFixed(3)
+    document.getElementById("ketoprofen").value = (weight / 1000 * 7.5 / 2).toFixed(3)
   }
 }
 </script>

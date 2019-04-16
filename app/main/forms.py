@@ -88,8 +88,8 @@ class SurgeryForm(wtforms.Form):
     surgery_choices.insert(0, (None, ""))
     outcome_choices = [(p,p) for p in fexperiment.SurgeryOutcome.fetch('surgery_outcome')]
     outcome_choices.insert(0, (None, ""))
-    quality_choices = [(p[0],p) for p in ("0 - Failure", "1 - Poorly", "2 - Okay",
-                                               "3 - Fair", "4 - Good", "5 - Perfect")]
+    quality_choices = [(p[0],p) for p in ("0 - Failure", "1 - Very Bad", "2 - Poor",
+                                               "3 - Okay", "4 - Good", "5 - Great")]
     quality_choices.insert(0, (None, ""))
     animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired()])
     date = DateField('Date', validators=[validators.InputRequired()], default=datetime.today())

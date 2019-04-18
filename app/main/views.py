@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from inspect import isclass
 from slacker import Slacker
-import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import datajoint as dj
 import uuid
@@ -13,6 +13,7 @@ import json
 import http
 from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
 from flask_weasyprint import render_pdf, HTML, CSS
+from pymysql.err import IntegrityError
 
 from . import main, forms, tables
 from .. import schemata
@@ -526,26 +527,35 @@ def mousereport_pdf(animal_id):
 def surgery():
     fexperiment = dj.create_virtual_module("csmith_testing", "csmith_testing")
     form = forms.SurgeryForm(request.form)
+    if 'user' in session:
+        form['user'].data = session['user']
     if request.method == 'POST' and form.validate():
-        tuple_ = {'animal_id': form['animal_id'].data, 'date': str(form['date'].data),
-                  'time': str(form['time_input'].data), 'username': form['user'].data,
-                  'surgery_outcome': form['outcome'].data, 'surgery_quality': form['surgery_quality'].data,
-                  'surgery_type': form['surgery_type'].data, 'weight': form['weight'].data,
-                  'ketoprofen': form['ketoprofen'].data, 'notes': form['notes'].data}
-        status_tuple_ = {'animal_id': tuple_['animal_id'], 'date': tuple_['date'], 'checkup_notes': ''}
-        if tuple_['ketoprofen'] == 0:
-            tuple_.pop('ketoprofen')
-        if tuple_['weight'] == 0:
-            tuple_.pop('weight')
-        if not fexperiment.Surgery().proj() & tuple_:
+        animal_id_tuple = {'animal_id': form['animal_id'].data}
+        new_surgery_id = 1
+        if fexperiment.Surgery.proj() & animal_id_tuple:
+            new_surgery_id = 1 + (fexperiment.Surgery & animal_id_tuple).fetch('surgery_id',
+                                                                               order_by='surgery_id DESC',
+                                                                               limit=1)[0]
+
+        tuple_ = {'animal_id': form['animal_id'].data, 'surgery_id': new_surgery_id,
+                  'date': str(form['date'].data), 'time': str(form['time_input'].data),
+                  'username': form['user'].data, 'surgery_outcome': form['outcome'].data,
+                  'surgery_quality': form['surgery_quality'].data, 'surgery_type': form['surgery_type'].data,
+                  'weight': form['weight'].data, 'ketoprofen': form['ketoprofen'].data,
+                  'surgery_notes': form['notes'].data}
+        status_tuple_ = {'animal_id': tuple_['animal_id'], 'surgery_id': tuple_['surgery_id'], 'checkup_notes': ''}
+
+
+        if not fexperiment.Surgery.proj() & tuple_:
             try:
-                fexperiment.Surgery().insert1(tuple_)
+                fexperiment.Surgery.insert1(tuple_)
                 fexperiment.SurgeryStatus.insert1(status_tuple_)
                 flash('Inserted record for animal {}'.format(tuple_['animal_id']))
-            except Exception as ex:
-                ex_message = "An exception of type {} occurred. More information:\n\n{}".format(type(ex).__name__,
-                                                                                                ex.args)
+            except IntegrityError as ex:
+                ex_message = "Error: Key value not allowed. More information below."
+                details = str(ex.args)
                 flash(ex_message)
+                flash(details)
         else:
             flash('Record already exists.')
     return render_template('surgery.html', form=form)
@@ -554,40 +564,38 @@ def surgery():
 @main.route('/surgery/status', methods=['GET', 'POST'])
 def surgery_status():
     fexperiment = dj.create_virtual_module("csmith_testing", "csmith_testing")
-    form = forms.SurgeryStatusForm(request.form)
-    surgery_data = (fexperiment.Surgery & {'surgery_outcome': 'Survival'}).fetch(as_dict=True)
-    newest_status = []
-    for entry in surgery_data:
-        status_key = dict((k,entry[k]) for k in ('animal_id','date') if k in entry)
+    date_res = (datetime.today() - timedelta(days=8)).strftime("%Y-%m-%d")
+    restriction = 'surgery_outcome = "Survival" and date > "{}"'.format(date_res)
+    new_surgeries = []
+    for status_key in (fexperiment.Surgery & restriction).fetch():
         if len(fexperiment.SurgeryStatus & status_key) > 0:
-            if (datetime.date.today() - entry['date']).days < 5:
-                newest_status.append((fexperiment.SurgeryStatus & status_key).fetch(order_by="timestamp DESC")[0])
-    table = tables.SurgeryStatusTable(newest_status)
-    return render_template('surgery_status.html', form=form, table=table)
+            new_surgeries.append(((fexperiment.SurgeryStatus & status_key) * fexperiment.Surgery).fetch(order_by="timestamp DESC")[0])
+    table = tables.SurgeryStatusTable(new_surgeries)
+    return render_template('surgery_status.html', table=table)
 
 
-@main.route('/surgery/update/<animal_id>/<date>', methods=['GET', 'POST'])
-def surgery_update(animal_id, date):
-    key = {'animal_id': animal_id, 'date': date}
+@main.route('/surgery/update/<animal_id>/<surgery_id>', methods=['GET', 'POST'])
+def surgery_update(animal_id, surgery_id):
+    key = {'animal_id': animal_id, 'surgery_id': surgery_id}
     fexperiment = dj.create_virtual_module('csmith_testing', 'csmith_testing')
     form = forms.SurgeryEditStatusForm(request.form)
     if request.method == 'POST':
-        tuple_ = {'animal_id': form['animal'].data, 'date': str(form['date_field'].data),
+        tuple_ = {'animal_id': form['animal_id'].data, 'surgery_id': form['surgery_id'].data,
                   'day_one': int(form['dayone_check'].data), 'day_two': int(form['daytwo_check'].data),
                   'day_three': int(form['daythree_check'].data),
                   'euthanized': int(form['euthanized_check'].data), 'checkup_notes': form['notes'].data}
         try:
             fexperiment.SurgeryStatus.insert1(tuple_)
-            flash("Surgery status for animal {} on date {} updated.".format(animal_id, date, tuple_['day_one']))
-        except Exception as ex:
-            ex_message = "An exception of type {} occurred. More information:\n\n{}".format(type(ex).__name__,
-                                                                                            ex.args)
+            flash("Surgery status for animal {} on date {} updated.".format(animal_id, form['date_field'].data))
+        except IntegrityError as ex:
+            ex_message = "Error: Key value not allowed. More information below."
+            details = str(ex.args)
             flash(ex_message)
-            flash(tuple_)
+            flash(details)
         return redirect(url_for('main.surgery_status'))
     if len(fexperiment.SurgeryStatus & key) > 0:
-        data = (fexperiment.SurgeryStatus & key).fetch(order_by='timestamp DESC')[0]
-        return render_template('surgery_edit_status.html', form=form, animal_id=data['animal_id'],
+        data = ((fexperiment.SurgeryStatus & key) * fexperiment.Surgery).fetch(order_by='timestamp DESC')[0]
+        return render_template('surgery_edit_status.html', form=form, animal_id=data['animal_id'], surgery_id=data['surgery_id'],
                                date=data['date'], day_one=bool(data['day_one']), day_two=bool(data['day_two']),
                                day_three=bool(data['day_three']), euthanized=bool(data['euthanized']),
                                notes=data['checkup_notes'])
@@ -599,25 +607,25 @@ def surgery_update(animal_id, date):
 def surgery_notification():
     fexperiment = dj.create_virtual_module('csmith_testing', 'csmith_testing')
     num_to_word = {1: 'one', 2: 'two', 3: 'three'}
+
     slack_notification_channel = "#slack_api_testing"
     slack_manager = "cameron.smith"
     slacktable = dj.create_virtual_module('pipeline_notification', 'pipeline_notification')
     domain, api_key = slacktable.SlackConnection.fetch1('domain', 'api_key')
     slack = Slacker(api_key, timeout=60)
-    if len(fexperiment.Surgery - fexperiment.SurgeryStatus) > 0:
-        missing_data = (fexperiment.Surgery - fexperiment.SurgeryStatus).proj().fetch()
-        for entry in missing_data:
-            fexperiment.SurgeryStatus.insert1(entry)
-    surgery_data = (fexperiment.Surgery & {'surgery_outcome': 'Survival'}).fetch()
+
+    date_res = (datetime.today() - timedelta(days=4)).strftime("%Y-%m-%d")
+    restriction = 'surgery_outcome = "Survival" and date > "{}"'.format(date_res)
+    surgery_data = (fexperiment.Surgery & restriction).fetch()
     for entry in surgery_data:
-        if (datetime.date.today() - entry['date']).days < 4:
+        if 0 < (datetime.today().date() - entry['date']).days < 4:
             status = (fexperiment.SurgeryStatus & entry).fetch(order_by="timestamp DESC")[0]
-            day_key = "day_" + num_to_word[(datetime.date.today() - entry['date']).days]
+            day_key = "day_" + num_to_word[(datetime.today().date() - entry['date']).days]
 
             edit_url = "<{}|Update Status Here>".format(url_for('main.surgery_update',
                                                                 _external=True,
                                                                 animal_id=entry['animal_id'],
-                                                                date=entry['date']))
+                                                                surgery_id=entry['surgery_id']))
             if (status['euthanized'] == 0 and status[day_key] == 0):
                 manager_message = "{} needs to check animal {} for {} surgery on {}. {}".format(entry['username'].title(),
                                                                                                 entry['animal_id'],
@@ -632,4 +640,15 @@ def surgery_notification():
                     pm_message = "Don't forget to check on animal {} today! {}".format(entry['animal_id'],
                                                                                        edit_url)
                     slack.chat.post_message("@" + slackname, pm_message, as_user=True)
-    return '', http.HTTPStatus.NO_CONTENT # https://www.erol.si/2018/03/flask-return-204-no-content-response/
+    return '', http.HTTPStatus.NO_CONTENT
+
+
+@main.route('/api/v1/surgery/spawn_missing_data', methods=['GET'])
+def surgery_spawn_missing_data():
+    fexperiment = dj.create_virtual_module('csmith_testing', 'csmith_testing')
+    if len(fexperiment.Surgery - fexperiment.SurgeryStatus) > 0:
+        missing_data = (fexperiment.Surgery - fexperiment.SurgeryStatus).proj().fetch()
+        for entry in missing_data:
+            fexperiment.SurgeryStatus.insert1(entry)
+    return '', http.HTTPStatus.NO_CONTENT
+

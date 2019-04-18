@@ -1,3 +1,4 @@
 0 10 * * * curl http://shikigami.ad.bcm.edu/api/v1/surgery/notification
 0 16 * * * curl http://shikigami.ad.bcm.edu/api/v1/surgery/notification
+0 9 * * * curl http://shikigami.ad.bcm.edu/api/v1/surgery/spawn_missing_data
 

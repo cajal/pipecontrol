@@ -97,6 +97,7 @@ class JobTable(flask_table.Table):
 class SurgeryStatusTable(flask_table.Table):
     classes = ['Relation']
     animal_id = flask_table.Col('Animal ID')
+    surgery_id = flask_table.Col('Surgery ID')
     date = flask_table.DateCol('Surgery Date')
     timestamp = flask_table.DatetimeCol('Timestamp')
     day_one = flask_table.BoolCol('Day 1 Check')
@@ -105,7 +106,7 @@ class SurgeryStatusTable(flask_table.Table):
     euthanized = flask_table.BoolCol('Euthanized')
     checkup_notes = flask_table.Col('Notes')
 
-    kwargs = {'animal_id': 'animal_id', 'date': 'date'}
+    kwargs = {'animal_id': 'animal_id', 'surgery_id': 'surgery_id'}
     link = flask_table.LinkCol('Edit', 'main.surgery_update', url_kwargs=kwargs)
 
 

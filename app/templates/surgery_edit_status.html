@@ -10,7 +10,10 @@
         <form method="post">
             <div class="row">
                 <div class="col-sm-2" style="width: 14%">
-                    <dl> {{ render_field(form.animal, readonly=true, style="width: 120px;", value=animal_id) }} </dl>
+                    <dl> {{ render_field(form.animal_id, readonly=true, style="width: 120px;", value=animal_id) }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.surgery_id, readonly=true, style="width: 120px;", value=surgery_id) }} </dl>
                 </div>
                 <div class="col-sm-2" style="width: 14%">
                     <dl> {{ render_field(form.date_field, readonly=true, style="width: 120px;", value=date) }} </dl>
@@ -33,7 +36,7 @@
             </div>
             <div class="row">
                 <div class="col-sm-2" style="width: 14%">
-                    <dl> {{ render_field(form.notes, style="width: 400px; height: 150px") }} </dl>
+                    <dl> {{ render_field(form.notes, style="width: 400px; height: 125px") }} </dl>
                 </div>
             </div>
             <br>

@@ -4,7 +4,7 @@
 {% block page_content %}
     <div class="post-tabs">
         <h4>Insert record of surgery.</h4>
-	<h5><b>Note:</b> Enter 0 for weight or ketoprofen if not measured.</h5>
+	<h5><b>Note:</b> Leave weight or ketoprofen blank if not measured.</h5>
         <br>
 
         {% from "_macros.html" import render_field %}
@@ -42,7 +42,7 @@
             </div>
             <div class="row">
                 <div class="col-sm-2" style="width: 14%">
-                    <dl> {{ render_field(form.notes, style="width: 300px;") }} </dl>
+                    <dl> {{ render_field(form.notes, style="width: 400px; height: 125px") }} </dl>
                 </div>
             </div>
             <br>

@@ -88,8 +88,8 @@ class SurgeryForm(wtforms.Form):
     surgery_choices.insert(0, (None, ""))
     outcome_choices = [(p,p) for p in fexperiment.SurgeryOutcome.fetch('surgery_outcome')]
     outcome_choices.insert(0, (None, ""))
-    quality_choices = [(p[0],p) for p in ("0 - Failure", "1 - Very Bad", "2 - Poor",
-                                               "3 - Okay", "4 - Good", "5 - Great")]
+    quality_choices = [(p[0],p) for p in ('0 - Failure', '1 - Very Bad', '2 - Poor',
+                                               '3 - Okay', '4 - Good', '5 - Great')]
     quality_choices.insert(0, (None, ""))
     animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired()])
     date = DateField('Date', validators=[validators.InputRequired()], default=datetime.today())
@@ -98,23 +98,17 @@ class SurgeryForm(wtforms.Form):
     outcome = wtforms.SelectField('Outcome', [validators.InputRequired()], choices=outcome_choices)
     surgery_quality = wtforms.SelectField('Surgery Quality', [validators.InputRequired()], choices=quality_choices)
     surgery_type = wtforms.SelectField('Surgery Type', [validators.InputRequired()], choices=surgery_choices)
-    weight = wtforms.DecimalField('Weight (g)', [validators.NumberRange(0, 200), validators.InputRequired()])
-    ketoprofen = wtforms.DecimalField('Ketoprofen (mL)', [validators.NumberRange(0,10), validators.InputRequired()])
-    notes = wtforms.StringField('Notes', widget=TextArea())
-
-
-class SurgeryStatusForm(wtforms.Form):
-    fexperiment = dj.create_virtual_module('csmith_testing', 'csmith_testing')
-    choices = [("{} {}".format(p['animal_id'],p['date']),
-                "{} {}".format(p['animal_id'],p['date'])) for p in fexperiment.SurgeryStatus.fetch()]
-    animal_id = wtforms.SelectField('Animal Id', [validators.InputRequired()], choices=choices)
+    weight = wtforms.DecimalField('Weight (g)', [validators.NumberRange(0.1, 200), validators.Optional()])
+    ketoprofen = wtforms.DecimalField('Ketoprofen (mL)', [validators.NumberRange(0,10), validators.Optional()])
+    notes = wtforms.TextAreaField('Notes')
 
 
 class SurgeryEditStatusForm(wtforms.Form):
-    animal = wtforms.StringField('Animal Id', [validators.InputRequired()])
+    animal_id = wtforms.StringField('Animal Id', [validators.InputRequired()])
+    surgery_id = wtforms.StringField('Surgery Id', [validators.InputRequired()])
     date_field = DateField('Date',  format='%Y-%m-%d')
     dayone_check = wtforms.BooleanField("Day 1 Checkup")
     daytwo_check = wtforms.BooleanField("Day 2 Checkup")
     daythree_check = wtforms.BooleanField("Day 3 Checkup")
     euthanized_check = wtforms.BooleanField("Euthanized?")
-    notes = wtforms.StringField('Notes', widget=TextArea())
+    notes = wtforms.TextAreaField('Notes')

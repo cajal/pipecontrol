@@ -81,12 +81,11 @@ class TrackingForm(wtforms.Form):
 
 
 class SurgeryForm(wtforms.Form):
-    fexperiment = dj.create_virtual_module('csmith_testing', 'csmith_testing')
     usernames = [(p, p) for p in experiment.Person().fetch('username')]
     usernames.insert(0, (None, ""))
-    surgery_choices = [(p,p) for p in fexperiment.SurgeryType.fetch('surgery_type')]
+    surgery_choices = [(p,p) for p in experiment.SurgeryType.fetch('surgery_type')]
     surgery_choices.insert(0, (None, ""))
-    outcome_choices = [(p,p) for p in fexperiment.SurgeryOutcome.fetch('surgery_outcome')]
+    outcome_choices = [(p,p) for p in experiment.SurgeryOutcome.fetch('surgery_outcome')]
     outcome_choices.insert(0, (None, ""))
     quality_choices = [(p[0],p) for p in ('0 - Failure', '1 - Very Bad', '2 - Poor',
                                                '3 - Okay', '4 - Good', '5 - Great')]

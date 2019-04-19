@@ -10,5 +10,6 @@ statsmodels
 seaborn==0.8.1
 matplotlib==2.0.0
 python-dotenv
+cairocffi
 slacker
 wtforms_components

@@ -1,5 +1,7 @@
 from collections import OrderedDict
 from inspect import isclass
+from slacker import Slacker
+from datetime import datetime, timedelta
 import pandas as pd
 import datajoint as dj
 import uuid
@@ -8,8 +10,10 @@ import matplotlib.pyplot as plt
 import mpld3
 import graphviz
 import json
+import http
 from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
 from flask_weasyprint import render_pdf, HTML, CSS
+from pymysql.err import IntegrityError
 
 from . import main, forms, tables
 from .. import schemata
@@ -517,3 +521,143 @@ def mousereport_pdf(animal_id):
     stylesheets = [CSS(url_for('static', filename='styles.css')),
                    CSS(url_for('static', filename='datajoint.css'))]
     return render_pdf(HTML(string=html), stylesheets=stylesheets)
+
+
+@main.route('/surgery', methods=['GET', 'POST'])
+def surgery():
+    form = forms.SurgeryForm(request.form)
+    if 'user' in session:
+        form['user'].data = session['user']
+
+    if request.method == 'POST' and form.validate():
+        animal_id_tuple = {'animal_id': form['animal_id'].data}
+        new_surgery_id = 1 # Surgery ID is a unique integer that starts at 1 and functions as a primary key
+        if experiment.Surgery.proj() & animal_id_tuple:
+            # If the animal_id already has a surgery, add 1 to max surgery_id and use that number as ID
+            new_surgery_id = 1 + (experiment.Surgery & animal_id_tuple).fetch('surgery_id',
+                                                                               order_by='surgery_id DESC',
+                                                                               limit=1)[0]
+
+        # Creating key to insert into Surgery. Status_tuple is used for SurgeryStatus
+        tuple_ = {'animal_id': form['animal_id'].data, 'surgery_id': new_surgery_id,
+                  'date': str(form['date'].data), 'time': str(form['time_input'].data),
+                  'username': form['user'].data, 'surgery_outcome': form['outcome'].data,
+                  'surgery_quality': form['surgery_quality'].data, 'surgery_type': form['surgery_type'].data,
+                  'weight': form['weight'].data, 'ketoprofen': form['ketoprofen'].data,
+                  'surgery_notes': form['notes'].data}
+        status_tuple_ = {'animal_id': tuple_['animal_id'], 'surgery_id': tuple_['surgery_id'], 'checkup_notes': ''}
+
+
+        if not experiment.Surgery.proj() & tuple_:
+            try:
+                experiment.Surgery.insert1(tuple_)
+                experiment.SurgeryStatus.insert1(status_tuple_)
+                flash('Inserted record for animal {}'.format(tuple_['animal_id']))
+            except IntegrityError as ex:
+                ex_message = "Error: Key value not allowed. More information below."
+                details = str(ex.args)
+                flash(ex_message)
+                flash(details)
+        else:
+            flash('Record already exists.')
+
+    return render_template('surgery.html', form=form)
+
+
+@main.route('/surgery/status', methods=['GET', 'POST'])
+def surgery_status():
+    # Any surgeries newer than below date are fetched for display
+    date_res = (datetime.today() - timedelta(days=8)).strftime("%Y-%m-%d")
+    restriction = 'surgery_outcome = "Survival" and date > "{}"'.format(date_res)
+
+    new_surgeries = []
+    for status_key in (experiment.Surgery & restriction).fetch():
+        if len(experiment.SurgeryStatus & status_key) > 0:
+            new_surgeries.append(((experiment.SurgeryStatus & status_key) * experiment.Surgery).fetch(order_by="timestamp DESC")[0])
+    table = tables.SurgeryStatusTable(new_surgeries)
+
+    return render_template('surgery_status.html', table=table)
+
+
+@main.route('/surgery/update/<animal_id>/<surgery_id>', methods=['GET', 'POST'])
+def surgery_update(animal_id, surgery_id):
+    key = {'animal_id': animal_id, 'surgery_id': surgery_id}
+    form = forms.SurgeryEditStatusForm(request.form)
+    if request.method == 'POST':
+        tuple_ = {'animal_id': form['animal_id'].data, 'surgery_id': form['surgery_id'].data,
+                  'day_one': int(form['dayone_check'].data), 'day_two': int(form['daytwo_check'].data),
+                  'day_three': int(form['daythree_check'].data),
+                  'euthanized': int(form['euthanized_check'].data), 'checkup_notes': form['notes'].data}
+        try:
+            experiment.SurgeryStatus.insert1(tuple_)
+            flash("Surgery status for animal {} on date {} updated.".format(animal_id, form['date_field'].data))
+        except IntegrityError as ex:
+            ex_message = "Error: Key value not allowed. More information below."
+            details = str(ex.args)
+            flash(ex_message)
+            flash(details)
+        return redirect(url_for('main.surgery_status'))
+    if len(experiment.SurgeryStatus & key) > 0:
+        data = ((experiment.SurgeryStatus & key) * experiment.Surgery).fetch(order_by='timestamp DESC')[0]
+        return render_template('surgery_edit_status.html', form=form, animal_id=data['animal_id'], surgery_id=data['surgery_id'],
+                               date=data['date'], day_one=bool(data['day_one']), day_two=bool(data['day_two']),
+                               day_three=bool(data['day_three']), euthanized=bool(data['euthanized']),
+                               notes=data['checkup_notes'])
+    else:
+        return render_template('404.html')
+
+
+@main.route('/api/v1/surgery/notification', methods=['GET'])
+def surgery_notification():
+    # Sends notifications to specified slack channel, surgeon, and lab manager about any checkups that need to be done
+    num_to_word = {1: 'one', 2: 'two', 3: 'three'} # Used to figure out which column to look up for checkup date
+
+    # Define all Slack notification variables
+    slack_notification_channel = "#slack_api_testing"
+    slack_manager = "cameron.smith"
+    slacktable = dj.create_virtual_module('pipeline_notification', 'pipeline_notification')
+    domain, api_key = slacktable.SlackConnection.fetch1('domain', 'api_key')
+    slack = Slacker(api_key, timeout=60)
+
+    # Only fetch surgeries done 1 to 3 days ago
+    lessthan_date_res = (datetime.today()).strftime("%Y-%m-%d")
+    greaterthan_date_res = (datetime.today() - timedelta(days=4)).strftime("%Y-%m-%d")
+    restriction = 'surgery_outcome = "Survival" and date < "{}" and date > "{}"'.format(lessthan_date_res,
+                                                                                        greaterthan_date_res)
+    surgery_data = (experiment.Surgery & restriction).fetch()
+
+    for entry in surgery_data:
+        status = (experiment.SurgeryStatus & entry).fetch(order_by="timestamp DESC")[0]
+        day_key = "day_" + num_to_word[(datetime.today().date() - entry['date']).days]
+
+        edit_url = "<{}|Update Status Here>".format(url_for('main.surgery_update',
+                                                            _external=True,
+                                                            animal_id=entry['animal_id'],
+                                                            surgery_id=entry['surgery_id']))
+        if status['euthanized'] == 0 and status[day_key] == 0:
+            manager_message = "{} needs to check animal {} for {} surgery on {}. {}".format(entry['username'].title(),
+                                                                                            entry['animal_id'],
+                                                                                            entry['surgery_type'],
+                                                                                            entry['date'],
+                                                                                            edit_url)
+            ch_message = "<!channel> Reminder: " + manager_message
+            slack.chat.post_message("@" + slack_manager, manager_message)
+            slack.chat.post_message(slack_notification_channel, ch_message)
+            if len(slacktable.SlackUser & entry) > 0:
+                slackname = (slacktable.SlackUser & entry).fetch('slack_user')
+                pm_message = "Don't forget to check on animal {} today! {}".format(entry['animal_id'],
+                                                                                   edit_url)
+                slack.chat.post_message("@" + slackname, pm_message, as_user=True)
+
+    return '', http.HTTPStatus.NO_CONTENT
+
+
+@main.route('/api/v1/surgery/spawn_missing_data', methods=['GET'])
+def surgery_spawn_missing_data():
+    # Finds any Surgery entries without a corresponding SurgeryStatus and inserts a SurgeryStatus key
+    if len(experiment.Surgery - experiment.SurgeryStatus) > 0:
+        missing_data = (experiment.Surgery - experiment.SurgeryStatus).proj().fetch()
+        for entry in missing_data:
+            experiment.SurgeryStatus.insert1(entry)
+    return '', http.HTTPStatus.NO_CONTENT
+

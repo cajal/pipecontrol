@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+
+{% block page_content %}
+    <div class="post-tabs">
+        <h4>Insert record of surgery.</h4>
+	<h5><b>Note:</b> Leave weight or ketoprofen blank if not measured.</h5>
+        <br>
+
+        {% from "_macros.html" import render_field %}
+        <form method="post">
+            <div class="row">
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.animal_id, style="width: 120px;") }} </dl>
+                </div>
+                <div class="col-sm-2 " style="width: 14%">
+                    <dl> {{ render_field(form.date, style="width: 120px;") }} </dl>
+                </div>
+                <div class="col-sm-2 " style="width: 14%">
+                    <dl> {{ render_field(form.time_input, style="width: 120px;") }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.user, style="width: 120px;") }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.surgery_type, style="width: 250px;") }} </dl>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.weight, style="width: 120px;") }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.ketoprofen, style="width: 120px;") }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.surgery_quality, style="width: 120px;") }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.outcome, style="width: 120px;") }} </dl>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.notes, style="width: 400px; height: 125px") }} </dl>
+                </div>
+            </div>
+            <br>
+	    <div class="d-md-flex">
+            	<input type="submit" value="Insert">
+	    </div>        
+	</form>
+    </div>
+
+<script>
+document.getElementById("weight").onfocusout = function() {calcKetoprofen()};
+function calcKetoprofen() {
+  var weight = document.getElementById("weight").value;
+  if (!isNaN(weight) && weight !== "") { 
+    document.getElementById("ketoprofen").value = (weight / 1000 * 7.5 / 2).toFixed(3)
+  }
+}
+</script>
+{% endblock %}

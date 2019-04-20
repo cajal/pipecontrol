@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+
+{% block page_content %}
+    <div class="post-tabs">
+        <h4>Edit existing surgery record</h4>
+        <br>
+
+        {% from "_macros.html" import render_field %}
+        <form method="post">
+            <div class="row">
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.animal_id, readonly=true, style="width: 120px;", value=animal_id) }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.surgery_id, readonly=true, style="width: 120px;", value=surgery_id) }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.date_field, readonly=true, style="width: 120px;", value=date) }} </dl>
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.dayone_check, style="width: 100px;", checked=day_one) }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.daytwo_check, style="width: 100px;", checked=day_two) }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.daythree_check, style="width: 100px;", checked=day_three) }} </dl>
+                </div>
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.euthanized_check, style="width: 80px;", checked=euthanized) }} </dl>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2" style="width: 14%">
+                    <dl> {{ render_field(form.notes, style="width: 400px; height: 125px") }} </dl>
+                </div>
+            </div>
+            <br>
+	    <div class="d-md-flex">
+            	<input type="submit" value="Insert">
+	    </div>        
+	</form>
+    </div>
+<script>
+function fillNotes() {
+  if ("{{ notes }}" !== "None") {
+    document.getElementById('notes').innerHTML = "{{ notes }}"
+  }
+}
+window.onload=fillNotes;
+</script>
+{% endblock %}

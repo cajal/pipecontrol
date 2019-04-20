@@ -9,7 +9,7 @@ WORKDIR /server/pipecontrol
 RUN apt update && apt upgrade -y
 
 # Install requirements
-RUN apt update && apt install -y graphviz libffi6 libffi-dev libssl-dev
+RUN apt update && apt install -y graphviz libffi6 libffi-dev libssl-dev cron
 RUN pip3 install --upgrade setuptools # otherwise cairocffi cannot be installed (https://github.com/lief-project/LIEF/issues/108)
 RUN pip3 install -r requirements.txt
 

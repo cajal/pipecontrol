@@ -613,8 +613,8 @@ def surgery_notification():
     num_to_word = {1: 'one', 2: 'two', 3: 'three'} # Used to figure out which column to look up for checkup date
 
     # Define all Slack notification variables
-    slack_notification_channel = "#slack_api_testing"
-    slack_manager = "cameron.smith"
+    slack_notification_channel = "#surgery_reminders"
+    slack_manager = "camila"
     slacktable = dj.create_virtual_module('pipeline_notification', 'pipeline_notification')
     domain, api_key = slacktable.SlackConnection.fetch1('domain', 'api_key')
     slack = Slacker(api_key, timeout=60)

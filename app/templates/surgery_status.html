@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='datajoint.css') }}">
+{% endblock %}
+
+{% block page_content %}
+    <div class="post-tabs">
+        <h4>View/Modify Status of New Surgeries</h4>
+        <br>
+	{{ table }}      
+    </div>
+
+{% endblock %}

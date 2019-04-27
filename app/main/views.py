@@ -527,9 +527,6 @@ def mousereport_pdf(animal_id):
 def surgery():
     form = forms.SurgeryForm(request.form)
 
-    # Date default is set in view.py because form.py does not run datetime.today() on each view
-    form['date'].data = datetime.today()
-
     if request.method == 'POST' and form.validate():
         animal_id_tuple = {'animal_id': form['animal_id'].data}
         new_surgery_id = 1 # Surgery ID is a unique integer that starts at 1 and functions as a primary key
@@ -562,9 +559,13 @@ def surgery():
         else:
             flash('Record already exists.')
 
-    # If the method is not POST, set the username choice to session user. This is to make sure the user choice is not
-    # changed during insertion
+    # If the method is not POST, set the username choice to session user and date to today.
+    # This is to make sure choices are not changed during insertion
     else:
+
+        # Date default is set in view.py because form.py does not run datetime.today() on each view
+        form['date'].data = datetime.today()
+
         if 'user' in session:
             form['user'].data = session['user']
 

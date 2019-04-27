@@ -99,6 +99,7 @@ class SurgeryStatusTable(flask_table.Table):
     animal_id = flask_table.Col('Animal ID')
     surgery_id = flask_table.Col('Surgery ID')
     date = flask_table.DateCol('Surgery Date')
+    mouse_room = flask_table.Col('Room')
     timestamp = flask_table.DatetimeCol('Timestamp')
     day_one = flask_table.BoolCol('Day 1 Check')
     day_two = flask_table.BoolCol('Day 2 Check')

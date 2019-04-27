@@ -526,8 +526,9 @@ def mousereport_pdf(animal_id):
 @main.route('/surgery', methods=['GET', 'POST'])
 def surgery():
     form = forms.SurgeryForm(request.form)
-    if 'user' in session:
-        form['user'].data = session['user']
+
+    # Date default is set in view.py because form.py does not run datetime.today() on each view
+    form['date'].data = datetime.today()
 
     if request.method == 'POST' and form.validate():
         animal_id_tuple = {'animal_id': form['animal_id'].data}
@@ -543,7 +544,7 @@ def surgery():
                   'date': str(form['date'].data), 'time': str(form['time_input'].data),
                   'username': form['user'].data, 'surgery_outcome': form['outcome'].data,
                   'surgery_quality': form['surgery_quality'].data, 'surgery_type': form['surgery_type'].data,
-                  'weight': form['weight'].data, 'ketoprofen': form['ketoprofen'].data,
+                  'weight': form['weight'].data, 'ketoprofen': form['ketoprofen'].data, 'mouse_room': form['room'].data,
                   'surgery_notes': form['notes'].data}
         status_tuple_ = {'animal_id': tuple_['animal_id'], 'surgery_id': tuple_['surgery_id'], 'checkup_notes': ''}
 
@@ -561,7 +562,13 @@ def surgery():
         else:
             flash('Record already exists.')
 
-    return render_template('surgery.html', form=form)
+    # If the method is not POST, set the username choice to session user. This is to make sure the user choice is not
+    # changed during insertion
+    else:
+        if 'user' in session:
+            form['user'].data = session['user']
+
+    return render_template('surgery.html', form=form, current_date=datetime.today())
 
 
 @main.route('/surgery/status', methods=['GET', 'POST'])
@@ -635,9 +642,10 @@ def surgery_notification():
                                                             animal_id=entry['animal_id'],
                                                             surgery_id=entry['surgery_id']))
         if status['euthanized'] == 0 and status[day_key] == 0:
-            manager_message = "{} needs to check animal {} for {} surgery on {}. {}".format(entry['username'].title(),
+            manager_message = "{} needs to check animal {} in room {} for surgery on {}. {}".format(
+                                                                                            entry['username'].title(),
                                                                                             entry['animal_id'],
-                                                                                            entry['surgery_type'],
+                                                                                            entry['mouse_room'],
                                                                                             entry['date'],
                                                                                             edit_url)
             ch_message = "<!channel> Reminder: " + manager_message
@@ -645,8 +653,7 @@ def surgery_notification():
             slack.chat.post_message(slack_notification_channel, ch_message)
             if len(slacktable.SlackUser & entry) > 0:
                 slackname = (slacktable.SlackUser & entry).fetch('slack_user')
-                pm_message = "Don't forget to check on animal {} today! {}".format(entry['animal_id'],
-                                                                                   edit_url)
+                pm_message = "Don't forget to check on animal {} today! {}".format(entry['animal_id'], edit_url)
                 slack.chat.post_message("@" + slackname, pm_message, as_user=True)
 
     return '', http.HTTPStatus.NO_CONTENT

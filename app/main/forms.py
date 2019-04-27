@@ -81,24 +81,26 @@ class TrackingForm(wtforms.Form):
 
 
 class SurgeryForm(wtforms.Form):
-    usernames = [(p, p) for p in experiment.Person().fetch('username')]
+    usernames = [(p, p) for p in experiment.Person.fetch('username')]
     usernames.insert(0, (None, ""))
     surgery_choices = [(p,p) for p in experiment.SurgeryType.fetch('surgery_type')]
     surgery_choices.insert(0, (None, ""))
     outcome_choices = [(p,p) for p in experiment.SurgeryOutcome.fetch('surgery_outcome')]
-    outcome_choices.insert(0, (None, ""))
     quality_choices = [(p[0],p) for p in ('0 - Failure', '1 - Very Bad', '2 - Poor',
                                                '3 - Okay', '4 - Good', '5 - Great')]
     quality_choices.insert(0, (None, ""))
+    room_choices = [(p,p) for p in experiment.MouseRoom.fetch('mouse_room')]
+    room_choices.insert(0, (None, ""))
     animal_id = wtforms.IntegerField('Animal Id', [validators.InputRequired()])
-    date = DateField('Date', validators=[validators.InputRequired()], default=datetime.today())
+    date = DateField('Date', validators=[validators.InputRequired()])
     time_input = TimeField('Time', validators=[validators.InputRequired()], default=datetime.strptime("12:00", "%H:%M"))
     user = wtforms.SelectField('User', [validators.InputRequired()], choices=usernames)
-    outcome = wtforms.SelectField('Outcome', [validators.InputRequired()], choices=outcome_choices)
+    outcome = wtforms.SelectField('Outcome', [validators.InputRequired()], choices=outcome_choices, default="Survival")
     surgery_quality = wtforms.SelectField('Surgery Quality', [validators.InputRequired()], choices=quality_choices)
     surgery_type = wtforms.SelectField('Surgery Type', [validators.InputRequired()], choices=surgery_choices)
     weight = wtforms.DecimalField('Weight (g)', [validators.NumberRange(0.1, 200), validators.Optional()])
     ketoprofen = wtforms.DecimalField('Ketoprofen (mL)', [validators.NumberRange(0,10), validators.Optional()])
+    room = wtforms.SelectField('Room', [validators.InputRequired()], choices=room_choices)
     notes = wtforms.TextAreaField('Notes')
 
 

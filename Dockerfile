@@ -1,6 +1,6 @@
 FROM datajoint/datajoint
 
-MAINTAINER Fabian Sinz <sinz@bcm.com>
+MAINTAINER Fabian Sinz <sinz@bcm.com>, Cameron Smith <camerons@bcm.edu>
 
 COPY . /server/pipecontrol
 WORKDIR /server/pipecontrol

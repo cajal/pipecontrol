@@ -97,7 +97,7 @@ class JobTable(flask_table.Table):
 class SurgeryStatusTable(flask_table.Table):
     classes = ['Relation']
     animal_id = flask_table.Col('Animal ID')
-    surgery_id = flask_table.Col('Surgery ID')
+    username = flask_table.Col('Username')
     date = flask_table.DateCol('Surgery Date')
     mouse_room = flask_table.Col('Room')
     timestamp = flask_table.DatetimeCol('Timestamp')

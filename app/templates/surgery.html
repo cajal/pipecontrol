@@ -60,7 +60,7 @@ document.getElementById("weight").onfocusout = function() {calcKetoprofen()};
 function calcKetoprofen() {
   var weight = document.getElementById("weight").value;
   if (!isNaN(weight) && weight !== "") { 
-    document.getElementById("ketoprofen").value = (weight / 1000 * 7.5 / 2).toFixed(3)
+    document.getElementById("ketoprofen").value = (weight / 1000 * 5 / 2).toFixed(3)
   }
 }
 </script>

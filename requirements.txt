@@ -13,4 +13,3 @@ python-dotenv
 cairocffi
 slacker
 wtforms_components
-schedule

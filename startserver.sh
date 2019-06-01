@@ -1,7 +1,9 @@
 #!/bin/bash
 
 #Start surgery notification daemon
-nohup python scheduled_tasks.py > /dev/null 2>&1 &
+crontab cron_jobs
+service cron start
+crontab -r
 
 #Start flask server
 export FLASK_APP=app/__init__.py

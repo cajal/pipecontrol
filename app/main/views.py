@@ -632,7 +632,7 @@ def surgery_notification():
     greaterthan_date_res = (datetime.today() - timedelta(days=4)).strftime("%Y-%m-%d")
     restriction = 'surgery_outcome = "Survival" and date < "{}" and date > "{}"'.format(lessthan_date_res,
                                                                                         greaterthan_date_res)
-    surgery_data = (experiment.Surgery & restriction).fetch()
+    surgery_data = (experiment.Surgery & restriction).fetch(order_by='date DESC')
 
     for entry in surgery_data:
         status = (experiment.SurgeryStatus & entry).fetch(order_by="timestamp DESC")[0]

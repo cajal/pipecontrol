@@ -579,7 +579,7 @@ def surgery_status():
     restriction = 'surgery_outcome = "Survival" and date > "{}"'.format(date_res)
 
     new_surgeries = []
-    for status_key in (experiment.Surgery & restriction).fetch():
+    for status_key in (experiment.Surgery & restriction).fetch(order_by='date DESC'):
         if len(experiment.SurgeryStatus & status_key) > 0:
             new_surgeries.append(((experiment.SurgeryStatus & status_key) * experiment.Surgery).fetch(order_by="timestamp DESC")[0])
     table = tables.SurgeryStatusTable(new_surgeries)

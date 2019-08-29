@@ -144,9 +144,9 @@ def progress():
 
 @main.route('/jobs', methods=['GET', 'POST'])
 def jobs():
-    modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack),
-                           ('tune', tune), ('treadmill', treadmill), ('pupil', pupil),
-                           ('stimulus', stimulus)])
+modules = OrderedDict([('reso', reso), ('meso', meso), ('stack', stack), 
+                       ('stimulus', stimulus), ('pupil', pupil), ('treadmill', treadmill), 
+                       ('tune', tune)])
 
     if request.method == 'POST':
         to_delete = []
@@ -579,7 +579,7 @@ def surgery_status():
     restriction = 'surgery_outcome = "Survival" and date > "{}"'.format(date_res)
 
     new_surgeries = []
-    for status_key in (experiment.Surgery & restriction).fetch():
+    for status_key in (experiment.Surgery & restriction).fetch(order_by='date DESC'):
         if len(experiment.SurgeryStatus & status_key) > 0:
             new_surgeries.append(((experiment.SurgeryStatus & status_key) * experiment.Surgery).fetch(order_by="timestamp DESC")[0])
     table = tables.SurgeryStatusTable(new_surgeries)
@@ -632,7 +632,7 @@ def surgery_notification():
     greaterthan_date_res = (datetime.today() - timedelta(days=4)).strftime("%Y-%m-%d")
     restriction = 'surgery_outcome = "Survival" and date < "{}" and date > "{}"'.format(lessthan_date_res,
                                                                                         greaterthan_date_res)
-    surgery_data = (experiment.Surgery & restriction).fetch()
+    surgery_data = (experiment.Surgery & restriction).fetch(order_by='date DESC')
 
     for entry in surgery_data:
         status = (experiment.SurgeryStatus & entry).fetch(order_by="timestamp DESC")[0]

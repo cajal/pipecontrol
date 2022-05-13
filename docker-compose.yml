@@ -6,6 +6,7 @@ services:
     ports:
       - "80:5000"
     volumes:
+      - .:/server/pipecontrol
       - /tmp:/tmp
       - /mnt:/mnt
       - /etc/timezone:/etc/timezone:ro

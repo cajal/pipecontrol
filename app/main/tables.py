@@ -1,5 +1,6 @@
 import flask_table
 
+import datajoint
 
 class SelectCol(flask_table.Col):
     def td_format(self, content):
@@ -37,7 +38,10 @@ class SimpleCheckMarkCol(flask_table.Col):
 
 class KeyColumn(flask_table.Col):
     def td_format(self, content):
-        key = {name: content[name][0] for name in content.dtype.names}  # recarray to dict
+        if(type(content) == datajoint.blob.MatStruct):
+             key = {name: content[name][0] for name in content.dtype.names}
+        else:
+             key = content # recarray to dict
         return '<code>{}</code>'.format(key)
 
 

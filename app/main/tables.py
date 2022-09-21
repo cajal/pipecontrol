@@ -41,6 +41,7 @@ class KeyColumn(flask_table.Col):
             key = {name: content[name][0] for name in content.dtype.names} 
         else:
             key = content # recarray to dict
+
         return '<code>{}</code>'.format(key)
 
 

@@ -1,0 +1,35 @@
+FROM python:3.8
+
+MAINTAINER Fabian Sinz <sinz@bcm.com>, Cameron Smith <camerons@bcm.edu>, Christos Papadopoulos <cpapadop@bcm.com>
+
+# Defines where the app will be run from
+ENV APP /app
+
+RUN mkdir $APP
+WORKDIR $APP
+
+# Expose the port uWSGI will listen on
+EXPOSE 5000
+
+# Install ubuntu packages
+RUN apt-get update
+# RUN apt install -y graphviz libffi6 libffi-dev libssl-dev
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/Chicago
+RUN apt-get install -y tzdata
+
+# Upgrade pip
+RUN pip3 install --upgrade pip
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip3 install --upgrade setuptools # otherwise cairocffi cannot be installed (https://github.com/lief-project/LIEF/issues/108)
+RUN pip3 install --upgrade git+https://github.com/atlab/datajoint-python
+RUN pip3 install -r requirements.txt
+
+# We copy the rest of the codebase into the image
+COPY . .
+
+# Run uWSGI with its ini file.
+# Might be better to use entrypoint here?
+CMD [ "uwsgi", "--enable-threads", "--ini", "app.ini" ]

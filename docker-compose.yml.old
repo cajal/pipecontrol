@@ -1,0 +1,50 @@
+version: '2'
+
+services:
+  pipecontrol:
+    build:
+      context: .
+      dockerfile: Dockerfile.old
+    ports:
+      - "80:5000"
+    volumes:
+      - .:/server/pipecontrol
+      - /tmp:/tmp
+      - /mnt:/mnt
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - PIPELINE_CONFIG=production
+    env_file: .env
+
+  development:
+    build:
+      context: .
+      dockerfile: Dockerfile.old
+    ports:
+      - "80:5000"
+    volumes:
+      - .:/server/pipecontrol
+      - ./tmp/:/tmp
+      - /mnt:/mnt
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - PIPELINE_CONFIG=development
+    env_file: .env
+
+  dragon:
+    build:
+      context: .
+      dockerfile: Dockerfile.old
+    ports:
+      - "80:5000"
+    volumes:
+      - .:/server/pipecontrol
+      - ./tmp/:/tmp
+      - /mnt:/mnt
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - PIPELINE_CONFIG=dragon
+    env_file: .env

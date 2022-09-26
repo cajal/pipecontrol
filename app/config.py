@@ -10,7 +10,8 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False # this won't work with flask script, use Flask.run() instead
-    SERVER_NAME='shikigami.ad.bcm.edu'
+    # SERVER_NAME='shikigami.ad.bcm.edu'
+    SERVER_NAME='spaceheater.ad.bcm.edu'
 
 class Dragon(Config):
     DEBUG = True # this won't work with flask script, use Flask.run() instead

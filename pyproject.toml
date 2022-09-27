@@ -1,0 +1,33 @@
+# This isn't currently being used by the pipecontrol docker because nothing is being installed
+# Also, this currently creates an empty wheel/egg for reasons likely related to name/pathing resolution
+[project]
+name = "pipecontrol"
+version = "0.1.0" # Not accurate to the history of this application
+description = "Website for interactions with our two-photon pipeline."
+authors = [
+  { name = "Fabian Sinz", email = "sinz@bcm.com" }
+]
+maintainers = [
+  { name = "Cameron Smith", email = "camerons@bcm.edu" },
+  { name = "Christos Papadopoulos", email = "cpapadop@bcm.edu"}
+]
+readme = "README.md"
+
+dependencies = [
+  "flask",
+  "flask-bootstrap>=3.3.7.1",
+  "flask-WTF",
+  "flask-table",
+  "flask-sslify",
+  "graphviz",
+  "mpld3",
+  "flask-weasyprint",
+  "statsmodels",
+  "seaborn==0.8.1",
+  "matplotlib==2.0.0",
+  "python-dotenv",
+  "cairocffi",
+  "slacker",
+  "wtforms_components",
+  "uWSGI",
+]

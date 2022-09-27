@@ -1,3 +1,3 @@
 #! /bin/bash
 
-docker-compose up -d pipecontrol
+docker-compose up -d

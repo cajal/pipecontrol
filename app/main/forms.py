@@ -1,5 +1,4 @@
 from wtforms.validators import ValidationError
-# from wtforms.fields.html5 import DateField
 from wtforms.fields import DateField
 from wtforms.widgets import TextArea
 from wtforms_components import TimeField

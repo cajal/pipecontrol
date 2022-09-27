@@ -1,3 +1,5 @@
+# This isn't currently being used by the pipecontrol docker because nothing is being installed
+# Also, this currently creates an empty wheel/egg for reasons likely related to name/pathing resolution
 [project]
 name = "pipecontrol"
 version = "0.1.0" # Not accurate to the history of this application

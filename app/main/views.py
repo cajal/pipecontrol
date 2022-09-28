@@ -11,7 +11,7 @@ import mpld3
 import graphviz
 import json
 import http
-from flask import render_template, redirect, url_for, flash, request, session, send_from_directory
+from flask import render_template, redirect, url_for, flash, request, session, send_from_directory, Markup
 from flask_weasyprint import render_pdf, HTML, CSS
 from pymysql.err import IntegrityError
 
@@ -526,6 +526,9 @@ def mousereport_pdf(animal_id):
 @main.route('/surgery', methods=['GET', 'POST'])
 def surgery():
     form = forms.SurgeryForm(request.form)
+    registration_link = 'https://orit.research.bcm.edu/CCM/ProcedureScheduler/Login.aspx?ReturnUrl=%2fCCM%2fProcedureScheduler%2fProcedureScheduler%2fHome%2fHome.aspx'
+    registration_html = f'<a href="{registration_link}" target="_blank" rel="noopener noreferrer">Surgery Registration</a>'
+    form.registration.label = Markup(f'<label for="registration">{registration_html}</label>')
 
     if request.method == 'POST' and form.validate():
         animal_id_tuple = {'animal_id': form['animal_id'].data}

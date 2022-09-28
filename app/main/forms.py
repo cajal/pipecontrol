@@ -101,6 +101,7 @@ class SurgeryForm(wtforms.Form):
     weight = wtforms.DecimalField('Weight (g)', [validators.NumberRange(0.1, 200), validators.Optional()])
     ketoprofen = wtforms.DecimalField('Ketoprofen (mL)', [validators.NumberRange(0,10), validators.Optional()])
     room = wtforms.SelectField('Room', [validators.InputRequired()], choices=room_choices)
+    registration = wtforms.BooleanField('Surgery Registration', [validators.InputRequired()])
     notes = wtforms.TextAreaField('Notes')
 
 

@@ -25,6 +25,7 @@ class AutoProcessing(wtforms.Form):
     scan_idx = wtforms.IntegerField('Scan Idx', [validators.InputRequired()])
     priority = wtforms.IntegerField('Priority [0-100]', [validators.NumberRange(-128, 127)],
                                     default=50)
+    spike_method = wtforms.IntegerField('Spike Method', [validators.InputRequired()], default=5)
     autosegment = wtforms.BooleanField('Segment somas in channel one?')
 
 

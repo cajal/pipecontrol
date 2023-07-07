@@ -631,35 +631,42 @@ def surgery_notification():
     domain, api_key = slacktable.SlackConnection.fetch1('domain', 'api_key')
     slack = Slacker(api_key, timeout=60)
 
-    # Only fetch surgeries done 1 to 3 days ago
-    lessthan_date_res = (datetime.today()).strftime("%Y-%m-%d")
-    greaterthan_date_res = (datetime.today() - timedelta(days=4)).strftime("%Y-%m-%d")
-    restriction = 'surgery_outcome = "Survival" and date < "{}" and date > "{}"'.format(lessthan_date_res,
-                                                                                        greaterthan_date_res)
-    surgery_data = (experiment.Surgery & restriction).fetch(order_by='date DESC')
+    try:
 
-    for entry in surgery_data:
-        status = (experiment.SurgeryStatus & entry).fetch(order_by="timestamp DESC")[0]
-        day_key = "day_" + num_to_word[(datetime.today().date() - entry['date']).days]
+        # Only fetch surgeries done 1 to 3 days ago
+        lessthan_date_res = (datetime.today()).strftime("%Y-%m-%d")
+        greaterthan_date_res = (datetime.today() - timedelta(days=4)).strftime("%Y-%m-%d")
+        restriction = 'surgery_outcome = "Survival" and date < "{}" and date > "{}"'.format(lessthan_date_res,
+                                                                                            greaterthan_date_res)
+        surgery_data = (experiment.Surgery & restriction).fetch(order_by='date DESC')
 
-        edit_url = "<{}|Update Status Here>".format(url_for('main.surgery_update',
-                                                            _external=True,
-                                                            animal_id=entry['animal_id'],
-                                                            surgery_id=entry['surgery_id']))
-        if status['euthanized'] == 0 and status[day_key] == 0:
-            manager_message = "{} needs to check animal {} in room {} for surgery on {}. {}".format(
-                                                                                            entry['username'].title(),
-                                                                                            entry['animal_id'],
-                                                                                            entry['mouse_room'],
-                                                                                            entry['date'],
-                                                                                            edit_url)
-            ch_message = "<!channel> Reminder: " + manager_message
-            slack.chat.post_message("@" + slack_manager, manager_message)
-            slack.chat.post_message(slack_notification_channel, ch_message)
-            if len(slacktable.SlackUser & entry) > 0:
-                slackname = (slacktable.SlackUser & entry).fetch('slack_user')
-                pm_message = "Don't forget to check on animal {} today! {}".format(entry['animal_id'], edit_url)
-                slack.chat.post_message("@" + slackname, pm_message, as_user=True)
+        for entry in surgery_data:
+            status = (experiment.SurgeryStatus & entry).fetch(order_by="timestamp DESC")[0]
+            day_key = "day_" + num_to_word[(datetime.today().date() - entry['date']).days]
+
+            edit_url = "<{}|Update Status Here>".format(url_for('main.surgery_update',
+                                                                _external=True,
+                                                                animal_id=entry['animal_id'],
+                                                                surgery_id=entry['surgery_id']))
+            if status['euthanized'] == 0 and status[day_key] == 0:
+                manager_message = "{} needs to check animal {} in room {} for surgery on {}. {}".format(
+                                                                                                entry['username'].title(),
+                                                                                                entry['animal_id'],
+                                                                                                entry['mouse_room'],
+                                                                                                entry['date'],
+                                                                                                edit_url)
+                ch_message = "<!channel> Reminder: " + manager_message
+                slack.chat.post_message("@" + slack_manager, manager_message)
+                slack.chat.post_message(slack_notification_channel, ch_message)
+                if len(slacktable.SlackUser & entry) > 0:
+                    slackname = (slacktable.SlackUser & entry).fetch('slack_user')
+                    pm_message = "Don't forget to check on animal {} today! {}".format(entry['animal_id'], edit_url)
+                    slack.chat.post_message("@" + slackname, pm_message, as_user=True)
+
+    except Exception as e:
+
+        error_message = f"WARNING! Notification system failed. Caught an exception of type: {type(e).__name__}. Error message: {str(e)}"
+        slack.chat.post_message(slack_notification_channel, error_message)
 
     return '', http.HTTPStatus.NO_CONTENT
 
